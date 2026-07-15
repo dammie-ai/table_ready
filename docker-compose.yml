@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  tableready-db:
+    image: postgres:15-alpine
+    container_name: tableready_postgres
+    environment:
+      POSTGRES_USER: tableready_admin
+      POSTGRES_PASSWORD: SuperSecurePassword123!
+      POSTGRES_DB: tableready_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:
+  
