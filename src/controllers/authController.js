@@ -11,9 +11,9 @@ const login = async (req, res) => {
   }
 
   try {
-    // 1. Query the 'employees' table using 'name' and 'password_hash'
+    // 1. Query the 'employees' table, making sure to fetch 'allowed_days_mask'
     const result = await pool.query(
-      'SELECT employee_id, name, password_hash, role FROM employees WHERE name = $1 OR email = $1',
+      'SELECT employee_id, name, password_hash, role, allowed_days_mask FROM employees WHERE name = $1 OR email = $1',
       [username]
     );
 
@@ -22,6 +22,18 @@ const login = async (req, res) => {
     }
 
     const user = result.rows[0];
+
+    // --- EMPLOYEE SHIFT CHECKER (TAB-27) ---
+    // JavaScript's getDay() returns 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+    const todayDayIndex = new Date().getDay(); 
+    const isScheduledToday = (user.allowed_days_mask & (1 << todayDayIndex)) !== 0;
+
+    if (!isScheduledToday) {
+      return res.status(403).json({ 
+        error: 'Access denied. You are not scheduled to work today.' 
+      });
+    }
+    // ----------------------------------------
 
     // 2. Validate password (using password_hash from DB)
     const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -48,7 +60,6 @@ const login = async (req, res) => {
     });
 
   } catch (err) {
-    // Writes the exact crash details into a file named crash-log.txt
     fs.writeFileSync('crash-log.txt', `CRASH ERROR: ${err.message}\nSTACK: ${err.stack}`);
     console.error('Login error:', err);
     res.status(500).json({ error: 'Internal server error during login.' });
