@@ -28,31 +28,40 @@ app.post('/api/login', login);
 
 // Waiter Dashboard (Accessible ONLY by waiters and admins)
 app.get(
-  '/api/waiter/dashboard', 
-  authenticateToken, 
-  authorizeRoles('waiter'), 
+  '/api/waiter/dashboard',
+  authenticateToken,
+  authorizeRoles('waiter'),
   (req, res) => {
-    res.json({ message: `Welcome ${req.user.username}! Here is your Waiter Terminal.` });
+    res.json({
+      message: 'Welcome to the Waiter Dashboard!',
+      user: req.user // Contains the verified user ID and role
+    });
   }
 );
 
-// Kitchen Display System (Accessible ONLY by kitchen staff and admins)
+// Kitchen Queue (Accessible ONLY by kitchen staff and admins)
 app.get(
-  '/api/kitchen/orders', 
-  authenticateToken, 
-  authorizeRoles('kitchen'), 
+  '/api/kitchen/queue',
+  authenticateToken,
+  authorizeRoles('kitchen'),
   (req, res) => {
-    res.json({ message: 'Kitchen connection verified. Here are the active orders.' });
+    res.json({
+      message: 'Welcome to the Kitchen Queue!',
+      user: req.user
+    });
   }
 );
 
-// Admin Analytics & Controls (Accessible ONLY by admins)
+// Manager Panel (Accessible ONLY by managers and admins)
 app.get(
-  '/api/admin/analytics', 
-  authenticateToken, 
-  authorizeRoles('admin'), 
+  '/api/manager/panel',
+  authenticateToken,
+  authorizeRoles('manager'),
   (req, res) => {
-    res.json({ message: 'Welcome Master Admin. Load comprehensive analytics.' });
+    res.json({
+      message: 'Welcome to the Manager Panel!',
+      user: req.user
+    });
   }
 );
 
