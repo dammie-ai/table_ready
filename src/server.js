@@ -1,26 +1,28 @@
-require('dotenv').config();
 const app = require('./app');
-const { pool } = require('./config/db');
+const dbConfig = require('./config/db');
 
-const PORT = process.env.PORT || 8000;
+const PORT = 8001;
 
-// Test DB Connection on startup, then boot server
-pool.query('SELECT NOW()')
-  .then(() => {
-    console.log('[Database] Connection verified.');
+const startServer = async () => {
+  try {
+    // 1. Verify database connection
+    if (dbConfig.pool) {
+      console.log('[Server] Database pool found. Testing connection...');
+      await dbConfig.pool.query('SELECT NOW()');
+      console.log('[Server] Database connection verified successfully.');
+    } else {
+      console.log('[Server] No database pool detected in config/db.js');
+    }
+
+    // 2. Start listening
     app.listen(PORT, () => {
       console.log(`[Server] TableReady backend running on port ${PORT}`);
       console.log(`[Server] Test the API health at: http://localhost:${PORT}/api/health`);
     });
-  })
-  .catch((err) => {
-    console.error('[Server] Database connection failed! Starting server aborted.', err);
+  } catch (error) {
+    console.error('[Server] Failed to start server:', error);
     process.exit(1);
-  });// This will capture and print any silent crashes so we can see them!
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ UNHANDLED REJECTION AT:', promise, 'REASON:', reason);
-});
+  }
+};
 
-process.on('uncaughtException', (err) => {
-    console.error('❌ UNCAUGHT EXCEPTION:', err);
-});
+startServer();

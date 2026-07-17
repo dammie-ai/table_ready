@@ -2,9 +2,9 @@ const express = require('express');
 const cors = require('cors');
 
 // Import existing routes
-const authRoutes = require('./routes/auth'); // Points to auth.js successfully
+const authRoutes = require('./routes/auth');
 
-// Import your brand-new session routes for TAB-28
+// Import session routes
 const sessionRoutes = require('./routes/sessionRoutes');
 
 const app = express();
@@ -24,7 +24,7 @@ app.get('/api/health', (req, res) => {
 
 // Register Feature Routes
 app.use('/api', authRoutes);
-app.use('/api', sessionRoutes); // Registers POST /api/session
+app.use('/api', sessionRoutes);
 
 // 404 Handler for unregistered routes
 app.use((req, res, next) => {
