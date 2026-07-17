@@ -1,68 +1,40 @@
 const express = require('express');
 const cors = require('cors');
 
-// Import your auth controller and security guards
-const { login } = require('./controllers/authController');
-const { authenticateToken, authorizeRoles } = require('./middleware/authGuard');
+// Import existing routes
+const authRoutes = require('./routes/auth'); // Points to auth.js successfully
+
+// Import your brand-new session routes for TAB-28
+const sessionRoutes = require('./routes/sessionRoutes');
 
 const app = express();
 
-// Middleware
-app.use(cors()); // Allows both your customer app and staff portal to talk to this API
-app.use(express.json()); // Allows the API to read JSON data sent in request bodies
+// Global Middlewares
+app.use(cors());
+app.use(express.json());
 
-// Baseline Health Check Route
+// Base Health Route
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     message: 'TableReady API is up and running!',
-    timestamp: new Date()
+    timestamp: new Date().toISOString()
   });
 });
 
-// --- AUTHENTICATION ROUTES ---
-// This is your login route (Implicitly determines role from username & password)
-app.post('/api/login', login);
+// Register Feature Routes
+app.use('/api', authRoutes);
+app.use('/api', sessionRoutes); // Registers POST /api/session
 
-// --- SECURED DEPARTMENTAL ROUTES ---
+// 404 Handler for unregistered routes
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Route not found' });
+});
 
-// Waiter Dashboard (Accessible ONLY by waiters and admins)
-app.get(
-  '/api/waiter/dashboard',
-  authenticateToken,
-  authorizeRoles('waiter'),
-  (req, res) => {
-    res.json({
-      message: 'Welcome to the Waiter Dashboard!',
-      user: req.user // Contains the verified user ID and role
-    });
-  }
-);
-
-// Kitchen Queue (Accessible ONLY by kitchen staff and admins)
-app.get(
-  '/api/kitchen/queue',
-  authenticateToken,
-  authorizeRoles('kitchen'),
-  (req, res) => {
-    res.json({
-      message: 'Welcome to the Kitchen Queue!',
-      user: req.user
-    });
-  }
-);
-
-// Manager Panel (Accessible ONLY by managers and admins)
-app.get(
-  '/api/manager/panel',
-  authenticateToken,
-  authorizeRoles('manager'),
-  (req, res) => {
-    res.json({
-      message: 'Welcome to the Manager Panel!',
-      user: req.user
-    });
-  }
-);
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
 
 module.exports = app;
