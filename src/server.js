@@ -1,28 +1,39 @@
-const app = require('./app');
-const dbConfig = require('./config/db');
+const express = require('express');
+const app = express();
 
-const PORT = 8001;
+// Middleware
+app.use(express.json());
 
-const startServer = async () => {
-  try {
-    // 1. Verify database connection
-    if (dbConfig.pool) {
-      console.log('[Server] Database pool found. Testing connection...');
-      await dbConfig.pool.query('SELECT NOW()');
-      console.log('[Server] Database connection verified successfully.');
-    } else {
-      console.log('[Server] No database pool detected in config/db.js');
-    }
+// Routes
+const authRoutes = require('./routes/auth');
+const sessionRoutes = require('./routes/sessionRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
-    // 2. Start listening
-    app.listen(PORT, () => {
-      console.log(`[Server] TableReady backend running on port ${PORT}`);
-      console.log(`[Server] Test the API health at: http://localhost:${PORT}/api/health`);
-    });
-  } catch (error) {
-    console.error('[Server] Failed to start server:', error);
-    process.exit(1);
-  }
-};
+// Health Check Endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'TableReady backend is operational' });
+});
 
-startServer();
+// API Route Mounts
+app.use('/api/auth', authRoutes);
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled Error:', err.stack || err.message);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal Server Error'
+  });
+});
+
+// Start Server Listener
+const PORT = process.env.PORT || 8001;
+app.listen(PORT, () => {
+  console.log(`🚀 Server listening on http://localhost:${PORT}`);
+});

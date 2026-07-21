@@ -11,29 +11,36 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_key');
-    req.user = verified; // Injected with payload: { id, username, role }
+    req.user = verified; // Injected with payload: { id, username, role / roles }
     next();
   } catch (err) {
-    res.status(403).json({ error: 'Session expired or invalid token.' });
+    return res.status(403).json({ error: 'Session expired or invalid token.' });
   }
 };
 
-// Enforces roles with Admin VIP override
+// Enforces roles with Admin VIP override and Multi-Role support
 const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    // ADMIN OVERRIDE: Admin can log into/access any department board
-    if (req.user.role === 'admin') {
+    // Normalize user roles into an array (supports single 'role' string or 'roles' array)
+    const userRoles = Array.isArray(req.user.roles) 
+      ? req.user.roles 
+      : (req.user.role ? [req.user.role] : []);
+
+    // ADMIN OVERRIDE (Handwritten Notes): Admin can log into/access any department board
+    if (userRoles.includes('admin')) {
       return next();
     }
 
-    // DEPARTMENTS ISOLATION: Check if current user's role is allowed on this route
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        error: `Access Denied. Your role (${req.user.role}) cannot access this department's services.` 
+    // DEPARTMENTS ISOLATION & MULTI-ROLE: Check if current user's role(s) match allowed route roles
+    const hasPermission = userRoles.some(role => allowedRoles.includes(role));
+
+    if (!hasPermission) {
+      return res.status(403).json({
+        error: `Access Denied. Your role (${userRoles.join(', ')}) cannot access this department's services.`
       });
     }
 

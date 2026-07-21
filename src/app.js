@@ -1,31 +1,34 @@
 const express = require('express');
 const app = express();
 
-// 1. Body Parser Middleware (MUST come before route declarations)
+// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// 2. Import Route Handlers
+// Routes
 const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
-
-// 3. API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/payments', paymentRoutes);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'TableReady backend is healthy.' });
+  res.status(200).json({ status: 'ok', message: 'TableReady backend is operational' });
 });
 
-// 4. Global Error Handler
+// API Route Mounts
+app.use('/api/auth', authRoutes);
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
+
+// Global Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Unhandled Error:', err.stack || err.message);
   res.status(err.status || 500).json({
     success: false,
-    error: err.message || 'Internal Server Error',
+    error: err.message || 'Internal Server Error'
   });
 });
 
