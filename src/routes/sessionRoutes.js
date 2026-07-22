@@ -1,11 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const sessionController = require('../controllers/sessionController');
 
-// Route to find or create a session by table_id
-router.post('/session', sessionController.findOrCreateSession);
+const { 
+  checkEmployeeShift, 
+  createSession, 
+  getActiveSessions, 
+  closeSession 
+} = require('../controllers/sessionController');
 
-// Route to join an active session using a 4-digit code
-router.post('/session/join', sessionController.joinSessionByCode);
+// Line 6: Ensure checkEmployeeShift is passed as a valid function
+router.post('/check-shift', checkEmployeeShift);
+router.post('/', createSession);
+router.get('/', getActiveSessions);
+router.put('/:id/close', closeSession);
 
 module.exports = router;

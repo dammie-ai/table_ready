@@ -13,11 +13,18 @@ exports.createPaymentIntent = async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert dollars to cents
       currency,
+      payment_method: 'pm_card_visa',
+      confirm: true,
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never'
+      }
     });
 
     res.status(200).json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      status: paymentIntent.status
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -30,8 +37,8 @@ exports.confirmPayment = async (req, res) => {
     const { paymentIntentId, orderId } = req.body;
 
     if (!paymentIntentId || !orderId) {
-      return res.status(400).json({ 
-        error: 'Missing required parameters: paymentIntentId and orderId are required.' 
+      return res.status(400).json({
+        error: 'Missing required parameters: paymentIntentId and orderId are required.'
       });
     }
 
@@ -39,33 +46,33 @@ exports.confirmPayment = async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status !== 'succeeded') {
-      return res.status(400).json({ 
-        error: `Payment not completed. Stripe status: ${paymentIntent.status}` 
+      return res.status(400).json({
+        error: `Payment not completed. Stripe status: ${paymentIntent.status}`
       });
     }
 
     // Update the database record once payment is verified
     const query = `
-      UPDATE orders 
-      SET payment_status = 'Paid', 
-          stripe_charge_id = $1 
-      WHERE master_order_id = $2 
+      UPDATE orders
+      SET payment_status = 'Paid',
+          stripe_charge_id = $1
+      WHERE master_order_id = $2
       RETURNING *;
     `;
     const values = [paymentIntentId, orderId];
     const result = await pool.query(query, values);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        error: `Order with ID ${orderId} not found in database.` 
+      return res.status(404).json({
+        success: false,
+        error: `Order with ID ${orderId} not found in database.`
       });
     }
 
     res.status(200).json({
       success: true,
       message: 'Payment confirmed and order status updated to Paid.',
-      order: result.rows[0],
+      order: result.rows[0]
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

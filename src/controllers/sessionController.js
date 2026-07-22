@@ -1,113 +1,127 @@
-const { pool } = require('../config/db');
+const pool = require('../config/db');
 
-// Helper function to generate a random 4-digit join code
-const generateJoinCode = () => {
-  return Math.floor(1000 + Math.random() * 9000).toString();
-};
+// POST /api/sessions/check-shift
+// Verifies whether a given user exists and holds the waiter role
+const checkEmployeeShift = async (req, res) => {
+  const { waiter_id } = req.body;
 
-// POST /api/session (Start / Find Table Session)
-const findOrCreateSession = async (req, res) => {
-  const { table_id, order_mode } = req.body;
-  const waiterId = req.user?.id; // Injected from authGuard middleware if logged in
-
-  // 1. HANDWRITTEN NOTES RULE: Delivery & Drive-Thru do NOT require table sessions/codes
-  if (order_mode === 'delivery' || order_mode === 'drive_thru') {
-    return res.status(200).json({
-      message: `Session not required for ${order_mode} orders. Proceed directly to checkout.`,
-      requires_table_code: false,
-    });
-  }
-
-  // Dine-in requires a table_id
-  if (!table_id) {
-    return res.status(400).json({ error: 'table_id is required for Dine In sessions.' });
+  // Validate the presence of the waiter_id parameter in the request payload
+  if (!waiter_id) {
+    return res.status(400).json({ error: 'waiter_id is required to check shift status.' });
   }
 
   try {
-    // 2. HANDWRITTEN NOTES RULE: Waiter Workload Cap (Max 3 assigned tables)
-    if (waiterId) {
-      const activeWaiterTablesQuery = `
-        SELECT COUNT(DISTINCT table_id) as active_count
-        FROM table_sessions
-        WHERE assigned_waiter_id = $1 AND is_active = true
-      `;
-      const waiterCheck = await pool.query(activeWaiterTablesQuery, [waiterId]);
-      const activeCount = parseInt(waiterCheck.rows[0].active_count, 10);
+    // Fetch user details from PostgreSQL database matching the provided ID
+    const shiftQuery = `
+      SELECT id, username, role
+      FROM users
+      WHERE id = $1
+    `;
+    const result = await pool.query(shiftQuery, [waiter_id]);
 
-      if (activeCount >= 3) {
-        return res.status(400).json({
-          error: 'Workload limit reached: Waiters can only be responsible for a maximum of 3 tables at a time.'
-        });
-      }
+    // Handle non-existent user records
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Waiter not found.' });
     }
 
-    // 3. Check if there is already an active session for this table
-    const activeSessionQuery = `
-      SELECT * FROM table_sessions
-      WHERE table_id = $1 AND is_active = true
-      LIMIT 1;
-    `;
-    const existingSession = await pool.query(activeSessionQuery, [table_id]);
+    const waiter = result.rows[0];
 
-    if (existingSession.rows.length > 0) {
-      return res.status(200).json({
-        message: 'Joined existing active session.',
-        session: existingSession.rows[0]
+    // Verify the record holds the waiter role prior to assignment
+    if (waiter.role !== 'waiter') {
+      return res.status(400).json({
+        error: `User ${waiter.username} is not registered as a waiter.`
       });
     }
 
-    // 4. Generate a fresh 4-digit join code and create session
-    const joinCode = generateJoinCode();
-    const createSessionQuery = `
-      INSERT INTO table_sessions (table_id, assigned_waiter_id, is_group_setup, is_active, join_code, created_at)
-      VALUES ($1, $2, true, true, $3, NOW())
-      RETURNING *;
-    `;
-    const newSession = await pool.query(createSessionQuery, [table_id, waiterId || null, joinCode]);
-
-    return res.status(201).json({
-      message: 'New session created successfully.',
-      session: newSession.rows[0]
+    // Return successful verification response
+    return res.status(200).json({
+      on_shift: true,
+      message: `Waiter ${waiter.username} is valid and ready for assignment.`,
+      waiter: waiter
     });
-
   } catch (err) {
-    console.error('Error in findOrCreateSession:', err);
+    // Log internal server/database execution errors
+    console.error('Error checking employee shift:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
-// POST /api/session/join (Join table session via 4-digit code)
-const joinSessionByCode = async (req, res) => {
-  const { join_code } = req.body;
+// POST /api/sessions
+// Creates a new dining session assigned to a waiter and table
+const createSession = async (req, res) => {
+  const { table_number, waiter_id, party_size } = req.body;
 
-  if (!join_code) {
-    return res.status(400).json({ error: 'join_code is required' });
+  if (!table_number || !waiter_id) {
+    return res.status(400).json({ error: 'table_number and waiter_id are required.' });
   }
 
-  try {
-    const findSessionQuery = `
-      SELECT * FROM table_sessions
-      WHERE join_code = $1 AND is_active = true
-      LIMIT 1;
-    `;
-    const sessionResult = await pool.query(findSessionQuery, [join_code]);
+  // Generate a random 4-digit access code
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-    if (sessionResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Active session not found. Please check your 4-digit code.' });
+  try {
+    const query = `
+      INSERT INTO sessions (table_number, waiter_id, code, party_size, status)
+      VALUES ($1, $2, $3, $4, 'active')
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      table_number,
+      waiter_id,
+      code,
+      party_size || 1
+    ]);
+
+    return res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating session:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+// GET /api/sessions
+// Retrieves active dining sessions
+const getActiveSessions = async (req, res) => {
+  try {
+    const query = `
+      SELECT * FROM sessions
+      WHERE status = 'active'
+    `;
+    const result = await pool.query(query);
+    return res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching active sessions:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+// PUT /api/sessions/:id/close
+// Closes an active session
+const closeSession = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const query = `
+      UPDATE sessions
+      SET status = 'closed', ended_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `;
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found.' });
     }
 
-    return res.status(200).json({
-      message: 'Successfully joined session!',
-      session: sessionResult.rows[0]
-    });
-
+    return res.status(200).json(result.rows[0]);
   } catch (err) {
-    console.error('Error in joinSessionByCode:', err);
+    console.error('Error closing session:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
 module.exports = {
-  findOrCreateSession,
-  joinSessionByCode
+  checkEmployeeShift,
+  createSession,
+  getActiveSessions,
+  closeSession
 };
