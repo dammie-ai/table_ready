@@ -62,3 +62,33 @@ WHERE order_type IS NULL
 ALTER TABLE orders 
 ADD CONSTRAINT orders_order_type_check 
 CHECK (order_type IN ('STANDARD', 'ORDER_FROM_HOME', 'DINE_IN', 'TAKEAWAY'));
+
+-- Create system settings table for toggles (e.g., dynamic pricing on/off)
+CREATE TABLE IF NOT EXISTS settings (
+  key VARCHAR(50) PRIMARY KEY,
+  value VARCHAR(255) NOT NULL
+);
+
+-- Initialize default dynamic pricing toggle to 'true' (enabled)
+INSERT INTO settings (key, value)
+VALUES ('dynamic_pricing_enabled', 'true')
+ON CONFLICT (key) DO NOTHING;
+
+-- Create customizable dynamic pricing rules table
+CREATE TABLE IF NOT EXISTS surge_tiers (
+  id SERIAL PRIMARY KEY,
+  min_orders INT NOT NULL,
+  max_orders INT, -- NULL represents infinity (e.g., 101+)
+  multiplier DECIMAL(4,2) NOT NULL
+);
+
+-- Seed initial pricing tiers matching business rules
+INSERT INTO surge_tiers (min_orders, max_orders, multiplier)
+VALUES 
+  (0, 10, 1.00),     -- Standard pricing
+  (11, 20, 1.10),    -- +10% Surge
+  (21, 50, 1.15),    -- +15% Surge
+  (51, 65, 0.90),    -- -10% Volume Discount
+  (66, 100, 0.85),   -- -15% Volume Discount
+  (101, NULL, 0.80)  -- -20% Reverse Surge (101+ orders)
+ON CONFLICT DO NOTHING;

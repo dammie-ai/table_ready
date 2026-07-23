@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db'); // Shared PostgreSQL Pool connection
+const db = require('../config/db'); // Shared PostgreSQL connection
+const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
+
+// Handle both pool export patterns cleanly
+const pool = db.pool || db;
 
 /**
  * POST /api/inventory
@@ -22,6 +26,8 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    // Fetch active multiplier (returns 1.00 if dynamic pricing is disabled by admin)
+    const multiplier = await getSurgeMultiplier();
     const processedItems = [];
 
     for (const item of items) {
@@ -33,7 +39,7 @@ router.post('/', async (req, res) => {
 
       // 1. Fetch current item state using row-level locking (FOR UPDATE)
       const checkRes = await client.query(
-        `SELECT id, item_name, stock_quantity, is_active 
+        `SELECT id, item_name, price, stock_quantity, is_active 
          FROM inventory 
          WHERE id = $1 FOR UPDATE`,
         [inventory_id]
@@ -72,7 +78,15 @@ router.post('/', async (req, res) => {
         [newStock, isStillActive, inventory_id]
       );
 
-      processedItems.push(updateRes.rows[0]);
+      // Attach dynamic pricing calculation to response item details
+      const basePrice = currentItem.price || 0;
+      const adjustedPrice = calculateAdjustedPrice(basePrice, multiplier);
+
+      processedItems.push({
+        ...updateRes.rows[0],
+        base_price: parseFloat(basePrice),
+        current_unit_price: adjustedPrice
+      });
     }
 
     // Commit transaction only when all items validate and update cleanly
@@ -81,38 +95,104 @@ router.post('/', async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Order processed successfully and inventory deducted.',
+      appliedMultiplier: multiplier,
       deducted_items: processedItems
     });
 
   } catch (err) {
     // Roll back all changes if any item fails validation or database error occurs
-    await client.query('ROLLBACK');
+    if (client) await client.query('ROLLBACK');
     return res.status(400).json({
       success: false,
       error: err.message
     });
 
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
 /**
  * GET /api/inventory
- * Fetch full inventory list sorted by ID
+ * Fetch full inventory list with active dynamic pricing applied
  */
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM inventory ORDER BY id ASC');
+    
+    // Fetch current dynamic pricing multiplier
+    const multiplier = await getSurgeMultiplier();
+
+    // Attach active dynamic prices to inventory items
+    const inventoryWithPricing = result.rows.map(item => {
+      const basePrice = item.price || 0;
+      return {
+        ...item,
+        base_price: parseFloat(basePrice),
+        current_price: calculateAdjustedPrice(basePrice, multiplier)
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      inventory: result.rows
+      appliedMultiplier: multiplier,
+      inventory: inventoryWithPricing
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
       error: err.message
     });
+  }
+});
+
+/**
+ * PATCH /api/inventory/:id/toggle
+ * Manually toggle an item's availability (Active / Disabled) by staff/admin
+ */
+router.patch('/:id/toggle', async (req, res) => {
+  const { id } = req.params;
+  const { is_active } = req.body;
+
+  try {
+    let query;
+    let params;
+
+    if (typeof is_active === 'boolean') {
+      query = `UPDATE inventory SET is_active = $1, updated_at = NOW() WHERE id = $2 RETURNING *`;
+      params = [is_active, id];
+    } else {
+      // Flips the current boolean value in the database
+      query = `UPDATE inventory SET is_active = NOT is_active, updated_at = NOW() WHERE id = $1 RETURNING *`;
+      params = [id];
+    }
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: `Inventory item #${id} not found.` });
+    }
+
+    const updatedItem = result.rows[0];
+
+    // Emit live WebSocket update to all connected customer apps
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('inventory_item_updated', {
+        itemId: updatedItem.id,
+        itemName: updatedItem.item_name || updatedItem.name,
+        isActive: updatedItem.is_active,
+        stockQuantity: updatedItem.stock_quantity
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Item '${updatedItem.item_name || 'Item #' + id}' status set to ${updatedItem.is_active ? 'AVAILABLE' : 'DISABLED/OUT_OF_STOCK'}`,
+      item: updatedItem
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
