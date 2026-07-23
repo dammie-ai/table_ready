@@ -38,8 +38,9 @@ router.post('/', async (req, res) => {
       }
 
       // 1. Fetch current item state using row-level locking (FOR UPDATE)
+      // FIX: Changed 'price' to 'base_price'
       const checkRes = await client.query(
-        `SELECT id, item_name, price, stock_quantity, is_active 
+        `SELECT id, item_name, base_price, stock_quantity, is_active 
          FROM inventory 
          WHERE id = $1 FOR UPDATE`,
         [inventory_id]
@@ -79,12 +80,13 @@ router.post('/', async (req, res) => {
       );
 
       // Attach dynamic pricing calculation to response item details
-      const basePrice = currentItem.price || 0;
-      const adjustedPrice = calculateAdjustedPrice(basePrice, multiplier);
+      // FIX: Reference currentItem.base_price instead of currentItem.price
+      const rawBasePrice = currentItem.base_price || 0;
+      const adjustedPrice = calculateAdjustedPrice(rawBasePrice, multiplier);
 
       processedItems.push({
         ...updateRes.rows[0],
-        base_price: parseFloat(basePrice),
+        base_price: parseFloat(rawBasePrice),
         current_unit_price: adjustedPrice
       });
     }
@@ -124,12 +126,13 @@ router.get('/', async (req, res) => {
     const multiplier = await getSurgeMultiplier();
 
     // Attach active dynamic prices to inventory items
+    // FIX: Reference item.base_price instead of item.price
     const inventoryWithPricing = result.rows.map(item => {
-      const basePrice = item.price || 0;
+      const rawBasePrice = item.base_price || 0;
       return {
         ...item,
-        base_price: parseFloat(basePrice),
-        current_price: calculateAdjustedPrice(basePrice, multiplier)
+        base_price: parseFloat(rawBasePrice),
+        current_price: calculateAdjustedPrice(rawBasePrice, multiplier)
       };
     });
 

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-// Verifies the user is logged in
+// Verifies the staff member is logged in
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Expects "Bearer <token>"
@@ -10,7 +10,7 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_key');
+    const verified = jwt.verify(token, process.env.JWT_SECRET || 'tableready_secret');
     req.user = verified; // Injected with payload: { id, username, role / roles }
     next();
   } catch (err) {
@@ -25,17 +25,14 @@ const authorizeRoles = (...allowedRoles) => {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    // Normalize user roles into an array (supports single 'role' string or 'roles' array)
     const userRoles = Array.isArray(req.user.roles) 
       ? req.user.roles 
       : (req.user.role ? [req.user.role] : []);
 
-    // ADMIN OVERRIDE (Handwritten Notes): Admin can log into/access any department board
     if (userRoles.includes('admin')) {
       return next();
     }
 
-    // DEPARTMENTS ISOLATION & MULTI-ROLE: Check if current user's role(s) match allowed route roles
     const hasPermission = userRoles.some(role => allowedRoles.includes(role));
 
     if (!hasPermission) {

@@ -1,8 +1,9 @@
--- Create the main inventory tracking table
+-- Create the main inventory tracking table (includes base_price for surge calculations)
 CREATE TABLE IF NOT EXISTS inventory (
   id SERIAL PRIMARY KEY,
   sku VARCHAR(100) UNIQUE NOT NULL,
   item_name VARCHAR(255) NOT NULL,
+  base_price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
   stock_quantity INTEGER NOT NULL DEFAULT 0,
   reorder_threshold INTEGER NOT NULL DEFAULT 10,
   unit VARCHAR(50) DEFAULT 'units',
@@ -33,6 +34,9 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 -- Safely patch existing databases if these columns don't exist yet
+ALTER TABLE inventory 
+ADD COLUMN IF NOT EXISTS base_price NUMERIC(10, 2) NOT NULL DEFAULT 0.00;
+
 ALTER TABLE stock_logs 
 ADD COLUMN IF NOT EXISTS new_quantity INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS change_amount INTEGER DEFAULT 0;
@@ -85,10 +89,10 @@ CREATE TABLE IF NOT EXISTS surge_tiers (
 -- Seed initial pricing tiers matching business rules
 INSERT INTO surge_tiers (min_orders, max_orders, multiplier)
 VALUES 
-  (0, 10, 1.00),     -- Standard pricing
-  (11, 20, 1.10),    -- +10% Surge
-  (21, 50, 1.15),    -- +15% Surge
-  (51, 65, 0.90),    -- -10% Volume Discount
-  (66, 100, 0.85),   -- -15% Volume Discount
-  (101, NULL, 0.80)  -- -20% Reverse Surge (101+ orders)
+  (0, 10, 1.00),    -- Standard pricing
+  (11, 20, 1.10),   -- +10% Surge
+  (21, 50, 1.15),   -- +15% Surge
+  (51, 65, 0.90),   -- -10% Volume Discount
+  (66, 100, 0.85),  -- -15% Volume Discount
+  (101, NULL, 0.80) -- -20% Reverse Surge (101+ orders)
 ON CONFLICT DO NOTHING;

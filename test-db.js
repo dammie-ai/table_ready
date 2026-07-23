@@ -1,4 +1,4 @@
-const { pool } = require('./src/config/db');
+const pool = require('./src/db');
 
 const addColumnQuery = `
   ALTER TABLE sessions 
