@@ -1,0 +1,1236 @@
+{
+  "info": {
+    "_postman_id": "ba59c480-d80c-4d26-91fa-0fbbd8ec83e9",
+    "name": "TableReady API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "56649202",
+    "_collection_link": "https://go.postman.co/collection/56649202-ba59c480-d80c-4d26-91fa-0fbbd8ec83e9?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "auth and security",
+      "item": [
+        {
+          "name": "user roles and security guards",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"waiter_test\",\r\n  \"password\": \"password123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "health"
+              ],
+              "query": [
+                {
+                  "key": "Content-type",
+                  "value": "application/json",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "shift checker",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"waiter_id\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/sessions/check-shift",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "sessions",
+                "check-shift"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "account creation",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"test_employee\",\r\n  \"password\": \"password123\",\r\n  \"role\": \"waiter\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST shift checker",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"test_employee\",\r\n  \"password\": \"password123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "New Request",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "delete account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6InN0YWZmIiwiaWF0IjoxNzg0ODA1MjQ4LCJleHAiOjE3ODQ4MzQwNDh9.IFbJPd4enXdAxbEGB6dwGy84T7XBHC-80p8xWn_oNck",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/auth/account",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "auth",
+                "account"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "payment and billing",
+      "item": [
+        {
+          "name": "Connect Stripe Payments Sandbox",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"amount\": 25.50,\r\n  \"order_mode\": \"dine_in\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/payments/create-intent",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "payments",
+                "create-intent"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "bill splitting engine",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"mode\": \"even\",\r\n  \"total\": 100.00,\r\n  \"splits\": 3,\r\n  \"totalPaid\": 66.67\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/payments/split",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "payments",
+                "split"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "order not found",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders/99999/refund",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "99999",
+                "refund"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "over 30% order",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"status\": \"IN_PREPARATION\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders/1/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "18",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "30% refund lock",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders/1/refund",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "18",
+                "refund"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "refund/ cancelling an order",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders/1/refund",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "19",
+                "refund"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "inventory and menu",
+      "item": [
+        {
+          "name": "inventory checker and editor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"items\": [\r\n    {\r\n      \"inventory_id\": 1,\r\n      \"quantity\": 82\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/inventory",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Fetch menu items",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/inventory",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Toggle Item Availability",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"is_active\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/inventory/1/toggle",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "inventory",
+                "1",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Link Ingredient to Menu Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"inventory_id\": 1,\r\n  \"quantity_required\": 1.00\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/menu/4/ingredients",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "menu",
+                "4",
+                "ingredients"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "orders",
+      "item": [
+        {
+          "name": "POST - Create Order (Order From Home / Held)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"order_type\": \"ORDER_FROM_HOME\",\r\n  \"is_held\": true,\r\n  \"total_amount\": 28.50,\r\n  \"items\": [\r\n    { \"inventory_id\": 1, \"quantity\": 1, \"price\": 5.00 }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Kitchen Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/orders/kitchen",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "kitchen"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Release Held Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders/1/release",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "1",
+                "release"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Release Held Order (Specific ID)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders/1/release",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "13",
+                "release"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Update Order Status",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"status\": \"IN_PREPARATION\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders/1/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "1",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Order History",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/orders/user/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "user",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Inventory Items",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/inventory",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Order",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"order_type\": \"DINE_IN\",\r\n  \"is_held\": false,\r\n  \"table_number\": 4,\r\n  \"notes\": \"Extra crispy fries, no onions\",\r\n  \"ordered_by_user_id\": 1,\r\n  \"items\": [\r\n    {\r\n      \"menu_item_id\": 4,\r\n      \"quantity\": 2,\r\n      \"price\": 12.50\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Kitchen Orders",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/orders/kitchen",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "kitchen"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Update Order Status",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"status\": \"IN_PREPARATION\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders/1/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "15",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Fetch Order Receipt",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/orders/1/receipt",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "15",
+                "receipt"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Get User Order History",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/orders/user/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders",
+                "user",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Dine-In Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"order_type\": \"Dine-In\",\r\n  \"table_number\": 5,\r\n  \"items\": [\r\n    {\r\n      \"menu_item_id\": 4,\r\n      \"quantity\": 2,\r\n      \"price\": 10.99\r\n    },\r\n    {\r\n      \"menu_item_id\": 5,\r\n      \"quantity\": 2,\r\n      \"price\": 3.99\r\n    }\r\n  ],\r\n  \"ordered_by_user_id\": 1,\r\n  \"notes\": \"Extra pickles\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "customer app",
+      "item": [
+        {
+          "name": "Browse Menu",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/menu",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "menu"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Menu Item Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/menu/4",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "menu", "4"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customer_id\": 1,\r\n  \"session_token\": \"guest-session-abc\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/cart",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"menu_item_id\": 4,\r\n  \"quantity\": 2\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/cart/1/items",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "cart", "1", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/cart/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "cart", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Checkout Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"order_type\": \"Dine-In\",\r\n  \"table_number\": 5,\r\n  \"ordered_by_user_id\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/cart/1/checkout",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "cart", "1", "checkout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Track Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/orders/2",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "orders", "2"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Menu Item (Staff)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZSI6Im1hbmFnZXIiLCJpYXQiOjE3ODQ4OTAyNDIsImV4cCI6MTc4NDkxOTA0Mn0.Q9tQ6i2tREpcYnQ80R4bJkmPQvVL9uyHSV1Wxp4_hBg",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"New Burger\",\r\n  \"category_type\": \"Entree\",\r\n  \"base_price\": 12.99,\r\n  \"description\": \"Delicious new burger\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/menu",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "menu"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Menu Item (Staff)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZSI6Im1hbmFnZXIiLCJpYXQiOjE3ODQ4OTAyNDIsImV4cCI6MTc4NDkxOTA0Mn0.Q9tQ6i2tREpcYnQ80R4bJkmPQvVL9uyHSV1Wxp4_hBg",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/menu/4/toggle",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "menu", "4", "toggle"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "admin and surge pricing",
+      "item": [
+        {
+          "name": "GET Surge Config",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8001/api/admin/surge-config",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "admin",
+                "surge-config"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Surge Toggle",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"enabled\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8001/api/admin/surge-toggle",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "api",
+                "admin",
+                "surge-toggle"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "auth_secret_06bs",
+      "secret": true
+    }
+  ]
+}

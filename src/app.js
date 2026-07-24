@@ -16,6 +16,8 @@ const menuRoutes = require('./routes/menuRoutes'); // Recipe/menu mappings
 const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const auditLogRoutes = require('./routes/auditLogRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -30,6 +32,8 @@ app.use('/api/menu', menuRoutes); // Mounts /api/menu/:id/ingredients
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin', auditLogRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

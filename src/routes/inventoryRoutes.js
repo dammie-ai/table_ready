@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db'); // Shared PostgreSQL connection
 const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
+const inventoryAlertController = require('../controllers/inventoryAlertController');
+const { logAudit } = require('../utils/auditLogger');
+const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 
 // Handle both pool export patterns cleanly
 const pool = db.pool || db;
@@ -79,6 +82,16 @@ router.post('/', async (req, res) => {
         [newStock, isStillActive, inventory_id]
       );
 
+      // Write stock log
+      await client.query(
+        `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+         VALUES ($1, $2, $3, $4)`,
+        [inventory_id, newStock, -quantity, 'Order deduction']
+      );
+
+      // Check for low stock alert after deduction
+      const alertResult = await inventoryAlertController.createAlertIfNeeded(inventory_id);
+
       // Attach dynamic pricing calculation to response item details
       // FIX: Reference currentItem.base_price instead of currentItem.price
       const rawBasePrice = currentItem.base_price || 0;
@@ -153,7 +166,7 @@ router.get('/', async (req, res) => {
  * PATCH /api/inventory/:id/toggle
  * Manually toggle an item's availability (Active / Disabled) by staff/admin
  */
-router.patch('/:id/toggle', async (req, res) => {
+router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager'), async (req, res) => {
   const { id } = req.params;
   const { is_active } = req.body;
 
@@ -161,22 +174,34 @@ router.patch('/:id/toggle', async (req, res) => {
     let query;
     let params;
 
+    const beforeRes = await pool.query(`SELECT is_active FROM inventory WHERE id = $1`, [id]);
+    if (beforeRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: `Inventory item #${id} not found.` });
+    }
+    const oldIsActive = beforeRes.rows[0].is_active;
+
     if (typeof is_active === 'boolean') {
       query = `UPDATE inventory SET is_active = $1, updated_at = NOW() WHERE id = $2 RETURNING *`;
       params = [is_active, id];
     } else {
-      // Flips the current boolean value in the database
       query = `UPDATE inventory SET is_active = NOT is_active, updated_at = NOW() WHERE id = $1 RETURNING *`;
       params = [id];
     }
 
     const result = await pool.query(query, params);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: `Inventory item #${id} not found.` });
-    }
-
     const updatedItem = result.rows[0];
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'INVENTORY_TOGGLED',
+      entity_type: 'inventory',
+      entity_id: parseInt(id),
+      old_value: oldIsActive ? 'true' : 'false',
+      new_value: updatedItem.is_active ? 'true' : 'false',
+      ip_address: req.ip || req.connection.remoteAddress
+    });
 
     // Emit live WebSocket update to all connected customer apps
     const io = req.app.get('io');
@@ -198,5 +223,29 @@ router.patch('/:id/toggle', async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
+
+/**
+ * GET /api/inventory/alerts
+ * Fetch all active low-stock alerts
+ */
+router.get('/alerts', inventoryAlertController.getActiveAlerts);
+
+/**
+ * GET /api/inventory/alerts/history
+ * Fetch all alerts including acknowledged and resolved
+ */
+router.get('/alerts/history', inventoryAlertController.getAlertHistory);
+
+/**
+ * POST /api/inventory/alerts/:id/acknowledge
+ * Mark an alert as acknowledged
+ */
+router.post('/alerts/:id/acknowledge', inventoryAlertController.acknowledgeAlert);
+
+/**
+ * POST /api/inventory/alerts/:id/resolve
+ * Mark an alert as resolved
+ */
+router.post('/alerts/:id/resolve', inventoryAlertController.resolveAlert);
 
 module.exports = router;

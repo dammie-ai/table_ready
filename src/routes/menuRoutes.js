@@ -1,14 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const menuController = require('../controllers/menuController');
+const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 
-// Link or update an ingredient requirement for a menu item
-router.post('/:id/ingredients', menuController.addIngredientToMenuItem);
+// Customer-facing menu browsing (public)
+router.get('/', menuController.getMenuItems);
+router.get('/:id', menuController.getMenuItemDetail);
 
-// Fetch all ingredients required for a menu item
-router.get('/:id/ingredients', menuController.getMenuItemIngredients);
+// Staff recipe management (protected)
+router.post('/:id/ingredients', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), menuController.addIngredientToMenuItem);
+router.get('/:id/ingredients', authenticateToken, menuController.getMenuItemIngredients);
+router.delete('/:id/ingredients/:inventoryId', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), menuController.removeIngredientFromMenuItem);
 
-// Remove an ingredient link from a menu item
-router.delete('/:id/ingredients/:inventoryId', menuController.removeIngredientFromMenuItem);
+// Menu item CRUD (protected)
+router.post('/', authenticateToken, authorizeRoles('admin', 'manager'), menuController.createMenuItem);
+router.put('/:id', authenticateToken, authorizeRoles('admin', 'manager'), menuController.updateMenuItem);
+router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager'), menuController.toggleMenuItem);
 
 module.exports = router;

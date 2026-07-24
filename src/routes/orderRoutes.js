@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
+const { logAudit } = require('../utils/auditLogger');
+const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 
 // Safely handle both direct and destructured pool export patterns
 const pool = db.pool || db;
@@ -130,6 +132,12 @@ router.post('/', async (req, res) => {
          WHERE id = $2`,
         [deduction.deduct_quantity, deduction.inventory_id]
       );
+
+      await client.query(
+        `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+         VALUES ($1, (SELECT stock_quantity FROM inventory WHERE id = $1), $2, $3)`,
+        [deduction.inventory_id, -deduction.deduct_quantity, 'Order #' + createdOrder.master_order_id]
+      );
     }
 
     // 5. Link items to order row
@@ -212,7 +220,7 @@ router.get('/user/:userId', async (req, res) => {
       FROM orders o
       LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
       LEFT JOIN inventory i ON oi.item_id = i.id
-      WHERE oi.ordered_by_user_id = $1
+      WHERE o.customer_id = $1
       GROUP BY o.master_order_id
       ORDER BY o.created_at DESC;
     `;
@@ -222,6 +230,43 @@ router.get('/user/:userId', async (req, res) => {
     return res.status(200).json({
       success: true,
       orders: result.rows
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/orders/:id
+ * Fetch order with items for customer/staff tracking
+ */
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const orderRes = await pool.query(
+      `SELECT * FROM orders WHERE master_order_id = $1`,
+      [id]
+    );
+
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: `Order #${id} not found.` });
+    }
+
+    const itemsRes = await pool.query(
+      `SELECT oi.quantity, oi.custom_instructions, oi.item_status, COALESCE(mi.name, 'Item #' || oi.item_id) AS item_name
+       FROM order_items oi
+       LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
+       WHERE oi.master_order_id = $1`,
+      [id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      order: {
+        ...orderRes.rows[0],
+        items: itemsRes.rows
+      }
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -282,7 +327,7 @@ router.get('/:id/receipt', async (req, res) => {
  * PATCH /api/orders/:id/status
  * Update order status and emit real-time WebSockets
  */
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
   const { id } = req.params;
   let { status, progress_percentage } = req.body;
 
@@ -401,7 +446,7 @@ router.post('/:id/release', async (req, res) => {
  * POST /api/orders/:id/refund
  * Process refund with progress limit checks
  */
-router.post('/:id/refund', async (req, res) => {
+router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager'), async (req, res) => {
   const { id } = req.params;
   let client;
 
@@ -442,6 +487,17 @@ router.post('/:id/refund', async (req, res) => {
     );
 
     await client.query('COMMIT');
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'REFUND_ISSUED',
+      entity_type: 'order',
+      entity_id: parseInt(id),
+      old_value: JSON.stringify({ status: order.status, progress_percentage: order.progress_percentage }),
+      new_value: JSON.stringify({ status: 'CANCELLED_AND_REFUNDED' }),
+      ip_address: req.ip || req.connection.remoteAddress
+    });
 
     return res.status(200).json({
       success: true,

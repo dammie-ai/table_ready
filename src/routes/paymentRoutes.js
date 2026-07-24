@@ -3,6 +3,8 @@ const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 const { isWithinDeliveryRadius } = require('../utils/distance');
 const { splitEvenly, splitByItem, checkBalanceStatus } = require('../utils/billSplitter');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const pool = require('../config/db');
 
 /**
  * Middleware to check delivery radius requirements before creating Stripe intent
@@ -67,6 +69,40 @@ router.post('/split', (req, res) => {
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
+});
+
+// Stripe webhook for automatic payment confirmation
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).json({ error: 'Webhook signature verification failed.' });
+  }
+
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object;
+    const orderId = paymentIntent.metadata?.order_id;
+
+    if (orderId) {
+      try {
+        await pool.query(
+          `UPDATE orders
+           SET payment_status = 'Paid',
+               stripe_charge_id = $1
+           WHERE master_order_id = $2`,
+          [paymentIntent.id, orderId]
+        );
+      } catch (dbErr) {
+        console.error('Failed to update order payment status:', dbErr.message);
+      }
+    }
+  }
+
+  res.json({ received: true });
 });
 
 module.exports = router;

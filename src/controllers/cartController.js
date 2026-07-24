@@ -1,0 +1,383 @@
+const db = require('../config/db');
+const pool = db.pool || db;
+const { logAudit } = require('../utils/auditLogger');
+const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+/**
+ * POST /api/cart
+ * Create a new cart (guest or customer)
+ */
+exports.createCart = async (req, res) => {
+  const { customer_id, session_token } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO carts (customer_id, session_token, status)
+       VALUES ($1, $2, 'active')
+       RETURNING *`,
+      [customer_id || null, session_token || null]
+    );
+
+    return res.status(201).json({
+      success: true,
+      cart: result.rows[0]
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * GET /api/cart/:id
+ * Fetch cart with items and totals
+ */
+exports.getCart = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const cartRes = await pool.query(`SELECT * FROM carts WHERE cart_id = $1`, [id]);
+
+    if (cartRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Cart not found.' });
+    }
+
+    const itemsRes = await pool.query(
+      `SELECT ci.*, mi.name as menu_item_name, mi.image_url, i.item_name as inventory_name
+       FROM cart_items ci
+       LEFT JOIN menu_items mi ON ci.menu_item_id = mi.item_id
+       LEFT JOIN inventory i ON ci.inventory_id = i.id
+       WHERE ci.cart_id = $1
+       ORDER BY ci.created_at ASC`,
+      [id]
+    );
+
+    const cart = cartRes.rows[0];
+    const items = itemsRes.rows;
+
+    const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.unit_price) * item.quantity), 0);
+
+    return res.status(200).json({
+      success: true,
+      cart: {
+        ...cart,
+        items,
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        item_count: items.reduce((sum, item) => sum + item.quantity, 0)
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * POST /api/cart/:id/items
+ * Add item to cart
+ */
+exports.addCartItem = async (req, res) => {
+  const { id } = req.params;
+  const { menu_item_id, inventory_id, quantity = 1, custom_instructions } = req.body;
+
+  if ((!menu_item_id && !inventory_id) || !quantity || quantity <= 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'menu_item_id or inventory_id and a positive quantity are required.'
+    });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const cartRes = await client.query(`SELECT * FROM carts WHERE cart_id = $1 FOR UPDATE`, [id]);
+    if (cartRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Cart not found.' });
+    }
+
+    if (cartRes.rows[0].status !== 'active') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, error: 'Cart is not active.' });
+    }
+
+    let unitPrice = 0;
+    let targetId = menu_item_id || inventory_id;
+
+    if (menu_item_id) {
+      const itemRes = await client.query(
+        `SELECT base_price FROM menu_items WHERE item_id = $1 AND is_active = true`,
+        [menu_item_id]
+      );
+      if (itemRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ success: false, error: 'Menu item not found or inactive.' });
+      }
+      const multiplier = await getSurgeMultiplier();
+      unitPrice = calculateAdjustedPrice(itemRes.rows[0].base_price, multiplier);
+    } else if (inventory_id) {
+      const itemRes = await client.query(
+        `SELECT base_price, stock_quantity FROM inventory WHERE id = $1 AND is_active = true`,
+        [inventory_id]
+      );
+      if (itemRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ success: false, error: 'Inventory item not found or inactive.' });
+      }
+      if (itemRes.rows[0].stock_quantity < quantity) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ success: false, error: 'Insufficient stock.' });
+      }
+      const multiplier = await getSurgeMultiplier();
+      unitPrice = calculateAdjustedPrice(itemRes.rows[0].base_price, multiplier);
+    }
+
+    const existingRes = await client.query(
+      `SELECT cart_item_id, quantity FROM cart_items
+       WHERE cart_id = $1 AND menu_item_id = $2 AND inventory_id = $3 AND (custom_instructions IS NOT DISTINCT FROM $4)`,
+      [id, menu_item_id || null, inventory_id || null, custom_instructions || null]
+    );
+
+    if (existingRes.rows.length > 0) {
+      const newQty = existingRes.rows[0].quantity + quantity;
+      await client.query(
+        `UPDATE cart_items SET quantity = $1, unit_price = $2, updated_at = NOW()
+         WHERE cart_item_id = $3`,
+        [newQty, unitPrice, existingRes.rows[0].cart_item_id]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO cart_items (cart_id, menu_item_id, inventory_id, quantity, custom_instructions, unit_price)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, menu_item_id || null, inventory_id || null, quantity, custom_instructions || null, unitPrice]
+      );
+    }
+
+    await client.query('COMMIT');
+
+    return res.status(201).json({
+      success: true,
+      message: 'Item added to cart.',
+      unit_price: unitPrice
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * DELETE /api/cart/:id/items/:itemId
+ * Remove item from cart
+ */
+exports.removeCartItem = async (req, res) => {
+  const { id, itemId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM cart_items WHERE cart_item_id = $1 AND cart_id = $2 RETURNING *`,
+      [itemId, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Cart item not found.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Item removed from cart.'
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * DELETE /api/cart/:id
+ * Clear/abandon cart
+ */
+exports.clearCart = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query(`DELETE FROM cart_items WHERE cart_id = $1`, [id]);
+    await pool.query(`UPDATE carts SET status = 'abandoned', updated_at = NOW() WHERE cart_id = $1`, [id]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cart cleared.'
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * POST /api/cart/:id/checkout
+ * Convert cart to an order
+ */
+exports.checkout = async (req, res) => {
+  const { id } = req.params;
+  const { order_type, table_number, notes, ordered_by_user_id } = req.body;
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const cartRes = await client.query(`SELECT * FROM carts WHERE cart_id = $1 FOR UPDATE`, [id]);
+    if (cartRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Cart not found.' });
+    }
+
+    const itemsRes = await client.query(
+      `SELECT * FROM cart_items WHERE cart_id = $1`,
+      [id]
+    );
+
+    if (itemsRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, error: 'Cart is empty.' });
+    }
+
+    const multiplier = await getSurgeMultiplier();
+    let calculatedTotal = 0;
+    const resolvedDeductions = [];
+
+    for (const item of itemsRes.rows) {
+      const orderQty = item.quantity;
+      const menuItemId = item.menu_item_id || item.inventory_id;
+
+      const recipeRes = await client.query(
+        `SELECT mii.inventory_id, mii.quantity_required, i.item_name, i.stock_quantity
+         FROM menu_item_ingredients mii
+         JOIN inventory i ON mii.inventory_id = i.id
+         WHERE mii.menu_item_id = $1`,
+        [menuItemId]
+      );
+
+      if (recipeRes.rows.length === 0) {
+        const directCheck = await client.query(
+          `SELECT id, item_name, stock_quantity FROM inventory WHERE id = $1 FOR UPDATE`,
+          [menuItemId]
+        );
+
+        if (directCheck.rows.length === 0) {
+          throw new Error(`Item #${menuItemId} does not exist.`);
+        }
+
+        if (directCheck.rows[0].stock_quantity < orderQty) {
+          throw new Error(`Insufficient stock for "${directCheck.rows[0].item_name}".`);
+        }
+
+        resolvedDeductions.push({
+          inventory_id: menuItemId,
+          deduct_quantity: orderQty
+        });
+      } else {
+        for (const ingredient of recipeRes.rows) {
+          const totalRequired = ingredient.quantity_required * orderQty;
+
+          const stockCheck = await client.query(
+            `SELECT stock_quantity FROM inventory WHERE id = $1 FOR UPDATE`,
+            [ingredient.inventory_id]
+          );
+
+          if (stockCheck.rows[0].stock_quantity < totalRequired) {
+            throw new Error(
+              `Insufficient stock for ingredient "${ingredient.item_name}" required by menu item #${menuItemId}.`
+            );
+          }
+
+          resolvedDeductions.push({
+            inventory_id: ingredient.inventory_id,
+            deduct_quantity: totalRequired
+          });
+        }
+      }
+
+      calculatedTotal += parseFloat(item.unit_price) * orderQty;
+    }
+
+    const initialStatus = 'RECEIVED';
+
+    const orderResult = await client.query(
+      `INSERT INTO orders (customer_id, status, is_held, total_amount, order_type, table_number, notes, progress_percentage)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 0)
+       RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at`,
+      [cartRes.rows[0].customer_id, initialStatus, false, calculatedTotal, order_type || 'IN_HOUSE', table_number || null, notes || null]
+    );
+
+    const createdOrder = orderResult.rows[0];
+
+    for (const item of itemsRes.rows) {
+      const menuItemId = item.menu_item_id || item.inventory_id;
+      await client.query(
+        `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id, custom_instructions)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [createdOrder.master_order_id, menuItemId, item.quantity, ordered_by_user_id || null, item.custom_instructions]
+      );
+    }
+
+    for (const deduction of resolvedDeductions) {
+      await client.query(
+        `UPDATE inventory SET stock_quantity = stock_quantity - $1 WHERE id = $2`,
+        [deduction.deduct_quantity, deduction.inventory_id]
+      );
+
+      await client.query(
+        `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+         VALUES ($1, (SELECT stock_quantity FROM inventory WHERE id = $1), $2, $3)`,
+        [deduction.inventory_id, -deduction.deduct_quantity, 'Order #' + createdOrder.master_order_id]
+      );
+    }
+
+    await client.query(`UPDATE carts SET status = 'checked_out', updated_at = NOW() WHERE cart_id = $1`, [id]);
+
+    await client.query('COMMIT');
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_kitchen_order', createdOrder);
+    }
+
+    let paymentIntent = null;
+    try {
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(calculatedTotal * 100),
+        currency: 'usd',
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never'
+        },
+        metadata: {
+          order_id: createdOrder.master_order_id.toString(),
+          cart_id: id
+        }
+      });
+    } catch (stripeErr) {
+      console.error('Stripe PaymentIntent creation failed:', stripeErr.message);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Order placed successfully.',
+      order: createdOrder,
+      appliedMultiplier: multiplier,
+      paymentIntent: paymentIntent ? {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        status: paymentIntent.status
+      } : null
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return res.status(400).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+};

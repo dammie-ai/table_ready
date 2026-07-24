@@ -78,11 +78,27 @@ CREATE TABLE IF NOT EXISTS stock_logs (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- 7a. LOW STOCK ALERTS
+CREATE TABLE IF NOT EXISTS low_stock_alerts (
+    alert_id SERIAL PRIMARY KEY,
+    inventory_id INTEGER REFERENCES inventory(id) ON DELETE CASCADE,
+    current_stock INTEGER NOT NULL,
+    threshold INTEGER NOT NULL,
+    status VARCHAR(30) DEFAULT 'active' CHECK (status IN ('active', 'acknowledged', 'resolved')),
+    acknowledged_by INTEGER DEFAULT NULL,
+    acknowledged_at TIMESTAMP DEFAULT NULL,
+    resolved_at TIMESTAMP DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_low_stock_alerts_inventory_id ON low_stock_alerts(inventory_id);
+CREATE INDEX IF NOT EXISTS idx_low_stock_alerts_status ON low_stock_alerts(status);
+
 -- 8. MENU ITEMS
 CREATE TABLE IF NOT EXISTS menu_items (
     item_id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
-    category_type VARCHAR(30) NOT NULL CHECK (category_type IN ('Entrée', 'Meat', 'Fish', 'Dessert', 'Combo')),
+    category_type VARCHAR(30) NOT NULL CHECK (category_type IN ('Entree', 'Entrée', 'Meat', 'Fish', 'Dessert', 'Combo')),
     description TEXT,
     base_price DECIMAL(10, 2) NOT NULL,
     stock_quantity INT DEFAULT 0,
@@ -91,10 +107,15 @@ CREATE TABLE IF NOT EXISTS menu_items (
     is_trending BOOLEAN DEFAULT FALSE,
     prep_time_minutes INT DEFAULT 10,
     allergens VARCHAR(50)[] DEFAULT '{}',
-    custom_sides_array JSONB DEFAULT '[]'
+    custom_sides_array JSONB DEFAULT '[]',
+    image_url VARCHAR(255) DEFAULT NULL
 );
 
 ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS image_url VARCHAR(255) DEFAULT NULL;
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INTEGER DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
 
 -- 9. MENU ITEM INGREDIENTS (Recipe junction)
 CREATE TABLE IF NOT EXISTS menu_item_ingredients (
@@ -113,6 +134,7 @@ CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_inventory_id ON menu_item_i
 -- 10. ORDERS
 CREATE TABLE IF NOT EXISTS orders (
     master_order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER DEFAULT NULL,
     status VARCHAR(30) DEFAULT 'RECEIVED',
     is_held BOOLEAN DEFAULT FALSE,
     total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
@@ -166,3 +188,51 @@ VALUES
     (66, 100, 0.85),
     (101, NULL, 0.80)
 ON CONFLICT DO NOTHING;
+
+-- 14. AUDIT LOGS
+CREATE TABLE IF NOT EXISTS audit_logs (
+    log_id SERIAL PRIMARY KEY,
+    actor_id INTEGER DEFAULT NULL,
+    actor_username VARCHAR(100) DEFAULT NULL,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id INTEGER DEFAULT NULL,
+    old_value TEXT DEFAULT NULL,
+    new_value TEXT DEFAULT NULL,
+    ip_address VARCHAR(45) DEFAULT NULL,
+    user_agent TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs(actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+
+-- 15. CARTS
+CREATE TABLE IF NOT EXISTS carts (
+    cart_id SERIAL PRIMARY KEY,
+    customer_id INTEGER DEFAULT NULL,
+    session_token VARCHAR(255) DEFAULT NULL,
+    status VARCHAR(30) DEFAULT 'active' CHECK (status IN ('active', 'checked_out', 'abandoned')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_carts_customer_id ON carts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_carts_session_token ON carts(session_token);
+CREATE INDEX IF NOT EXISTS idx_carts_status ON carts(status);
+
+-- 16. CART ITEMS
+CREATE TABLE IF NOT EXISTS cart_items (
+    cart_item_id SERIAL PRIMARY KEY,
+    cart_id INTEGER NOT NULL REFERENCES carts(cart_id) ON DELETE CASCADE,
+    menu_item_id INTEGER DEFAULT NULL REFERENCES menu_items(item_id) ON DELETE CASCADE,
+    inventory_id INTEGER DEFAULT NULL REFERENCES inventory(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    custom_instructions TEXT DEFAULT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON cart_items(cart_id);

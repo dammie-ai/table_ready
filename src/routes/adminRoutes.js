@@ -1,8 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { logAudit } = require('../utils/auditLogger');
+const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 
 const pool = db.pool || db;
+
+// All admin routes require authentication + admin or manager role
+router.use(authenticateToken);
+router.use(authorizeRoles('admin', 'manager'));
 
 /**
  * GET /api/admin/surge-config
@@ -44,11 +50,27 @@ router.patch('/surge-toggle', async (req, res) => {
   }
 
   try {
+    const settingRes = await pool.query(
+      `SELECT value FROM settings WHERE key = 'dynamic_pricing_enabled'`
+    );
+    const oldEnabled = settingRes.rows[0]?.value === 'true';
+
     await pool.query(
       `INSERT INTO settings (key, value) VALUES ('dynamic_pricing_enabled', $1)
        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
       [enabled.toString()]
     );
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'SURGE_TOGGLED',
+      entity_type: 'setting',
+      entity_id: 1,
+      old_value: oldEnabled ? 'true' : 'false',
+      new_value: enabled.toString(),
+      ip_address: req.ip || req.connection.remoteAddress
+    });
 
     return res.status(200).json({
       success: true,
@@ -91,6 +113,15 @@ router.put('/surge-tiers', async (req, res) => {
     }
 
     await client.query('COMMIT');
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'SURGE_TIERS_UPDATED',
+      entity_type: 'surge_tiers',
+      new_value: JSON.stringify(tiers),
+      ip_address: req.ip || req.connection.remoteAddress
+    });
 
     return res.status(200).json({
       success: true,

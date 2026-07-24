@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { logAudit } = require('../utils/auditLogger');
 
 exports.register = async (req, res) => {
   const { username, password, role } = req.body;
@@ -90,6 +91,15 @@ exports.deleteAccount = async (req, res) => {
     }
 
     await client.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'USER_DELETED',
+      entity_type: 'user',
+      entity_id: userId,
+      ip_address: req.ip || req.connection.remoteAddress
+    });
 
     return res.status(200).json({
       success: true,
