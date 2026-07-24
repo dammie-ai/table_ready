@@ -1,4 +1,4 @@
-const db = require('../db'); // Adjust path to match your db import if needed
+const db = require('../config/db');
 
 /**
  * Calculates current price multiplier based on admin toggle & active order volume.

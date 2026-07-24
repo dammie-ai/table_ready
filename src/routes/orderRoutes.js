@@ -11,7 +11,7 @@ const VALID_STATUSES = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'SERVE
 
 /**
  * POST /api/orders
- * Handle new order creation and deduct inventory
+ * Handle new order creation with automatic recipe-based ingredient deduction
  */
 router.post('/', async (req, res) => {
   let client;
@@ -37,31 +37,70 @@ router.post('/', async (req, res) => {
     // 1. Fetch active surge multiplier (returns 1.00 if feature is turned off by admin)
     const multiplier = await getSurgeMultiplier();
 
-    // 2. Calculate dynamic order total server-side
+    // 2. Resolve Recipe Ingredients & Perform Row-Level Lock Stock Validation
     let calculatedTotal = 0;
+    const resolvedDeductions = []; // Stores resolved inventory deductions for Step 4
 
     if (items && items.length > 0) {
       for (const item of items) {
-        const itemId = item.item_id || item.inventory_id;
-        const quantity = item.quantity;
+        const menuItemId = item.menu_item_id || item.item_id || item.inventory_id;
+        const orderQty = item.quantity || 1;
 
-        // Check inventory stock using valid 'stock_quantity' column
-        const stockCheck = await client.query(
-          `SELECT stock_quantity FROM inventory WHERE id = $1 FOR UPDATE`,
-          [itemId]
+        // Fetch recipe mapping for this menu item
+        const recipeRes = await client.query(
+          `SELECT mii.inventory_id, mii.quantity_required, i.item_name, i.stock_quantity
+           FROM menu_item_ingredients mii
+           JOIN inventory i ON mii.inventory_id = i.id
+           WHERE mii.menu_item_id = $1`,
+          [menuItemId]
         );
 
-        if (stockCheck.rows.length === 0) {
-          throw new Error(`Inventory item #${itemId} does not exist.`);
-        }
+        // Fallback: If no recipe exists in junction table, check if it's a direct inventory item
+        if (recipeRes.rows.length === 0) {
+          const directCheck = await client.query(
+            `SELECT id, item_name, stock_quantity FROM inventory WHERE id = $1 FOR UPDATE`,
+            [menuItemId]
+          );
 
-        if (stockCheck.rows[0].stock_quantity < quantity) {
-          throw new Error(`Insufficient stock for inventory item #${itemId}.`);
+          if (directCheck.rows.length === 0) {
+            throw new Error(`Menu Item or Inventory #${menuItemId} does not exist.`);
+          }
+
+          if (directCheck.rows[0].stock_quantity < orderQty) {
+            throw new Error(`Insufficient stock for item "${directCheck.rows[0].item_name}".`);
+          }
+
+          resolvedDeductions.push({
+            inventory_id: menuItemId,
+            deduct_quantity: orderQty
+          });
+        } else {
+          // Recipe found: Validate stock for ALL required ingredients
+          for (const ingredient of recipeRes.rows) {
+            const totalRequired = ingredient.quantity_required * orderQty;
+
+            // Lock row for update
+            const stockCheck = await client.query(
+              `SELECT stock_quantity FROM inventory WHERE id = $1 FOR UPDATE`,
+              [ingredient.inventory_id]
+            );
+
+            if (stockCheck.rows[0].stock_quantity < totalRequired) {
+              throw new Error(
+                `Insufficient stock for ingredient "${ingredient.item_name}" required by menu item #${menuItemId}.`
+              );
+            }
+
+            resolvedDeductions.push({
+              inventory_id: ingredient.inventory_id,
+              deduct_quantity: totalRequired
+            });
+          }
         }
 
         const basePrice = item.price || 0;
         const dynamicUnitPrice = calculateAdjustedPrice(basePrice, multiplier);
-        calculatedTotal += dynamicUnitPrice * quantity;
+        calculatedTotal += dynamicUnitPrice * orderQty;
       }
     }
 
@@ -83,25 +122,26 @@ router.post('/', async (req, res) => {
 
     const createdOrder = orderResult.rows[0];
 
-    // 4. Deduct stock and insert order items
+    // 4. Deduct stock across all resolved recipe ingredients
+    for (const deduction of resolvedDeductions) {
+      await client.query(
+        `UPDATE inventory
+         SET stock_quantity = stock_quantity - $1
+         WHERE id = $2`,
+        [deduction.deduct_quantity, deduction.inventory_id]
+      );
+    }
+
+    // 5. Link items to order row
     if (items && items.length > 0) {
       for (const item of items) {
-        const itemId = item.item_id || item.inventory_id;
-        const quantity = item.quantity;
+        const menuItemId = item.menu_item_id || item.item_id || item.inventory_id;
+        const quantity = item.quantity || 1;
 
-        // Deduct stock using 'stock_quantity' and 'id'
-        await client.query(
-          `UPDATE inventory
-           SET stock_quantity = stock_quantity - $1
-           WHERE id = $2`,
-          [quantity, itemId]
-        );
-
-        // Link item to order using 'item_id' and 'ordered_by_user_id'
         await client.query(
           `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id)
            VALUES ($1, $2, $3, $4)`,
-          [createdOrder.master_order_id, itemId, quantity, ordered_by_user_id || 1]
+          [createdOrder.master_order_id, menuItemId, quantity, ordered_by_user_id || 1]
         );
       }
     }
@@ -154,7 +194,7 @@ router.get('/kitchen', async (req, res) => {
 
 /**
  * GET /api/orders/user/:userId
- * Fetch customer order history (uses i.item_name)
+ * Fetch customer order history
  */
 router.get('/user/:userId', async (req, res) => {
   const { userId } = req.params;
@@ -166,7 +206,7 @@ router.get('/user/:userId', async (req, res) => {
                json_build_object(
                  'item_id', oi.item_id,
                  'quantity', oi.quantity,
-                 'item_name', i.item_name
+                 'item_name', COALESCE(i.item_name, 'Menu Item #' || oi.item_id)
                )
              ) AS items
       FROM orders o
@@ -190,7 +230,7 @@ router.get('/user/:userId', async (req, res) => {
 
 /**
  * GET /api/orders/:id/receipt
- * Generate detailed itemized receipt view for a specific order (uses i.item_name)
+ * Generate detailed itemized receipt view for a specific order
  */
 router.get('/:id/receipt', async (req, res) => {
   const { id } = req.params;
@@ -208,9 +248,9 @@ router.get('/:id/receipt', async (req, res) => {
     const order = orderRes.rows[0];
 
     const itemsRes = await pool.query(
-      `SELECT oi.quantity, i.item_name
+      `SELECT oi.quantity, COALESCE(i.item_name, 'Menu Item #' || oi.item_id) AS item_name
        FROM order_items oi
-       JOIN inventory i ON oi.item_id = i.id
+       LEFT JOIN inventory i ON oi.item_id = i.id
        WHERE oi.master_order_id = $1`,
       [id]
     );

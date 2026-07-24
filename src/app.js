@@ -1,8 +1,10 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const app = express();
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -10,9 +12,10 @@ app.use(express.urlencoded({ extended: true }));
 const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
+const menuRoutes = require('./routes/menuRoutes'); // Recipe/menu mappings
 const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
-const adminRoutes = require('./routes/adminRoutes'); // Admin route for dynamic pricing settings
+const adminRoutes = require('./routes/adminRoutes');
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -23,9 +26,10 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/menu', menuRoutes); // Mounts /api/menu/:id/ingredients
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/admin', adminRoutes); // Mount admin routes
+app.use('/api/admin', adminRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
