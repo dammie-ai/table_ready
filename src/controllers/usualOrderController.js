@@ -1,6 +1,105 @@
 const pool = require('../config/db');
 
 /**
+ * GET /api/customer/usual
+ * Get customer's most frequently ordered combo by session_token (guest-friendly)
+ */
+exports.getTheUsualBySession = async (req, res) => {
+  const { session_token } = req.query;
+
+  if (!session_token) {
+    return res.status(400).json({ success: false, error: 'session_token is required for guest access.' });
+  }
+
+  try {
+    const sessionRes = await pool.query(
+      `SELECT customer_id FROM customer_sessions WHERE session_token = $1 AND (expires_at IS NULL OR expires_at > NOW())`,
+      [session_token]
+    );
+
+    if (sessionRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Invalid or expired session.' });
+    }
+
+    const customerId = sessionRes.rows[0].customer_id;
+
+    if (!customerId) {
+      return res.status(404).json({ success: false, error: 'No customer profile linked to this session.' });
+    }
+
+    return await exports.getTheUsual({ params: { customerId } }, res);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * POST /api/customer/usual/reorder
+ * One-tap reorder by session_token (guest-friendly)
+ */
+exports.reorderTheUsualBySession = async (req, res) => {
+  const { session_token, order_type, table_number, ordered_by_user_id } = req.body;
+
+  if (!session_token) {
+    return res.status(400).json({ success: false, error: 'session_token is required for guest access.' });
+  }
+
+  try {
+    const sessionRes = await pool.query(
+      `SELECT customer_id FROM customer_sessions WHERE session_token = $1 AND (expires_at IS NULL OR expires_at > NOW())`,
+      [session_token]
+    );
+
+    if (sessionRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Invalid or expired session.' });
+    }
+
+    const customerId = sessionRes.rows[0].customer_id;
+
+    if (!customerId) {
+      return res.status(404).json({ success: false, error: 'No customer profile linked to this session.' });
+    }
+
+    return await exports.reorderTheUsual({ params: { customerId }, body: { order_type, table_number, ordered_by_user_id, cart_id: req.body.cart_id }, app: req.app }, res);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * POST /api/customer/usual
+ * Update/create customer's usual combo by session_token (guest-friendly)
+ */
+exports.setTheUsualBySession = async (req, res) => {
+  const { session_token, item_ids, quantities, combo_name } = req.body;
+
+  if (!session_token) {
+    return res.status(400).json({ success: false, error: 'session_token is required for guest access.' });
+  }
+
+  try {
+    const sessionRes = await pool.query(
+      `SELECT customer_id FROM customer_sessions WHERE session_token = $1 AND (expires_at IS NULL OR expires_at > NOW())`,
+      [session_token]
+    );
+
+    if (sessionRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Invalid or expired session.' });
+    }
+
+    const customerId = sessionRes.rows[0].customer_id;
+
+    if (!customerId) {
+      return res.status(404).json({ success: false, error: 'No customer profile linked to this session.' });
+    }
+
+    return await exports.setTheUsual({ params: { customerId }, body: { item_ids, quantities, combo_name } }, res);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
  * GET /api/customer/:customerId/usual
  * Get customer's most frequently ordered combo ("The Usual")
  */
@@ -21,7 +120,6 @@ exports.getTheUsual = async (req, res) => {
     const itemIds = combo.item_ids;
     const quantities = combo.quantities;
 
-    // Fetch current item details
     const items = [];
     for (let i = 0; i < itemIds.length; i++) {
       const itemId = itemIds[i];

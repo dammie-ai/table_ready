@@ -2,6 +2,7 @@ const db = require('../config/db');
 const pool = db.pool || db;
 const { logAudit } = require('../utils/auditLogger');
 const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
+const { isWithinDeliveryRadius } = require('../utils/distance');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 /**
@@ -221,7 +222,22 @@ exports.clearCart = async (req, res) => {
  */
 exports.checkout = async (req, res) => {
   const { id } = req.params;
-  const { order_type, table_number, notes, ordered_by_user_id } = req.body;
+  const { order_type, table_number, notes, ordered_by_user_id, latitude, longitude } = req.body;
+
+  // Geofencing: enforce 10-mile radius for delivery orders
+  if (order_type === 'delivery') {
+    if (!latitude || !longitude) {
+      return res.status(400).json({ success: false, error: 'Delivery orders require latitude and longitude coordinates.' });
+    }
+
+    const radiusCheck = isWithinDeliveryRadius(latitude, longitude);
+    if (!radiusCheck.isAllowed) {
+      return res.status(400).json({
+        success: false,
+        error: `Delivery unavailable. Your location is ${radiusCheck.distanceMiles} miles away (Maximum allowed delivery radius is 10 miles).`
+      });
+    }
+  }
 
   const client = await pool.connect();
 

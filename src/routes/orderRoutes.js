@@ -238,9 +238,9 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/orders/:id
- * Fetch order with items for customer/staff tracking
+ * Fetch order with items for customer/staff tracking (public for order lookup)
  */
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -275,9 +275,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/orders/:id/receipt
- * Generate detailed itemized receipt view for a specific order
+ * Generate detailed itemized receipt view for a specific order (public)
  */
-router.get('/:id/receipt', authenticateToken, async (req, res) => {
+router.get('/:id/receipt', async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -502,6 +502,74 @@ router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager')
     return res.status(200).json({
       success: true,
       message: `Order #${id} successfully refunded and cancelled.`,
+      order: updatedOrder.rows[0]
+    });
+
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    return res.status(500).json({ success: false, error: err.message });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+/**
+ * PATCH /api/orders/:id/cancel
+ * Cancel an order without refund
+ */
+router.patch('/:id/cancel', authenticateToken, authorizeRoles('admin', 'manager', 'waiter'), async (req, res) => {
+  const { id } = req.params;
+  let client;
+
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    const orderQuery = await client.query(
+      `SELECT * FROM orders WHERE master_order_id = $1 FOR UPDATE`,
+      [id]
+    );
+
+    if (orderQuery.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: `Order #${id} not found.` });
+    }
+
+    const order = orderQuery.rows[0];
+    const nonCancellableStatuses = ['IN_PREPARATION', 'COOKING', 'COMPLETED', 'SERVED', 'CANCELLED_AND_REFUNDED'];
+
+    if (nonCancellableStatuses.includes(order.status)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        error: `Cannot cancel order #${id}: status is already ${order.status}.`
+      });
+    }
+
+    const updatedOrder = await client.query(
+      `UPDATE orders
+       SET status = 'CANCELLED', is_held = false, updated_at = NOW()
+       WHERE master_order_id = $1
+       RETURNING *`,
+      [id]
+    );
+
+    await client.query('COMMIT');
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'ORDER_CANCELLED',
+      entity_type: 'order',
+      entity_id: parseInt(id),
+      old_value: JSON.stringify({ status: order.status }),
+      new_value: JSON.stringify({ status: 'CANCELLED' }),
+      ip_address: req.ip || req.connection.remoteAddress
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Order #${id} cancelled.`,
       order: updatedOrder.rows[0]
     });
 

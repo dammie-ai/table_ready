@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const usualOrderController = require('../controllers/usualOrderController');
-const { authenticateToken } = require('../middleware/authGuard');
 
-router.get('/:customerId/usual', authenticateToken, usualOrderController.getTheUsual);
-router.post('/:customerId/usual/reorder', authenticateToken, usualOrderController.reorderTheUsual);
-router.post('/:customerId/usual', authenticateToken, usualOrderController.setTheUsual);
+// Support both authenticated customers and guest sessions
+router.get('/usual', usualOrderController.getTheUsualBySession);
+router.get('/:customerId/usual', usualOrderController.getTheUsual);
+router.post('/usual/reorder', usualOrderController.reorderTheUsualBySession);
+router.post('/:customerId/usual/reorder', usualOrderController.reorderTheUsual);
+router.post('/usual', usualOrderController.setTheUsualBySession);
+router.post('/:customerId/usual', usualOrderController.setTheUsual);
 
 module.exports = router;
