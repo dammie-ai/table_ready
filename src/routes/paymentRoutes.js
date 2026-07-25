@@ -15,6 +15,7 @@ const validateDeliveryRadius = (req, res, next) => {
   if (order_mode === 'delivery') {
     if (!latitude || !longitude) {
       return res.status(400).json({
+        success: false,
         error: 'Delivery orders require latitude and longitude coordinates.'
       });
     }
@@ -23,6 +24,7 @@ const validateDeliveryRadius = (req, res, next) => {
 
     if (!radiusCheck.isAllowed) {
       return res.status(400).json({
+        success: false,
         error: `Delivery unavailable. Your location is ${radiusCheck.distanceMiles} miles away (Maximum allowed delivery radius is 10 miles).`
       });
     }
@@ -65,9 +67,9 @@ router.post('/split', (req, res) => {
       });
     }
 
-    return res.status(400).json({ error: 'Invalid split mode. Must be "even" or "itemized".' });
+    return res.status(400).json({ success: false, error: 'Invalid split mode. Must be "even" or "itemized".' });
   } catch (err) {
-    return res.status(400).json({ error: err.message });
+    return res.status(400).json({ success: false, error: err.message });
   }
 });
 
@@ -80,7 +82,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).json({ error: 'Webhook signature verification failed.' });
+    return res.status(400).json({ success: false, error: 'Webhook signature verification failed.' });
   }
 
   if (event.type === 'payment_intent.succeeded') {

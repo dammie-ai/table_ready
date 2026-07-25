@@ -13,7 +13,7 @@ const pool = db.pool || db;
  * POST /api/inventory
  * Process order deductions with transaction safety, row locking, and stock guard validation.
  */
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
   const { items } = req.body;
 
   // Validate incoming payload

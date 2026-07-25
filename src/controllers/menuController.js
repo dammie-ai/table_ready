@@ -46,7 +46,7 @@ const getMenuItemDetail = async (req, res) => {
     );
 
     if (itemRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Menu item not found.' });
+      return res.status(404).json({ success: false, error: 'Menu item not found.' });
     }
 
     const item = itemRes.rows[0];
@@ -76,6 +76,7 @@ const addIngredientToMenuItem = async (req, res) => {
 
         if (!inventory_id || !quantity_required || quantity_required <= 0) {
             return res.status(400).json({
+                success: false,
                 error: 'inventory_id and a positive quantity_required are required.'
             });
         }
@@ -126,7 +127,7 @@ const removeIngredientFromMenuItem = async (req, res) => {
         const removed = await menuItemModel.removeMenuItemIngredient(menuItemId, inventoryId);
 
         if (!removed) {
-            return res.status(404).json({ error: 'Ingredient link not found.' });
+            return res.status(404).json({ success: false, error: 'Ingredient link not found.' });
         }
 
         return res.status(200).json({
@@ -148,7 +149,7 @@ const createMenuItem = async (req, res) => {
         const { name, category_type, description, base_price, stock_quantity, prep_time_minutes, image_url } = req.body;
 
         if (!name || !category_type || base_price === undefined) {
-            return res.status(400).json({ error: 'name, category_type, and base_price are required.' });
+            return res.status(400).json({ success: false, error: 'name, category_type, and base_price are required.' });
         }
 
         const result = await pool.query(
@@ -168,7 +169,7 @@ const createMenuItem = async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating menu item:', error);
-        return res.status(500).json({ error: 'Internal server error.' });
+        return res.status(500).json({ success: false, error: 'Internal server error.' });
     }
 };
 
@@ -200,7 +201,7 @@ const updateMenuItem = async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Menu item not found.' });
+            return res.status(404).json({ success: false, error: 'Menu item not found.' });
         }
 
         const item = result.rows[0];
@@ -213,7 +214,7 @@ const updateMenuItem = async (req, res) => {
         });
     } catch (error) {
         console.error('Error updating menu item:', error);
-        return res.status(500).json({ error: 'Internal server error.' });
+        return res.status(500).json({ success: false, error: 'Internal server error.' });
     }
 };
 
@@ -231,7 +232,7 @@ const toggleMenuItem = async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Menu item not found.' });
+            return res.status(404).json({ success: false, error: 'Menu item not found.' });
         }
 
         const item = result.rows[0];
@@ -244,7 +245,7 @@ const toggleMenuItem = async (req, res) => {
         });
     } catch (error) {
         console.error('Error toggling menu item:', error);
-        return res.status(500).json({ error: 'Internal server error.' });
+        return res.status(500).json({ success: false, error: 'Internal server error.' });
     }
 };
 

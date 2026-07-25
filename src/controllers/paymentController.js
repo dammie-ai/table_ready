@@ -7,7 +7,7 @@ exports.createPaymentIntent = async (req, res) => {
     const { amount, currency = 'usd' } = req.body;
 
     if (!amount) {
-      return res.status(400).json({ error: 'Amount is required.' });
+      return res.status(400).json({ success: false, error: 'Amount is required.' });
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -20,12 +20,13 @@ exports.createPaymentIntent = async (req, res) => {
     });
 
     res.status(200).json({
+      success: true,
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       status: paymentIntent.status
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
@@ -36,6 +37,7 @@ exports.confirmPayment = async (req, res) => {
 
     if (!paymentIntentId || !orderId) {
       return res.status(400).json({
+        success: false,
         error: 'Missing required parameters: paymentIntentId and orderId are required.'
       });
     }
@@ -45,6 +47,7 @@ exports.confirmPayment = async (req, res) => {
 
     if (paymentIntent.status !== 'succeeded') {
       return res.status(400).json({
+        success: false,
         error: `Payment not completed. Stripe status: ${paymentIntent.status}`
       });
     }
@@ -73,6 +76,6 @@ exports.confirmPayment = async (req, res) => {
       order: result.rows[0]
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };

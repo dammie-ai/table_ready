@@ -15,7 +15,7 @@ const VALID_STATUSES = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'SERVE
  * POST /api/orders
  * Handle new order creation with automatic recipe-based ingredient deduction
  */
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
   let client;
 
   try {
@@ -183,7 +183,7 @@ router.post('/', async (req, res) => {
  * GET /api/orders/kitchen
  * Fetch active kitchen orders (filters out held, completed, served, and cancelled orders)
  */
-router.get('/kitchen', async (req, res) => {
+router.get('/kitchen', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
   try {
     const kitchenOrders = await pool.query(
       `SELECT * FROM orders
@@ -204,7 +204,7 @@ router.get('/kitchen', async (req, res) => {
  * GET /api/orders/user/:userId
  * Fetch customer order history
  */
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', authenticateToken, async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -240,7 +240,7 @@ router.get('/user/:userId', async (req, res) => {
  * GET /api/orders/:id
  * Fetch order with items for customer/staff tracking
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -277,7 +277,7 @@ router.get('/:id', async (req, res) => {
  * GET /api/orders/:id/receipt
  * Generate detailed itemized receipt view for a specific order
  */
-router.get('/:id/receipt', async (req, res) => {
+router.get('/:id/receipt', authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   try {

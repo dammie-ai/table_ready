@@ -7,7 +7,7 @@ const checkEmployeeShift = async (req, res) => {
 
   // Validate the presence of the waiter_id parameter in the request payload
   if (!waiter_id) {
-    return res.status(400).json({ error: 'waiter_id is required to check shift status.' });
+    return res.status(400).json({ success: false, error: 'waiter_id is required to check shift status.' });
   }
 
   try {
@@ -21,7 +21,7 @@ const checkEmployeeShift = async (req, res) => {
 
     // Handle non-existent user records
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Waiter not found.' });
+      return res.status(404).json({ success: false, error: 'Waiter not found.' });
     }
 
     const waiter = result.rows[0];
@@ -29,12 +29,14 @@ const checkEmployeeShift = async (req, res) => {
     // Verify the record holds the waiter role prior to assignment
     if (waiter.role !== 'waiter') {
       return res.status(400).json({
+        success: false,
         error: `User ${waiter.username} is not registered as a waiter.`
       });
     }
 
     // Return successful verification response
     return res.status(200).json({
+      success: true,
       on_shift: true,
       message: `Waiter ${waiter.username} is valid and ready for assignment.`,
       waiter: waiter
@@ -52,7 +54,7 @@ const createSession = async (req, res) => {
   const { table_number, waiter_id, party_size } = req.body;
 
   if (!table_number || !waiter_id) {
-    return res.status(400).json({ error: 'table_number and waiter_id are required.' });
+    return res.status(400).json({ success: false, error: 'table_number and waiter_id are required.' });
   }
 
   // Generate a random 4-digit access code
@@ -71,7 +73,7 @@ const createSession = async (req, res) => {
       party_size || 1
     ]);
 
-    return res.status(201).json(result.rows[0]);
+    return res.status(201).json({ success: true, ...result.rows[0] });
   } catch (err) {
     console.error('Error creating session:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
@@ -87,7 +89,7 @@ const getActiveSessions = async (req, res) => {
       WHERE status = 'active'
     `;
     const result = await pool.query(query);
-    return res.status(200).json(result.rows);
+    return res.status(200).json({ success: true, sessions: result.rows });
   } catch (err) {
     console.error('Error fetching active sessions:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
@@ -109,10 +111,10 @@ const closeSession = async (req, res) => {
     const result = await pool.query(query, [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Session not found.' });
+      return res.status(404).json({ success: false, error: 'Session not found.' });
     }
 
-    return res.status(200).json(result.rows[0]);
+    return res.status(200).json({ success: true, ...result.rows[0] });
   } catch (err) {
     console.error('Error closing session:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
