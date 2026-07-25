@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS verification_code VARCHAR(6) DEFAULT NULL;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS verification_attempts INT DEFAULT 0;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS verification_verified BOOLEAN DEFAULT FALSE;
+
 -- 4. RESTAURANT TABLES (Floor map)
 CREATE TABLE IF NOT EXISTS restaurant_tables (
     table_id SERIAL PRIMARY KEY,
@@ -236,3 +240,111 @@ CREATE TABLE IF NOT EXISTS cart_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON cart_items(cart_id);
+
+-- 17. CUSTOMER PROFILES (guest/registered customers)
+CREATE TABLE IF NOT EXISTS customer_profiles (
+    customer_id SERIAL PRIMARY KEY,
+    email VARCHAR(100) UNIQUE DEFAULT NULL,
+    phone VARCHAR(20) DEFAULT NULL,
+    first_name VARCHAR(100) DEFAULT NULL,
+    last_name VARCHAR(100) DEFAULT NULL,
+    preferred_language VARCHAR(10) DEFAULT 'en',
+    preferred_fulfillment VARCHAR(30) DEFAULT NULL,
+    max_delivery_distance_miles INTEGER DEFAULT 10,
+    is_guest BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_profiles_email ON customer_profiles(email);
+CREATE INDEX IF NOT EXISTS idx_customer_profiles_phone ON customer_profiles(phone);
+
+-- 18. CUSTOMER SESSIONS (guest tokens / device sessions)
+CREATE TABLE IF NOT EXISTS customer_sessions (
+    session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_id INTEGER DEFAULT NULL REFERENCES customer_profiles(customer_id) ON DELETE CASCADE,
+    device_token VARCHAR(255) DEFAULT NULL,
+    session_token VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMP DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_sessions_token ON customer_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_customer_sessions_customer_id ON customer_sessions(customer_id);
+
+-- 19. USER ROLES (multi-role support junction table)
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_role_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(30) NOT NULL CHECK (role IN ('admin', 'manager', 'kitchen', 'waiter', 'driver')),
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, role)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);
+
+-- 20. DISH OF THE WEEK CONFIG
+CREATE TABLE IF NOT EXISTS dish_of_week_config (
+    config_id SERIAL PRIMARY KEY,
+    category_type VARCHAR(30) NOT NULL,
+    menu_item_id INTEGER DEFAULT NULL REFERENCES menu_items(item_id) ON DELETE SET NULL,
+    discount_percentage DECIMAL(5,2) NOT NULL DEFAULT 14.00,
+    is_override BOOLEAN DEFAULT FALSE,
+    set_by INTEGER DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+    period_start DATE DEFAULT NULL,
+    period_end DATE DEFAULT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_dish_of_week_category ON dish_of_week_config(category_type);
+CREATE INDEX IF NOT EXISTS idx_dish_of_week_active ON dish_of_week_config(is_active);
+
+-- 21. SERVICE REQUESTS (call server, refill, etc.)
+CREATE TABLE IF NOT EXISTS service_requests (
+    request_id SERIAL PRIMARY KEY,
+    table_number INT NOT NULL,
+    session_id UUID DEFAULT NULL REFERENCES table_sessions(session_id) ON DELETE SET NULL,
+    request_type VARCHAR(30) NOT NULL CHECK (request_type IN ('call_server', 'refill', 'bill_request', 'other')),
+    status VARCHAR(30) DEFAULT 'pending' CHECK (status IN ('pending', 'acknowledged', 'completed', 'cancelled')),
+    notes TEXT DEFAULT NULL,
+    created_by_customer BOOLEAN DEFAULT TRUE,
+    acknowledged_by INTEGER DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+    acknowledged_at TIMESTAMP DEFAULT NULL,
+    completed_at TIMESTAMP DEFAULT NULL,
+    cancelled_at TIMESTAMP DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_service_requests_table ON service_requests(table_number);
+CREATE INDEX IF NOT EXISTS idx_service_requests_status ON service_requests(status);
+
+-- 22. CUSTOMER FAVORITE COMBOS ("The Usual")
+CREATE TABLE IF NOT EXISTS customer_favorite_combos (
+    combo_id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES customer_profiles(customer_id) ON DELETE CASCADE,
+    combo_name VARCHAR(100) DEFAULT 'The Usual',
+    item_ids JSONB NOT NULL DEFAULT '[]',
+    quantities JSONB NOT NULL DEFAULT '[]',
+    order_count INTEGER DEFAULT 1,
+    last_ordered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_favorite_combos_customer_id ON customer_favorite_combos(customer_id);
+
+-- 23. ORDER DISCOUNT APPLICATIONS (track which discounts were applied to orders)
+CREATE TABLE IF NOT EXISTS order_discounts (
+    discount_id SERIAL PRIMARY KEY,
+    master_order_id INTEGER NOT NULL REFERENCES orders(master_order_id) ON DELETE CASCADE,
+    order_item_id INTEGER DEFAULT NULL REFERENCES order_items(order_item_id) ON DELETE SET NULL,
+    discount_type VARCHAR(30) NOT NULL CHECK (discount_type IN ('dish_of_week_category', 'dish_of_week_overall', 'promo', 'custom')),
+    discount_percentage DECIMAL(5,2) NOT NULL,
+    discount_amount DECIMAL(10,2) NOT NULL,
+    menu_item_id INTEGER DEFAULT NULL REFERENCES menu_items(item_id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_discounts_order_id ON order_discounts(master_order_id);
