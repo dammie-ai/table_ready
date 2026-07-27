@@ -9,7 +9,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authGuard')
 const pool = db.pool || db;
 
 // Valid order status transitions
-const VALID_STATUSES = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'SERVED', 'COMPLETED', 'CANCELLED'];
+const VALID_STATUSES = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'READY_FOR_PICKUP', 'PICKED_UP', 'SERVED', 'COMPLETED', 'CANCELLED'];
 
 /**
  * POST /api/orders
@@ -745,7 +745,7 @@ router.patch('/:id/cancel', authenticateToken, authorizeRoles('admin', 'manager'
     const result = await pool.query(
       `SELECT order_type,
               COUNT(*) AS total_orders,
-              SUM(CASE WHEN status NOT IN ('COMPLETED', 'CANCELLED', 'SERVED', 'CANCELLED_AND_REFUNDED') THEN 1 ELSE 0 END) AS active_orders,
+              SUM(CASE WHEN status NOT IN ('COMPLETED', 'CANCELLED', 'SERVED', 'CANCELLED_AND_REFUNDED', 'PICKED_UP') THEN 1 ELSE 0 END) AS active_orders,
               SUM(total_amount) AS total_revenue
        FROM orders
        GROUP BY order_type
@@ -762,6 +762,190 @@ router.patch('/:id/cancel', authenticateToken, authorizeRoles('admin', 'manager'
     return res.status(200).json({
       success: true,
       summary,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/orders/pickup-queue
+// Fetch pending pickup orders sorted by scheduled time
+router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT o.*,
+              json_agg(
+                json_build_object(
+                  'order_item_id', oi.order_item_id,
+                  'item_id', oi.item_id,
+                  'quantity', oi.quantity,
+                  'item_status', oi.item_status,
+                  'custom_instructions', oi.custom_instructions
+                )
+              ) AS items
+       FROM orders o
+       LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
+       WHERE o.order_type = 'PICKUP'
+         AND o.status NOT IN ('COMPLETED', 'CANCELLED', 'CANCELLED_AND_REFUNDED', 'PICKED_UP')
+       GROUP BY o.master_order_id
+       ORDER BY o.pickup_scheduled_time ASC NULLS LAST, o.created_at ASC`
+    );
+
+    const orders = result.rows.map((row) => ({
+      ...row,
+      items: row.items.filter((item) => item.order_item_id !== null),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: orders.length,
+      orders,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/orders/:id/customer-arrived
+// Customer marks themselves as arrived at the restaurant
+router.post('/:id/customer-arrived', async (req, res) => {
+  const { id } = req.params;
+  const { vehicle, curbside_lane } = req.body;
+
+  try {
+    const orderRes = await pool.query(
+      `SELECT * FROM orders WHERE master_order_id = $1 AND order_type = 'PICKUP'`,
+      [id]
+    );
+
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Pickup order not found.' });
+    }
+
+    const updated = await pool.query(
+      `UPDATE orders
+       SET pickup_actual_time = NOW(),
+           customer_vehicle = COALESCE($1, customer_vehicle),
+           curbside_lane = COALESCE($2, curbside_lane),
+           order_held_until_arrival = false,
+           updated_at = NOW()
+       WHERE master_order_id = $3
+       RETURNING *`,
+      [vehicle || null, curbside_lane || null, id]
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${id}`).emit('customer_arrived', {
+        orderId: parseInt(id),
+        vehicle: updated.rows[0].customer_vehicle,
+        curbside_lane: updated.rows[0].curbside_lane,
+        arrived_at: updated.rows[0].pickup_actual_time,
+      });
+      io.to('kitchen').emit('pickup_customer_arrived', {
+        orderId: parseInt(id),
+        message: `Customer for order #${id} has arrived.`,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Arrival confirmed. Kitchen has been notified.',
+      order: updated.rows[0],
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/orders/:id/mark-ready-pickup
+// Kitchen marks a pickup order as ready for collection
+router.post('/:id/mark-ready-pickup', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+  const { id } = req.params;
+  const { pickup_code } = req.body;
+
+  try {
+    const orderRes = await pool.query(
+      `SELECT * FROM orders WHERE master_order_id = $1 AND order_type = 'PICKUP'`,
+      [id]
+    );
+
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Pickup order not found.' });
+    }
+
+    const code = pickup_code || Math.floor(100000 + Math.random() * 900000).toString();
+
+    const updated = await pool.query(
+      `UPDATE orders
+       SET status = 'READY_FOR_PICKUP',
+           pickup_code = $1,
+           pickup_notified = true,
+           progress_percentage = 100,
+           updated_at = NOW()
+       WHERE master_order_id = $2
+       RETURNING *`,
+      [code, id]
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${id}`).emit('order_ready_for_pickup', {
+        orderId: parseInt(id),
+        pickup_code: code,
+        message: `Your order is ready for pickup! Your pickup code is: ${code}`,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order marked as ready for pickup.',
+      order: updated.rows[0],
+      pickup_code: code,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/orders/:id/complete-pickup
+// Staff confirms customer has collected the order
+router.post('/:id/complete-pickup', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const orderRes = await pool.query(
+      `SELECT * FROM orders WHERE master_order_id = $1 AND order_type = 'PICKUP'`,
+      [id]
+    );
+
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Pickup order not found.' });
+    }
+
+    const updated = await pool.query(
+      `UPDATE orders
+       SET status = 'PICKED_UP',
+           pickup_actual_time = COALESCE(pickup_actual_time, NOW()),
+           progress_percentage = 100,
+           updated_at = NOW()
+       WHERE master_order_id = $1
+       RETURNING *`,
+      [id]
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${id}`).emit('order_picked_up', {
+        orderId: parseInt(id),
+        message: `Order #${id} has been picked up.`,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Pickup completed successfully.',
+      order: updated.rows[0],
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });

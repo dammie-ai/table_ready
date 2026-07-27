@@ -12,7 +12,7 @@ const runMigration = async () => {
     await pool.query(sql);
     console.log('[Migration] Core schema initialized.');
 
-    const migrationsDir = path.join(__dirname, 'db', 'migrations');
+    const migrationsDir = path.join(__dirname, '..', 'db', 'migrations');
     if (fs.existsSync(migrationsDir)) {
       const files = fs.readdirSync(migrationsDir)
         .filter(f => f.endsWith('.sql'))

@@ -28,8 +28,16 @@ CREATE TABLE IF NOT EXISTS employees (
 
 CREATE INDEX IF NOT EXISTS idx_employees_username ON employees(username);
 
--- Link users -> employees after both tables exist
-ALTER TABLE users ADD CONSTRAINT fk_users_employee_id FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE SET NULL;
+-- Link users -> employees after both tables exist (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_name = 'users' AND constraint_name = 'fk_users_employee_id'
+  ) THEN
+    ALTER TABLE users ADD CONSTRAINT fk_users_employee_id FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- 3. DINING SESSIONS (Floor management, waiter assignments)
 CREATE TABLE IF NOT EXISTS sessions (
@@ -158,6 +166,13 @@ CREATE TABLE IF NOT EXISTS orders (
     refund_eligible BOOLEAN DEFAULT TRUE,
     stripe_charge_id VARCHAR(255) DEFAULT NULL,
     idempotency_key VARCHAR(255) DEFAULT NULL,
+    pickup_scheduled_time TIMESTAMP DEFAULT NULL,
+    pickup_actual_time TIMESTAMP DEFAULT NULL,
+    customer_vehicle VARCHAR(100) DEFAULT NULL,
+    curbside_lane VARCHAR(50) DEFAULT NULL,
+    order_held_until_arrival BOOLEAN DEFAULT FALSE,
+    pickup_code VARCHAR(6) DEFAULT NULL,
+    pickup_notified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
