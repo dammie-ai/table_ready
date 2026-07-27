@@ -51,15 +51,20 @@
           "response": []
         },
         {
-          "name": "login",
+          "name": "login as manager",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.environment.set(\"manager_token\", jsonData.token);",
+                  "const code = pm.response.code;",
+                  "const body = pm.response.json();",
+                  "console.log('Login status:', code, body.success ? 'OK' : 'FAIL');",
+                  "if (code === 200 && body.success && body.token) {",
+                  "    pm.environment.set('manager_token', body.token);",
+                  "    console.log('manager_token saved (length:', body.token.length, ')');",
+                  "} else {",
+                  "    console.log('Login failed:', body.error || body.message);",
                   "}"
                 ]
               }
@@ -95,9 +100,14 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.environment.set(\"waiter_token\", jsonData.token);",
+                  "const code = pm.response.code;",
+                  "const body = pm.response.json();",
+                  "console.log('Login status:', code, body.success ? 'OK' : 'FAIL');",
+                  "if (code === 200 && body.success && body.token) {",
+                  "    pm.environment.set('waiter_token', body.token);",
+                  "    console.log('waiter_token saved (length:', body.token.length, ')');",
+                  "} else {",
+                  "    console.log('Login failed:', body.error || body.message);",
                   "}"
                 ]
               }

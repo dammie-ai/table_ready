@@ -2,8 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
+const { getTaxRate } = require('../services/configService');
 const { logAudit } = require('../utils/auditLogger');
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
+const { validate, schemas } = require('../middleware/validation');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Safely handle both direct and destructured pool export patterns
 const pool = db.pool || db;
@@ -15,7 +18,7 @@ const VALID_STATUSES = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'READY
  * POST /api/orders
  * Handle new order creation with automatic recipe-based ingredient deduction
  */
-router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
+router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), validate(schemas.createOrder), async (req, res) => {
   let client;
 
   try {
@@ -134,25 +137,45 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
 
         const basePrice = item.price || 0;
         const dynamicUnitPrice = calculateAdjustedPrice(basePrice, multiplier);
-        calculatedTotal += dynamicUnitPrice * orderQty;
+
+        let modifierTotal = 0;
+        if (item.modifiers && item.modifiers.length > 0) {
+          for (const mod of item.modifiers) {
+            const modRes = await client.query(
+              `SELECT price_adjustment FROM menu_modifiers WHERE modifier_id = $1 AND is_active = true`,
+              [mod.modifier_id]
+            );
+            if (modRes.rows.length > 0) {
+              const modQty = mod.quantity || 1;
+              modifierTotal += parseFloat(modRes.rows[0].price_adjustment) * modQty;
+            }
+          }
+        }
+
+        calculatedTotal += (dynamicUnitPrice + modifierTotal) * orderQty;
       }
     }
 
     // 3. Create master order row
+    const taxRate = await getTaxRate();
+    const taxAmount = parseFloat((calculatedTotal * taxRate).toFixed(2));
+    const totalWithTax = parseFloat((calculatedTotal + taxAmount).toFixed(2));
+
     const insertOrderQuery = `
-      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key)
-      VALUES ($1, $2, $3, $4, $5, $6, 0, $7)
+      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation)
+      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8)
       RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at;
     `;
 
     const orderResult = await client.query(insertOrderQuery, [
       initialStatus,
       shouldHold,
-      calculatedTotal,
+      totalWithTax,
       order_type || 'IN_HOUSE',
       table_number || null,
       notes || null,
-      idempotency_key || null
+      idempotency_key || null,
+      taxAmount
     ]);
 
     const createdOrder = orderResult.rows[0];
@@ -179,12 +202,13 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
       for (const item of items) {
         const menuItemId = item.menu_item_id || item.item_id || item.inventory_id;
         const quantity = item.quantity || 1;
+        const itemModifiers = item.modifiers || [];
 
         const inserted = await client.query(
-          `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id, custom_instructions)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id, custom_instructions, modifiers)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING order_item_id`,
-          [createdOrder.master_order_id, menuItemId, quantity, ordered_by_user_id || 1, item.custom_instructions || null]
+          [createdOrder.master_order_id, menuItemId, quantity, ordered_by_user_id || 1, item.custom_instructions || null, JSON.stringify(itemModifiers)]
         );
         insertedOrderItemIds.push(inserted.rows[0].order_item_id);
       }
@@ -211,7 +235,8 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
                   'item_id', oi.item_id,
                   'quantity', oi.quantity,
                   'item_status', oi.item_status,
-                  'custom_instructions', oi.custom_instructions
+                  'custom_instructions', oi.custom_instructions,
+                  'modifiers', oi.modifiers
                 )
               ) AS items
        FROM orders o
@@ -368,10 +393,10 @@ router.get('/:id', async (req, res) => {
       );
 
       const taxRate = await require('../services/configService').getTaxRate();
-      const subtotal = parseFloat(order.total_amount || 0);
-      const tax = subtotal * taxRate;
+      const subtotal = parseFloat(order.total_amount || 0) - parseFloat(order.tax_calculation || 0);
+      const tax = parseFloat(order.tax_calculation || 0);
       const tip = parseFloat(order.tip_value || 0);
-      const total = subtotal + tax + tip;
+      const total = parseFloat(order.total_amount || 0) + tip;
 
       const receipt = {
         receiptNumber: `TR-REC-${order.master_order_id.toString().padStart(6, '0')}`,
@@ -529,8 +554,9 @@ router.patch('/:id/status', authenticateToken, authorizeRoles('admin', 'manager'
  * POST /api/orders/:id/refund
  * Process refund with progress limit checks
  */
-router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager'), async (req, res) => {
+router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.refundOrder), async (req, res) => {
   const { id } = req.params;
+  const { reason } = req.body;
   let client;
 
   try {
@@ -561,6 +587,22 @@ router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager')
       });
     }
 
+    let stripeRefund = null;
+    if (order.stripe_charge_id) {
+      try {
+        stripeRefund = await stripe.refunds.create({
+          payment_intent: order.stripe_charge_id,
+          reason: reason || 'requested_by_customer'
+        });
+      } catch (stripeErr) {
+        await client.query('ROLLBACK');
+        return res.status(500).json({
+          success: false,
+          error: `Stripe refund failed: ${stripeErr.message}`
+        });
+      }
+    }
+
     const updatedOrder = await client.query(
       `UPDATE orders
        SET status = 'CANCELLED_AND_REFUNDED', is_held = false, updated_at = NOW()
@@ -568,6 +610,15 @@ router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager')
        RETURNING *`,
       [id]
     );
+
+    if (stripeRefund) {
+      await client.query(
+        `UPDATE order_payments
+         SET status = 'refunded', stripe_payment_intent_id = $1
+         WHERE master_order_id = $2 AND stripe_payment_intent_id = $3`,
+        [stripeRefund.id, id, order.stripe_charge_id]
+      );
+    }
 
     const orderItems = await client.query(
       `SELECT oi.item_id, oi.quantity FROM order_items oi WHERE oi.master_order_id = $1`,
@@ -615,17 +666,21 @@ router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager')
       action: 'REFUND_ISSUED',
       entity_type: 'order',
       entity_id: parseInt(id),
-      old_value: JSON.stringify({ status: order.status, progress_percentage: order.progress_percentage }),
-      new_value: JSON.stringify({ status: 'CANCELLED_AND_REFUNDED' }),
+      old_value: JSON.stringify({ status: order.status, progress_percentage: order.progress_percentage, stripe_charge_id: order.stripe_charge_id }),
+      new_value: JSON.stringify({ status: 'CANCELLED_AND_REFUNDED', stripe_refund_id: stripeRefund?.id || null }),
       ip_address: req.ip || req.connection.remoteAddress
     });
 
     return res.status(200).json({
       success: true,
       message: `Order #${id} successfully refunded and cancelled.`,
+      stripe_refund: stripeRefund ? {
+        id: stripeRefund.id,
+        status: stripeRefund.status,
+        amount: stripeRefund.amount
+      } : null,
       order: updatedOrder.rows[0]
     });
-
   } catch (err) {
     if (client) await client.query('ROLLBACK');
     return res.status(500).json({ success: false, error: err.message });

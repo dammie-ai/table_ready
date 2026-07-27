@@ -8,16 +8,15 @@ const {
   joinSessionByCode
 } = require('../controllers/sessionController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
+const { validate, schemas } = require('../middleware/validation');
 
-// Public route for customers joining a table session by code
-router.post('/join-by-code', joinSessionByCode);
+router.post('/join-by-code', validate(schemas.joinSession), joinSessionByCode);
 
-// All other session routes require staff authentication
 router.use(authenticateToken);
 router.use(authorizeRoles('admin', 'manager', 'waiter'));
 
 router.post('/check-shift', checkEmployeeShift);
-router.post('/', createSession);
+router.post('/', validate(schemas.createSession), createSession);
 router.get('/', getActiveSessions);
 router.put('/:id/close', closeSession);
 

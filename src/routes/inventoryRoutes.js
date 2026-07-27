@@ -1,19 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // Shared PostgreSQL connection
+const db = require('../config/db');
 const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
 const inventoryAlertController = require('../controllers/inventoryAlertController');
 const { logAudit } = require('../utils/auditLogger');
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
+const { validate, schemas } = require('../middleware/validation');
 
-// Handle both pool export patterns cleanly
 const pool = db.pool || db;
 
-/**
- * POST /api/inventory
- * Process order deductions with transaction safety, row locking, and stock guard validation.
- */
-router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), validate(schemas.inventoryDeduction), async (req, res) => {
   const { items } = req.body;
 
   // Validate incoming payload
@@ -166,7 +162,7 @@ router.get('/', async (req, res) => {
  * PATCH /api/inventory/:id/toggle
  * Manually toggle an item's availability (Active / Disabled) by staff/admin
  */
-router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager'), async (req, res) => {
+router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.toggleInventory), async (req, res) => {
   const { id } = req.params;
   const { is_active } = req.body;
 
@@ -252,7 +248,7 @@ router.post('/alerts/:id/resolve', inventoryAlertController.resolveAlert);
  * POST /api/inventory/log-waste
  * Log waste/spoilage for inventory items
  */
-router.post('/log-waste', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+router.post('/log-waste', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), validate(schemas.logWaste), async (req, res) => {
   const { inventory_id, quantity, reason } = req.body;
 
   if (!inventory_id || !quantity || quantity <= 0) {

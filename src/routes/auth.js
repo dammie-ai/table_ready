@@ -2,14 +2,12 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
+const { validate, schemas } = require('../middleware/validation');
 
-// POST /api/auth/register (Employees)
-router.post('/register', authController.register);
+router.post('/register', validate(schemas.register), authController.register);
 
-// POST /api/auth/login (Employees)
-router.post('/login', authController.login);
+router.post('/login', validate(schemas.login), authController.login);
 
-// DELETE /api/auth/account (Protected: Admins or authenticated employees)
 router.delete('/account', authenticateToken, authController.deleteAccount);
 
 module.exports = router;

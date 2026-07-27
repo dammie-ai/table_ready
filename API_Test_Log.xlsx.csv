@@ -1,0 +1,71 @@
+#,Folder,Request Name,Method,Endpoint,Expected Status,Actual Status,Pass/Fail,Notes
+1,auth and security,health check,GET,/api/health,200,,,
+2,auth and security,login as manager,POST,/api/auth/login,200,,,Auto-saves manager_token
+3,auth and security,login as waiter,POST,/api/auth/login,200,,,Auto-saves waiter_token
+4,auth and security,register,POST,/api/auth/register,201,,,
+5,auth and security,shift checker,POST,/api/sessions/check-shift,200,,,
+6,auth and security,delete account,DELETE,/api/auth/account,200,,,Needs manager_token
+7,sessions and tables,create session,POST,/api/sessions,201,,,
+8,sessions and tables,join session by code,POST,/api/sessions/join-by-code,200,,,
+9,sessions and tables,get active sessions,GET,/api/sessions,200,,,Needs manager_token
+10,sessions and tables,close session,PUT,/api/sessions/1/close,200,,,Needs manager_token
+11,sessions and tables,floor layout,GET,/api/tables/floor-layout,200,,,
+12,sessions and tables,verify table code,POST,/api/tables/verify-code,200,,,
+13,sessions and tables,verify location,POST,/api/tables/check-location,200,,,
+14,sessions and tables,generate qr code,POST,/api/tables/qr/generate,200,,,Needs manager_token
+15,sessions and tables,verify qr code,POST,/api/tables/qr/verify,200,,,
+16,orders,create order (staff),POST,/api/orders,201,,,Needs manager_token
+17,orders,create order from home,POST,/api/orders,201,,,Needs manager_token
+18,orders,create pickup order,POST,/api/orders,201,,,Needs manager_token
+19,orders,get order,GET,/api/orders/{{order_id}},200,,,
+20,orders,get order receipt,GET,/api/orders/{{order_id}}/receipt,200,,,
+21,orders,get kitchen orders,GET,/api/orders/kitchen-orders,200,,,Needs waiter_token
+22,orders,get pickup queue,GET,/api/orders/pickup-queue,200,,,Needs waiter_token
+23,orders,update order status,PATCH,/api/orders/{{order_id}}/status,200,,,Needs waiter_token
+24,orders,release held order,POST,/api/orders/{{order_id}}/release-hold,200,,,
+25,orders,customer arrived,POST,/api/orders/{{order_id}}/customer-arrived,200,,,Public
+26,orders,mark ready for pickup,POST,/api/orders/{{order_id}}/mark-ready-pickup,200,,,Needs waiter_token
+27,orders,complete pickup,POST,/api/orders/{{order_id}}/complete-pickup,200,,,Needs waiter_token
+28,orders,refund order,POST,/api/orders/{{order_id}}/refund,200,,,Needs manager_token
+29,orders,cancel order,PATCH,/api/orders/{{order_id}}/cancel,200,,,Needs waiter_token
+30,orders,get orders by type,GET,/api/orders/by-type/DINE_IN,200,,,Needs waiter_token
+31,orders,type summary,GET,/api/orders/type-summary,200,,,Needs manager_token
+32,orders,modify order items,PATCH,/api/orders/{{order_id}}/modify-items,200,,,Needs waiter_token
+33,orders,void item,POST,/api/orders/{{order_id}}/void-item/1,200,,,Needs manager_token
+34,orders,record cash payment,POST,/api/orders/{{order_id}}/cash-payment,201,,,Needs waiter_token
+35,orders,distribute tips,POST,/api/orders/{{order_id}}/tips/distribute,200,,,Needs manager_token
+36,customer app,browse menu,GET,/api/menu,200,,,
+37,customer app,get menu item detail,GET,/api/menu/{{menu_item_id}},200,,,
+38,customer app,create cart,POST,/api/cart,201,,,
+39,customer app,add item to cart,POST,/api/cart/{{cart_id}}/items,201,,,
+40,customer app,get cart,GET,/api/cart/{{cart_id}},200,,,
+41,customer app,checkout cart,POST,/api/cart/{{cart_id}}/checkout,201,,,
+42,customer app,track order,GET,/api/orders/{{order_id}},200,,,
+43,payment and billing,create payment intent,POST,/api/payments/create-intent,201,,,
+44,payment and billing,confirm payment,POST,/api/payments/confirm,200,,,
+45,payment and billing,bill splitting calculate,POST,/api/payments/split-bill/calculate,200,,,
+46,payment and billing,split payment intents,POST,/api/payments/split-bill/create-intents,201,,,Needs manager_token
+47,inventory and menu,fetch inventory,GET,/api/inventory,200,,,
+48,inventory and menu,deduct inventory,POST,/api/inventory,200,,,
+49,inventory and menu,toggle inventory item,PATCH,/api/inventory/1/toggle,200,,,Needs manager_token
+50,inventory and menu,log waste,POST,/api/inventory/log-waste,201,,,Needs manager_token
+51,inventory and menu,fetch menu items,GET,/api/menu,200,,,
+52,inventory and menu,create menu item,POST,/api/menu,201,,,Needs manager_token
+53,inventory and menu,toggle menu item,PATCH,/api/menu/{{menu_item_id}}/toggle,200,,,Needs manager_token
+54,admin and surge,get surge config,GET,/api/admin/surge-pricing/config,200,,,Needs manager_token
+55,admin and surge,toggle surge,PATCH,/api/admin/surge-pricing/toggle,200,,,Needs manager_token
+56,admin and surge,get restaurant config,GET,/api/admin/restaurant-config,200,,,Needs manager_token
+57,admin and surge,update restaurant config,PATCH,/api/admin/restaurant-config/branding,200,,,Needs manager_token
+58,admin and surge,get audit logs,GET,/api/admin/audit-logs,200,,,Needs manager_token
+59,admin and surge,run sales audit,POST,/api/audit/sales/configs/1/run-now,200,,,Needs manager_token
+60,admin and surge,get sales audit results,GET,/api/audit/sales/results,200,,,Needs manager_token
+61,waitlist,join waitlist,POST,/api/waitlist,201,,,
+62,waitlist,get waitlist,GET,/api/waitlist,200,,,Needs manager_token
+63,waitlist,seat next in line,POST,/api/waitlist/tables/1/seat-next,200,,,Needs manager_token
+64,waitlist,cancel waitlist entry,PATCH,/api/waitlist/entries/1/cancel,200,,,Needs manager_token
+65,waitlist,mark no show,PATCH,/api/waitlist/entries/1/no-show,200,,,Needs manager_token
+66,kitchen,start cooking,POST,/api/kitchen/orders/{{order_id}}/cook/start/1,200,,,Needs waiter_token
+67,kitchen,release held items,POST,/api/kitchen/orders/{{order_id}}/cook/release-held,200,,,Needs waiter_token
+68,kitchen,mark item ready,POST,/api/kitchen/orders/{{order_id}}/cook/ready/1,200,,,Needs waiter_token
+69,kitchen,get order tracking,GET,/api/kitchen/orders/{{order_id}}/cook-tracking,200,,,Needs waiter_token
+70,kitchen,acknowledge overdue,POST,/api/kitchen/orders/{{order_id}}/cook/acknowledge-overdue/1,200,,,Needs waiter_token

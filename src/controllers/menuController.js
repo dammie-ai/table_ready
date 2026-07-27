@@ -54,10 +54,20 @@ const getMenuItemDetail = async (req, res) => {
 
     const ingredients = await menuItemModel.getMenuItemIngredients(id);
 
+    const modifiersRes = await pool.query(
+      `SELECT mim.*, m.name, m.description, m.price_adjustment, m.modifier_type
+       FROM menu_item_modifiers mim
+       JOIN menu_modifiers m ON mim.modifier_id = m.modifier_id
+       WHERE mim.menu_item_id = $1 AND m.is_active = true
+       ORDER BY mim.sort_order ASC, m.name ASC`,
+      [id]
+    );
+
     return res.status(200).json({
       success: true,
       item,
-      ingredients
+      ingredients,
+      modifiers: modifiersRes.rows
     });
   } catch (error) {
     console.error('Error fetching menu item detail:', error);

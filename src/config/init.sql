@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS employees (
     username VARCHAR(100) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(30) NOT NULL CHECK (role IN ('Admin', 'Waiter', 'Kitchen', 'Driver')),
+    role VARCHAR(30) NOT NULL CHECK (role IN ('Manager', 'Admin', 'Assistant Manager', 'Kitchen', 'Delivery', 'Waiter', 'Other')),
     allowed_days_mask INT NOT NULL DEFAULT 127,
     account_lock_status BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -148,6 +148,35 @@ CREATE TABLE IF NOT EXISTS menu_item_ingredients (
 
 CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_menu_id ON menu_item_ingredients(menu_item_id);
 CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_inventory_id ON menu_item_ingredients(inventory_id);
+
+-- 9a. MENU MODIFIERS (global modifier catalog)
+CREATE TABLE IF NOT EXISTS menu_modifiers (
+    modifier_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT DEFAULT NULL,
+    price_adjustment NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    modifier_type VARCHAR(30) DEFAULT 'choice' CHECK (modifier_type IN ('choice', 'extra', 'removal', 'preparation')),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_menu_modifiers_active ON menu_modifiers(is_active);
+
+-- 9b. MENU ITEM MODIFIERS (junction: which modifiers apply to which items)
+CREATE TABLE IF NOT EXISTS menu_item_modifiers (
+    item_modifier_id SERIAL PRIMARY KEY,
+    menu_item_id INT NOT NULL REFERENCES menu_items(item_id) ON DELETE CASCADE,
+    modifier_id INT NOT NULL REFERENCES menu_modifiers(modifier_id) ON DELETE CASCADE,
+    is_required BOOLEAN DEFAULT FALSE,
+    max_quantity INT DEFAULT 1,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(menu_item_id, modifier_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_menu_item_modifiers_menu_item_id ON menu_item_modifiers(menu_item_id);
+CREATE INDEX IF NOT EXISTS idx_menu_item_modifiers_modifier_id ON menu_item_modifiers(modifier_id);
 
 -- 10. ORDERS
 CREATE TABLE IF NOT EXISTS orders (
@@ -300,7 +329,7 @@ CREATE INDEX IF NOT EXISTS idx_customer_sessions_customer_id ON customer_session
 CREATE TABLE IF NOT EXISTS user_roles (
     user_role_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(30) NOT NULL CHECK (role IN ('admin', 'manager', 'kitchen', 'waiter', 'driver')),
+    role VARCHAR(30) NOT NULL CHECK (role IN ('manager', 'admin', 'assistant_manager', 'kitchen', 'delivery', 'waiter', 'other')),
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, role)
 );
@@ -391,6 +420,28 @@ CREATE TABLE IF NOT EXISTS waitlist_entries (
 
 CREATE INDEX IF NOT EXISTS idx_waitlist_entries_status ON waitlist_entries(status);
 CREATE INDEX IF NOT EXISTS idx_waitlist_entries_table ON waitlist_entries(table_id);
+
+-- 24a. RESERVATIONS (pre-booked table reservations)
+CREATE TABLE IF NOT EXISTS reservations (
+    reservation_id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(100) NOT NULL,
+    customer_phone VARCHAR(20) DEFAULT NULL,
+    customer_email VARCHAR(100) DEFAULT NULL,
+    table_id INT DEFAULT NULL REFERENCES restaurant_tables(table_id) ON DELETE SET NULL,
+    reservation_date DATE NOT NULL,
+    reservation_time TIME NOT NULL,
+    party_size INT NOT NULL DEFAULT 2,
+    status VARCHAR(30) DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'seated', 'cancelled', 'completed', 'no_show')),
+    notes TEXT DEFAULT NULL,
+    created_by_user_id INT DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_reservations_date ON reservations(reservation_date);
+CREATE INDEX IF NOT EXISTS idx_reservations_table_id ON reservations(table_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
+CREATE INDEX IF NOT EXISTS idx_reservations_customer_phone ON reservations(customer_phone);
 
 -- 25. COOK TRACKING (per order item cook time tracking)
 CREATE TABLE IF NOT EXISTS order_cook_tracking (

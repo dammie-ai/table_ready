@@ -69,6 +69,10 @@ const kitchenSortingRoutes = require('./routes/kitchenSortingRoutes');
 const kitchenStaggerRoutes = require('./routes/kitchenStaggerRoutes');
 const salesAuditRoutes = require('./routes/salesAuditRoutes');
 const allergyRoutes = require('./routes/allergyRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const deliveryRoutes = require('./routes/deliveryRoutes');
+const modifierRoutes = require('./routes/modifierRoutes');
+const reservationRoutes = require('./routes/reservationRoutes');
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -96,6 +100,10 @@ app.use('/api/kitchen', kitchenSortingRoutes);
 app.use('/api/kitchen', kitchenStaggerRoutes);
 app.use('/api/audit', salesAuditRoutes);
 app.use('/api/allergy', allergyRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/delivery', deliveryRoutes);
+app.use('/api/modifiers', modifierRoutes);
+app.use('/api/reservations', reservationRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

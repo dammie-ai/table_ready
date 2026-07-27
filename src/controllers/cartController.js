@@ -2,6 +2,7 @@ const db = require('../config/db');
 const pool = db.pool || db;
 const { logAudit } = require('../utils/auditLogger');
 const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
+const { getTaxRate } = require('../services/configService');
 const { isWithinDeliveryRadius } = require('../utils/distance');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
@@ -54,7 +55,10 @@ exports.getCart = async (req, res) => {
     );
 
     const cart = cartRes.rows[0];
-    const items = itemsRes.rows;
+    const items = itemsRes.rows.map(item => ({
+      ...item,
+      modifiers: typeof item.modifiers === 'string' ? JSON.parse(item.modifiers || '[]') : (item.modifiers || [])
+    }));
 
     const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.unit_price) * item.quantity), 0);
 
@@ -78,7 +82,7 @@ exports.getCart = async (req, res) => {
  */
 exports.addCartItem = async (req, res) => {
   const { id } = req.params;
-  const { menu_item_id, inventory_id, quantity = 1, custom_instructions } = req.body;
+  const { menu_item_id, inventory_id, quantity = 1, custom_instructions, modifiers } = req.body;
 
   if ((!menu_item_id && !inventory_id) || !quantity || quantity <= 0) {
     return res.status(400).json({
@@ -117,6 +121,19 @@ exports.addCartItem = async (req, res) => {
       }
       const multiplier = await getSurgeMultiplier();
       unitPrice = calculateAdjustedPrice(itemRes.rows[0].base_price, multiplier);
+
+      if (modifiers && modifiers.length > 0) {
+        for (const mod of modifiers) {
+          const modRes = await client.query(
+            `SELECT price_adjustment FROM menu_modifiers WHERE modifier_id = $1 AND is_active = true`,
+            [mod.modifier_id]
+          );
+          if (modRes.rows.length > 0) {
+            const modQty = mod.quantity || 1;
+            unitPrice += parseFloat(modRes.rows[0].price_adjustment) * modQty;
+          }
+        }
+      }
     } else if (inventory_id) {
       const itemRes = await client.query(
         `SELECT base_price, stock_quantity FROM inventory WHERE id = $1 AND is_active = true`,
@@ -143,15 +160,15 @@ exports.addCartItem = async (req, res) => {
     if (existingRes.rows.length > 0) {
       const newQty = existingRes.rows[0].quantity + quantity;
       await client.query(
-        `UPDATE cart_items SET quantity = $1, unit_price = $2, updated_at = NOW()
-         WHERE cart_item_id = $3`,
-        [newQty, unitPrice, existingRes.rows[0].cart_item_id]
+        `UPDATE cart_items SET quantity = $1, unit_price = $2, modifiers = $3, updated_at = NOW()
+         WHERE cart_item_id = $4`,
+        [newQty, unitPrice, JSON.stringify(modifiers || []), existingRes.rows[0].cart_item_id]
       );
     } else {
       await client.query(
-        `INSERT INTO cart_items (cart_id, menu_item_id, inventory_id, quantity, custom_instructions, unit_price)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [id, menu_item_id || null, inventory_id || null, quantity, custom_instructions || null, unitPrice]
+        `INSERT INTO cart_items (cart_id, menu_item_id, inventory_id, quantity, custom_instructions, unit_price, modifiers)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, menu_item_id || null, inventory_id || null, quantity, custom_instructions || null, unitPrice, JSON.stringify(modifiers || [])]
       );
     }
 
@@ -353,11 +370,15 @@ exports.checkout = async (req, res) => {
 
     const initialStatus = 'RECEIVED';
 
+    const taxRate = await getTaxRate();
+    const taxAmount = parseFloat((calculatedTotal * taxRate).toFixed(2));
+    const totalWithTax = parseFloat((calculatedTotal + taxAmount).toFixed(2));
+
     const orderResult = await client.query(
-      `INSERT INTO orders (customer_id, status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8)
+      `INSERT INTO orders (customer_id, status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, $9)
        RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at`,
-      [cartRes.rows[0].customer_id, initialStatus, false, calculatedTotal, order_type || 'IN_HOUSE', table_number || null, notes || null, idempotency_key || null]
+      [cartRes.rows[0].customer_id, initialStatus, false, totalWithTax, order_type || 'IN_HOUSE', table_number || null, notes || null, idempotency_key || null, taxAmount]
     );
 
     const createdOrder = orderResult.rows[0];
@@ -365,11 +386,12 @@ exports.checkout = async (req, res) => {
     const insertedOrderItemIds = [];
     for (const item of itemsRes.rows) {
       const menuItemId = item.menu_item_id || item.inventory_id;
+      const itemModifiers = typeof item.modifiers === 'string' ? JSON.parse(item.modifiers || '[]') : (item.modifiers || []);
       const inserted = await client.query(
-        `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id, custom_instructions)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id, custom_instructions, modifiers)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING order_item_id`,
-        [createdOrder.master_order_id, menuItemId, item.quantity, ordered_by_user_id || null, item.custom_instructions || null]
+        [createdOrder.master_order_id, menuItemId, item.quantity, ordered_by_user_id || null, item.custom_instructions || null, JSON.stringify(itemModifiers)]
       );
       insertedOrderItemIds.push(inserted.rows[0].order_item_id);
     }

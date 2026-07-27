@@ -51,7 +51,8 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid credentials.' });
     }
 
-    if (user.role === 'waiter') {
+    const staffRoles = ['waiter', 'kitchen', 'delivery', 'assistant_manager', 'other'];
+    if (staffRoles.includes(user.role)) {
       if (user.employee_id) {
         const empRes = await pool.query(
           `SELECT e.employee_id, e.name, e.allowed_days_mask, e.account_lock_status

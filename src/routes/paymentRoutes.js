@@ -5,11 +5,9 @@ const { isWithinDeliveryRadius } = require('../utils/distance');
 const { splitEvenly, splitByItem, checkBalanceStatus } = require('../utils/billSplitter');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const pool = require('../config/db');
-const { authenticateToken } = require('../middleware/authGuard');
+const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
+const { validate, schemas } = require('../middleware/validation');
 
-/**
- * Middleware to check delivery radius requirements before creating Stripe intent
- */
 const validateDeliveryRadius = (req, res, next) => {
   const { order_mode, latitude, longitude } = req.body;
 
@@ -34,16 +32,17 @@ const validateDeliveryRadius = (req, res, next) => {
   next();
 };
 
-// Handles initial payment intent creation for Stripe (with 10-mile delivery check)
-router.post('/create-intent', validateDeliveryRadius, paymentController.createPaymentIntent);
+router.post('/create-intent', validate(schemas.createPaymentIntent), validateDeliveryRadius, paymentController.createPaymentIntent);
 
-// Confirms payment status with Stripe and updates the order in PostgreSQL
-router.post('/confirm', paymentController.confirmPayment);
+router.post('/confirm', validate(schemas.confirmPayment), paymentController.confirmPayment);
 
-// Bill-Splitting Engine Endpoint (TAB-32)
 router.post('/split-bill/calculate', (req, res) => {
   try {
     const { mode, total, splits, guestOrders, tax = 0, tip = 0, totalPaid = 0 } = req.body;
+
+    if (!['even', 'itemized'].includes(mode)) {
+      return res.status(400).json({ success: false, error: 'Invalid split mode. Must be "even" or "itemized".' });
+    }
 
     if (mode === 'even') {
       const splitAmounts = splitEvenly(total, splits);
@@ -67,21 +66,14 @@ router.post('/split-bill/calculate', (req, res) => {
         balance
       });
     }
-
-    return res.status(400).json({ success: false, error: 'Invalid split mode. Must be "even" or "itemized".' });
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
   }
 });
 
-// Create split PaymentIntents for each payer
-router.post('/split-bill/create-intents', authenticateToken, async (req, res) => {
+router.post('/split-bill/create-intents', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.splitBill), async (req, res) => {
   try {
     const { order_id, splits } = req.body;
-
-    if (!order_id || !splits || !Array.isArray(splits) || splits.length === 0) {
-      return res.status(400).json({ success: false, error: 'order_id and splits array are required.' });
-    }
 
     const orderRes = await pool.query(`SELECT * FROM orders WHERE master_order_id = $1`, [order_id]);
     if (orderRes.rows.length === 0) {
@@ -135,7 +127,6 @@ router.post('/split-bill/create-intents', authenticateToken, async (req, res) =>
   }
 });
 
-// Stripe webhook for automatic payment confirmation
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
