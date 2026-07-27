@@ -51,8 +51,76 @@ exports.login = async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid credentials.' });
     }
 
+    if (user.role === 'waiter') {
+      if (user.employee_id) {
+        const empRes = await pool.query(
+          `SELECT e.employee_id, e.name, e.allowed_days_mask, e.account_lock_status
+           FROM employees e
+           WHERE e.employee_id = $1`,
+          [user.employee_id]
+        );
+
+        if (empRes.rows.length > 0) {
+          const employee = empRes.rows[0];
+
+          if (employee.account_lock_status) {
+            return res.status(403).json({
+              success: false,
+              error: 'Account is locked. Contact an administrator to unlock your account.',
+            });
+          }
+
+          const today = new Date().getDay();
+          const dayMask = 1 << today;
+          const worksToday = (employee.allowed_days_mask & dayMask) !== 0;
+
+          if (!worksToday) {
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return res.status(403).json({
+              success: false,
+              error: `You are not scheduled to work today (${dayNames[today]}). You cannot log in on your day off.`,
+            });
+          }
+        }
+      } else if (user.username) {
+        const fallbackRes = await pool.query(
+          `SELECT e.employee_id, e.name, e.allowed_days_mask, e.account_lock_status
+           FROM employees e
+           WHERE e.username = $1
+           LIMIT 1`,
+          [user.username]
+        );
+
+        if (fallbackRes.rows.length > 0) {
+          const employee = fallbackRes.rows[0];
+
+          if (employee.account_lock_status) {
+            return res.status(403).json({
+              success: false,
+              error: 'Account is locked. Contact an administrator to unlock your account.',
+            });
+          }
+
+          const today = new Date().getDay();
+          const dayMask = 1 << today;
+          const worksToday = (employee.allowed_days_mask & dayMask) !== 0;
+
+          if (!worksToday) {
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return res.status(403).json({
+              success: false,
+              error: `You are not scheduled to work today (${dayNames[today]}). You cannot log in on your day off.`,
+            });
+          }
+        }
+      }
+    }
+
+    const rolesRes = await pool.query('SELECT role FROM user_roles WHERE user_id = $1', [user.id]);
+    const roles = rolesRes.rows.length > 0 ? rolesRes.rows.map(r => r.role) : [user.role];
+
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, roles, username: user.username },
       process.env.JWT_SECRET || 'tableready_secret',
       { expiresIn: '8h' }
     );
@@ -60,7 +128,7 @@ exports.login = async (req, res) => {
     return res.status(200).json({
       success: true,
       token,
-      user: { id: user.id, username: user.username, role: user.role }
+      user: { id: user.id, username: user.username, roles }
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });

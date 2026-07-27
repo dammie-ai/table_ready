@@ -5,6 +5,7 @@ const { isWithinDeliveryRadius } = require('../utils/distance');
 const { splitEvenly, splitByItem, checkBalanceStatus } = require('../utils/billSplitter');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const pool = require('../config/db');
+const { authenticateToken } = require('../middleware/authGuard');
 
 /**
  * Middleware to check delivery radius requirements before creating Stripe intent
@@ -40,7 +41,7 @@ router.post('/create-intent', validateDeliveryRadius, paymentController.createPa
 router.post('/confirm', paymentController.confirmPayment);
 
 // Bill-Splitting Engine Endpoint (TAB-32)
-router.post('/split', (req, res) => {
+router.post('/split-bill/calculate', (req, res) => {
   try {
     const { mode, total, splits, guestOrders, tax = 0, tip = 0, totalPaid = 0 } = req.body;
 
@@ -70,6 +71,67 @@ router.post('/split', (req, res) => {
     return res.status(400).json({ success: false, error: 'Invalid split mode. Must be "even" or "itemized".' });
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Create split PaymentIntents for each payer
+router.post('/split-bill/create-intents', authenticateToken, async (req, res) => {
+  try {
+    const { order_id, splits } = req.body;
+
+    if (!order_id || !splits || !Array.isArray(splits) || splits.length === 0) {
+      return res.status(400).json({ success: false, error: 'order_id and splits array are required.' });
+    }
+
+    const orderRes = await pool.query(`SELECT * FROM orders WHERE master_order_id = $1`, [order_id]);
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found.' });
+    }
+
+    const order = orderRes.rows[0];
+    const paymentIntents = [];
+
+    for (const split of splits) {
+      if (!split.amount || split.amount <= 0) {
+        return res.status(400).json({ success: false, error: 'Each split must have a positive amount.' });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(split.amount * 100),
+        currency: 'usd',
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never'
+        },
+        metadata: {
+          order_id: order_id.toString(),
+          split_index: split.index || 0,
+          split_label: split.label || `Payer ${split.index || 0 + 1}`,
+        }
+      });
+
+      await pool.query(
+        `INSERT INTO order_payments (master_order_id, payment_method, amount, stripe_payment_intent_id, status, paid_by_customer_id, paid_by_user_id)
+         VALUES ($1, 'stripe', $2, $3, 'pending', $4, $5)`,
+        [order_id, split.amount, paymentIntent.id, split.customer_id || null, req.user.id]
+      );
+
+      paymentIntents.push({
+        index: split.index || 0,
+        label: split.label || `Payer ${split.index || 0 + 1}`,
+        amount: split.amount,
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: `Created ${paymentIntents.length} payment intents.`,
+      paymentIntents,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

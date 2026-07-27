@@ -1,64 +1,69 @@
 const http = require('http');
 const { Server } = require('socket.io');
-const app = require('./app'); // Imports configured app instance
+const app = require('./app');
 const jwt = require('jsonwebtoken');
+const { setupWebSocketHub, ROOMS } = require('./utils/websocketHub');
+const { startAbandonedTableCleaner } = require('./utils/abandonedTableCleaner');
+const { startLateWarningClock } = require('./utils/lateWarningClock');
+const { scheduleSalesAudit, createDefaultAuditConfig } = require('./utils/salesAudit');
 
 const server = http.createServer(app);
 
-// Initialize Socket.io
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:5173'];
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PATCH', 'PUT']
-  }
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PATCH', 'PUT'],
+    credentials: true,
+  },
 });
 
-// Make io accessible across all route files via req.app.get('io')
 app.set('io', io);
 
-// WebSocket auth middleware
 const socketAuthMiddleware = (socket, next) => {
   const token = socket.handshake.auth?.token || socket.handshake.query?.token;
 
   if (!token) {
-    console.warn(`⚠️  Unauthenticated WebSocket connection attempt: ${socket.id}`);
-    // For development: allow connection but warn
-    // In production, you should return next(new Error('Authentication required'))
+    socket.user = null;
+    console.log(`⚡ Guest WebSocket connection allowed: ${socket.id}`);
     return next();
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'tableready_secret');
     socket.user = decoded;
-    console.log(`🔐 Authenticated WebSocket connection: ${socket.id} (user ${decoded.id}, role ${decoded.role})`);
+    console.log(`⚡ Authenticated WebSocket connection: ${socket.id} (user ${decoded.id}, role ${decoded.role})`);
     next();
   } catch (err) {
-    console.warn(`⚠️  Invalid WebSocket token from ${socket.id}: ${err.message}`);
-    // For development: allow connection but warn
-    next();
+    console.warn(`Invalid WebSocket token from ${socket.id}: ${err.message}`);
+    socket.user = null;
+    return next();
   }
 };
 
-// Handle real-time WebSocket connections
 io.use(socketAuthMiddleware);
 
-io.on('connection', (socket) => {
-  const userInfo = socket.user ? `user ${socket.user.id} (${socket.user.role})` : 'anonymous';
-  console.log(`⚡ WebSocket client connected: ${socket.id} [${userInfo}]`);
+setupWebSocketHub(io);
 
-  // Customer joins their specific order room
-  socket.on('join_order', (orderId) => {
-    socket.join(`order_${orderId}`);
-    console.log(`Socket ${socket.id} joined room order_${orderId}`);
-  });
+app.set('io', io);
 
-  socket.on('disconnect', () => {
-    console.log(`🔥 WebSocket client disconnected: ${socket.id}`);
-  });
-});
-
-// Start Server Listener
 const PORT = process.env.PORT || 8001;
 server.listen(PORT, () => {
-  console.log(`🚀 Server listening on http://localhost:${PORT}`);
+  console.log(`Server listening on http://localhost:${PORT}`);
+  console.log(`WebSocket rooms available: ${Object.values(ROOMS).join(', ')}`);
+
+  startAbandonedTableCleaner(io, 5 * 60 * 1000);
+  console.log('[Server] Abandoned table cleaner started (5-min interval)');
+
+  startLateWarningClock(io, 30 * 1000);
+  console.log('[Server] Late warning clock started (30-sec interval)');
+
+  createDefaultAuditConfig();
+  scheduleSalesAudit(io);
+  console.log('[Server] Sales audit scheduler started');
 });
+
+module.exports = { server, io };

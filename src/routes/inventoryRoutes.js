@@ -248,4 +248,74 @@ router.post('/alerts/:id/acknowledge', inventoryAlertController.acknowledgeAlert
  */
 router.post('/alerts/:id/resolve', inventoryAlertController.resolveAlert);
 
+/**
+ * POST /api/inventory/log-waste
+ * Log waste/spoilage for inventory items
+ */
+router.post('/log-waste', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+  const { inventory_id, quantity, reason } = req.body;
+
+  if (!inventory_id || !quantity || quantity <= 0) {
+    return res.status(400).json({ success: false, error: 'inventory_id and positive quantity are required.' });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const itemRes = await client.query(
+      `SELECT id, item_name, stock_quantity FROM inventory WHERE id = $1 FOR UPDATE`,
+      [inventory_id]
+    );
+
+    if (itemRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Inventory item not found.' });
+    }
+
+    const newStock = Math.max(0, itemRes.rows[0].stock_quantity - quantity);
+
+    await client.query(
+      `UPDATE inventory SET stock_quantity = $1, updated_at = NOW() WHERE id = $2`,
+      [newStock, inventory_id]
+    );
+
+    await client.query(
+      `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+       VALUES ($1, $2, $3, $4)`,
+      [inventory_id, newStock, -quantity, `Waste: ${reason || 'No reason provided'}`]
+    );
+
+    await client.query(
+      `INSERT INTO waste_logs (inventory_id, quantity, reason, logged_by)
+       VALUES ($1, $2, $3, $4)`,
+      [inventory_id, quantity, reason || null, req.user?.id || null]
+    );
+
+    await client.query('COMMIT');
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'WASTE_LOGGED',
+      entity_type: 'inventory',
+      entity_id: inventory_id,
+      new_value: JSON.stringify({ quantity, reason, new_stock: newStock }),
+      ip_address: req.ip || req.connection.remoteAddress
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Waste logged and inventory updated.',
+      new_stock: newStock,
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;

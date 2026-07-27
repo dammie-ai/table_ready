@@ -11,10 +11,10 @@ router.use(authenticateToken);
 router.use(authorizeRoles('admin', 'manager'));
 
 /**
- * GET /api/admin/surge-config
+ * GET /api/admin/surge-pricing/config
  * Fetch current dynamic pricing toggle status and configured tiers
  */
-router.get('/surge-config', async (req, res) => {
+router.get('/surge-pricing/config', async (req, res) => {
   try {
     const settingRes = await pool.query(
       `SELECT value FROM settings WHERE key = 'dynamic_pricing_enabled'`
@@ -36,10 +36,10 @@ router.get('/surge-config', async (req, res) => {
 });
 
 /**
- * PATCH /api/admin/surge-toggle
+ * PATCH /api/admin/surge-pricing/toggle
  * Quickly toggle dynamic pricing ON or OFF
  */
-router.patch('/surge-toggle', async (req, res) => {
+router.patch('/surge-pricing/toggle', async (req, res) => {
   const { enabled } = req.body; // Expects boolean: true or false
 
   if (typeof enabled !== 'boolean') {
@@ -83,10 +83,10 @@ router.patch('/surge-toggle', async (req, res) => {
 });
 
 /**
- * PUT /api/admin/surge-tiers
+ * PUT /api/admin/surge-pricing/tiers
  * Replace existing tier rules with new admin configurations
  */
-router.put('/surge-tiers', async (req, res) => {
+router.put('/surge-pricing/tiers', async (req, res) => {
   const { tiers } = req.body;
   // Expected format: [{ min_orders: 0, max_orders: 10, multiplier: 1.00 }, ...]
 
@@ -102,7 +102,6 @@ router.put('/surge-tiers', async (req, res) => {
     client = await pool.connect();
     await client.query('BEGIN');
 
-    // Clear old tiers and re-insert new configurations
     await client.query(`DELETE FROM surge_tiers`);
 
     for (const tier of tiers) {
@@ -132,6 +131,108 @@ router.put('/surge-tiers', async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   } finally {
     if (client) client.release();
+  }
+});
+
+/**
+ * GET /api/admin/restaurant-config
+ * Get all restaurant config
+ */
+router.get('/restaurant-config', async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM restaurant_config`);
+    const config = {};
+    result.rows.forEach(row => {
+      config[row.config_key] = row.config_value;
+    });
+    return res.status(200).json({ success: true, config });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * PATCH /api/admin/restaurant-config/:key
+ * Update a specific restaurant config key
+ */
+router.patch('/restaurant-config/:key', async (req, res) => {
+  const { key } = req.params;
+  const { value } = req.body;
+
+  if (!value) {
+    return res.status(400).json({ success: false, error: 'value is required.' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO restaurant_config (config_key, config_value)
+       VALUES ($1, $2)
+       ON CONFLICT (config_key) DO UPDATE SET config_value = EXCLUDED.config_value, updated_at = NOW()
+       RETURNING *`,
+      [key, JSON.stringify(value)]
+    );
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'CONFIG_UPDATED',
+      entity_type: 'restaurant_config',
+      entity_id: key,
+      new_value: JSON.stringify(value),
+      ip_address: req.ip || req.connection.remoteAddress
+    });
+
+    return res.status(200).json({ success: true, config: result.rows[0] });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/settings
+ * Get all settings
+ */
+router.get('/settings', async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM settings`);
+    return res.status(200).json({ success: true, settings: result.rows });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * PATCH /api/admin/settings/:key
+ * Update a specific setting
+ */
+router.patch('/settings/:key', async (req, res) => {
+  const { key } = req.params;
+  const { value } = req.body;
+
+  if (!value) {
+    return res.status(400).json({ success: false, error: 'value is required.' });
+  }
+
+  try {
+    await pool.query(
+      `INSERT INTO settings (key, value) VALUES ($1, $2)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      [key, String(value)]
+    );
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'SETTING_UPDATED',
+      entity_type: 'setting',
+      entity_id: key,
+      new_value: String(value),
+      ip_address: req.ip || req.connection.remoteAddress
+    });
+
+    return res.status(200).json({ success: true, message: 'Setting updated.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

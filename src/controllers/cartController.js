@@ -222,7 +222,39 @@ exports.clearCart = async (req, res) => {
  */
 exports.checkout = async (req, res) => {
   const { id } = req.params;
-  const { order_type, table_number, notes, ordered_by_user_id, latitude, longitude } = req.body;
+  const { order_type, table_number, notes, ordered_by_user_id, latitude, longitude, idempotency_key } = req.body;
+
+  if (idempotency_key) {
+    const existingOrder = await pool.query(
+      `SELECT master_order_id FROM orders WHERE idempotency_key = $1 AND created_at > NOW() - INTERVAL '5 minutes'`,
+      [idempotency_key]
+    );
+
+    if (existingOrder.rows.length > 0) {
+      const fullOrder = await pool.query(
+        `SELECT o.*,
+                json_agg(
+                  json_build_object(
+                    'order_item_id', oi.order_item_id,
+                    'item_id', oi.item_id,
+                    'quantity', oi.quantity,
+                    'item_status', oi.item_status,
+                    'custom_instructions', oi.custom_instructions
+                  )
+                ) AS items
+         FROM orders o
+         LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
+         WHERE o.master_order_id = $1
+         GROUP BY o.master_order_id`,
+        [existingOrder.rows[0].master_order_id]
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'Order already exists (idempotency key match).',
+        order: fullOrder.rows[0],
+      });
+    }
+  }
 
   // Geofencing: enforce 10-mile radius for delivery orders
   if (order_type === 'delivery') {
@@ -322,21 +354,24 @@ exports.checkout = async (req, res) => {
     const initialStatus = 'RECEIVED';
 
     const orderResult = await client.query(
-      `INSERT INTO orders (customer_id, status, is_held, total_amount, order_type, table_number, notes, progress_percentage)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 0)
+      `INSERT INTO orders (customer_id, status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8)
        RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at`,
-      [cartRes.rows[0].customer_id, initialStatus, false, calculatedTotal, order_type || 'IN_HOUSE', table_number || null, notes || null]
+      [cartRes.rows[0].customer_id, initialStatus, false, calculatedTotal, order_type || 'IN_HOUSE', table_number || null, notes || null, idempotency_key || null]
     );
 
     const createdOrder = orderResult.rows[0];
 
+    const insertedOrderItemIds = [];
     for (const item of itemsRes.rows) {
       const menuItemId = item.menu_item_id || item.inventory_id;
-      await client.query(
+      const inserted = await client.query(
         `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id, custom_instructions)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [createdOrder.master_order_id, menuItemId, item.quantity, ordered_by_user_id || null, item.custom_instructions]
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING order_item_id`,
+        [createdOrder.master_order_id, menuItemId, item.quantity, ordered_by_user_id || null, item.custom_instructions || null]
       );
+      insertedOrderItemIds.push(inserted.rows[0].order_item_id);
     }
 
     for (const deduction of resolvedDeductions) {
@@ -356,9 +391,38 @@ exports.checkout = async (req, res) => {
 
     await client.query('COMMIT');
 
+    if (insertedOrderItemIds.length > 0) {
+      try {
+        const { createCookTrackingForOrder } = require('../utils/kitchenStagger');
+        await createCookTrackingForOrder(createdOrder.master_order_id, insertedOrderItemIds);
+      } catch (trackingErr) {
+        console.error('Cook tracking creation failed:', trackingErr.message);
+      }
+    }
+
+    const fullOrder = await pool.query(
+      `SELECT o.*,
+              json_agg(
+                json_build_object(
+                  'order_item_id', oi.order_item_id,
+                  'item_id', oi.item_id,
+                  'quantity', oi.quantity,
+                  'item_status', oi.item_status,
+                  'custom_instructions', oi.custom_instructions
+                )
+              ) AS items
+       FROM orders o
+       LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
+       WHERE o.master_order_id = $1
+       GROUP BY o.master_order_id`,
+      [createdOrder.master_order_id]
+    );
+
+    const broadcastOrder = fullOrder.rows[0];
+
     const io = req.app.get('io');
     if (io) {
-      io.emit('new_kitchen_order', createdOrder);
+      io.emit('new_kitchen_order', broadcastOrder);
     }
 
     let paymentIntent = null;

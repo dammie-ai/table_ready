@@ -1,48 +1,82 @@
 const pool = require('../config/db');
+const { autoSeatWaitlistForTable } = require('../utils/autoSeatWaitlist');
 
 // POST /api/sessions/check-shift
-// Verifies whether a given user exists and holds the waiter role
+// Verifies whether a given user exists, holds the waiter role, and is scheduled to work today
 const checkEmployeeShift = async (req, res) => {
   const { waiter_id } = req.body;
 
-  // Validate the presence of the waiter_id parameter in the request payload
   if (!waiter_id) {
     return res.status(400).json({ success: false, error: 'waiter_id is required to check shift status.' });
   }
 
   try {
-    // Fetch user details from PostgreSQL database matching the provided ID
-    const shiftQuery = `
-      SELECT id, username, role
-      FROM users
-      WHERE id = $1
-    `;
-    const result = await pool.query(shiftQuery, [waiter_id]);
+    const userRes = await pool.query(
+      `SELECT id, username, role FROM users WHERE id = $1`,
+      [waiter_id]
+    );
 
-    // Handle non-existent user records
-    if (result.rows.length === 0) {
+    if (userRes.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Waiter not found.' });
     }
 
-    const waiter = result.rows[0];
+    const waiter = userRes.rows[0];
 
-    // Verify the record holds the waiter role prior to assignment
     if (waiter.role !== 'waiter') {
       return res.status(400).json({
         success: false,
-        error: `User ${waiter.username} is not registered as a waiter.`
+        error: `User ${waiter.username} is not registered as a waiter.`,
       });
     }
 
-    // Return successful verification response
+    const empRes = await pool.query(
+      `SELECT e.employee_id, e.name, e.allowed_days_mask, e.account_lock_status
+       FROM employees e
+       WHERE e.employee_id = $1`,
+      [waiter.employee_id]
+    );
+
+    let employee = empRes.rows[0] || null;
+
+    if (!employee && waiter.username) {
+      const fallbackRes = await pool.query(
+        `SELECT e.employee_id, e.name, e.allowed_days_mask, e.account_lock_status
+         FROM employees e
+         WHERE e.username = $1
+         LIMIT 1`,
+        [waiter.username]
+      );
+      employee = fallbackRes.rows[0] || null;
+    }
+
+    if (employee) {
+      if (employee.account_lock_status) {
+        return res.status(403).json({
+          success: false,
+          error: `Account is locked. Contact an administrator to unlock your account.`,
+        });
+      }
+
+      const today = new Date().getDay();
+      const dayMask = 1 << today;
+      const worksToday = (employee.allowed_days_mask & dayMask) !== 0;
+
+      if (!worksToday) {
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return res.status(403).json({
+          success: false,
+          error: `You are not scheduled to work today (${dayNames[today]}). You cannot log in on your day off.`,
+        });
+      }
+    }
+
     return res.status(200).json({
       success: true,
       on_shift: true,
       message: `Waiter ${waiter.username} is valid and ready for assignment.`,
-      waiter: waiter
+      waiter: waiter,
     });
   } catch (err) {
-    // Log internal server/database execution errors
     console.error('Error checking employee shift:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -102,21 +136,85 @@ const closeSession = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const query = `
+    const sessionQuery = `
       UPDATE sessions
       SET status = 'closed', ended_at = NOW()
       WHERE id = $1
       RETURNING *
     `;
-    const result = await pool.query(query, [id]);
+    const sessionResult = await pool.query(sessionQuery, [id]);
 
-    if (result.rows.length === 0) {
+    if (sessionResult.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Session not found.' });
     }
 
-    return res.status(200).json({ success: true, ...result.rows[0] });
+    const session = sessionResult.rows[0];
+
+    await pool.query(
+      `UPDATE restaurant_tables
+       SET status_state = 'Available', active_pin = NULL, pin_expires_at = NULL, updated_at = NOW()
+       WHERE table_number = $1`,
+      [session.table_number]
+    );
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('table_status_updated', {
+        table_number: session.table_number,
+        status_state: 'Available',
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    await autoSeatWaitlistForTable(io, session.table_number);
+
+    return res.status(200).json({ success: true, ...session });
   } catch (err) {
     console.error('Error closing session:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+// POST /api/sessions/join
+// Join an active table session by 4-digit code
+const joinSessionByCode = async (req, res) => {
+  const { code } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ success: false, error: 'code is required.' });
+  }
+
+  try {
+    const sessionRes = await pool.query(
+      `SELECT * FROM sessions WHERE code = $1 AND status = 'active'`,
+      [code]
+    );
+
+    if (sessionRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Invalid or expired session code.' });
+    }
+
+    const session = sessionRes.rows[0];
+
+    const tableRes = await pool.query(
+      `SELECT table_id, table_number, status_state FROM restaurant_tables WHERE table_number = $1`,
+      [session.table_number]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Joined table session successfully.',
+      session: {
+        id: session.id,
+        table_number: session.table_number,
+        party_size: session.party_size,
+        waiter_id: session.waiter_id,
+        created_at: session.created_at,
+      },
+      table: tableRes.rows[0] || null,
+    });
+  } catch (err) {
+    console.error('Error joining session:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -125,5 +223,6 @@ module.exports = {
   checkEmployeeShift,
   createSession,
   getActiveSessions,
-  closeSession
+  closeSession,
+  joinSessionByCode
 };

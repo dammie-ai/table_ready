@@ -4,11 +4,15 @@ const {
   checkEmployeeShift, 
   createSession, 
   getActiveSessions, 
-  closeSession 
+  closeSession,
+  joinSessionByCode
 } = require('../controllers/sessionController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 
-// All session routes require staff authentication
+// Public route for customers joining a table session by code
+router.post('/join-by-code', joinSessionByCode);
+
+// All other session routes require staff authentication
 router.use(authenticateToken);
 router.use(authorizeRoles('admin', 'manager', 'waiter'));
 

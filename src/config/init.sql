@@ -7,13 +7,17 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(30) NOT NULL DEFAULT 'waiter',
+    employee_id INTEGER DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_employee_id ON users(employee_id);
 
 -- 2. EMPLOYEES (Legacy/admin matrix, kept for future expansion)
 CREATE TABLE IF NOT EXISTS employees (
     employee_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    username VARCHAR(100) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(30) NOT NULL CHECK (role IN ('Admin', 'Waiter', 'Kitchen', 'Driver')),
@@ -21,6 +25,11 @@ CREATE TABLE IF NOT EXISTS employees (
     account_lock_status BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_employees_username ON employees(username);
+
+-- Link users -> employees after both tables exist
+ALTER TABLE users ADD CONSTRAINT fk_users_employee_id FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE SET NULL;
 
 -- 3. DINING SESSIONS (Floor management, waiter assignments)
 CREATE TABLE IF NOT EXISTS sessions (
@@ -46,6 +55,9 @@ CREATE TABLE IF NOT EXISTS restaurant_tables (
     active_pin VARCHAR(4) DEFAULT NULL,
     pin_expires_at TIMESTAMP DEFAULT NULL,
     waitlist_queue_array INT[] DEFAULT '{}',
+    capacity INT DEFAULT 4,
+    reservation_time TIMESTAMP DEFAULT NULL,
+    section VARCHAR(50) DEFAULT 'main',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -115,12 +127,6 @@ CREATE TABLE IF NOT EXISTS menu_items (
     image_url VARCHAR(255) DEFAULT NULL
 );
 
-ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
-ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS image_url VARCHAR(255) DEFAULT NULL;
-
-ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INTEGER DEFAULT NULL;
-CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
-
 -- 9. MENU ITEM INGREDIENTS (Recipe junction)
 CREATE TABLE IF NOT EXISTS menu_item_ingredients (
     id SERIAL PRIMARY KEY,
@@ -146,14 +152,17 @@ CREATE TABLE IF NOT EXISTS orders (
     table_number INT DEFAULT NULL,
     notes TEXT DEFAULT NULL,
     progress_percentage INT DEFAULT 0,
-    payment_status VARCHAR(30) DEFAULT 'Pending' CHECK (payment_status IN ('Pending', 'Paid', 'Refunded', 'Failed')),
+    payment_status VARCHAR(30) DEFAULT 'Pending' CHECK (payment_status IN ('Pending', 'Paid', 'Refunded', 'Failed', 'PartiallyPaid')),
     tax_calculation DECIMAL(10, 2) DEFAULT 0.00,
     tip_value DECIMAL(10, 2) DEFAULT 0.00,
     refund_eligible BOOLEAN DEFAULT TRUE,
     stripe_charge_id VARCHAR(255) DEFAULT NULL,
+    idempotency_key VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_orders_idempotency_key ON orders(idempotency_key);
 
 -- 11. ORDER ITEMS
 CREATE TABLE IF NOT EXISTS order_items (
@@ -348,3 +357,124 @@ CREATE TABLE IF NOT EXISTS order_discounts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_order_discounts_order_id ON order_discounts(master_order_id);
+
+-- 24. WAITLIST ENTRIES
+CREATE TABLE IF NOT EXISTS waitlist_entries (
+    entry_id SERIAL PRIMARY KEY,
+    table_id INT DEFAULT NULL REFERENCES restaurant_tables(table_id) ON DELETE SET NULL,
+    customer_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) DEFAULT NULL,
+    party_size INT NOT NULL DEFAULT 1,
+    status VARCHAR(30) DEFAULT 'waiting' CHECK (status IN ('waiting', 'seated', 'cancelled', 'no_show')),
+    pin_code VARCHAR(4) DEFAULT NULL,
+    pin_expires_at TIMESTAMP DEFAULT NULL,
+    notified_at TIMESTAMP DEFAULT NULL,
+    seated_at TIMESTAMP DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_waitlist_entries_status ON waitlist_entries(status);
+CREATE INDEX IF NOT EXISTS idx_waitlist_entries_table ON waitlist_entries(table_id);
+
+-- 25. COOK TRACKING (per order item cook time tracking)
+CREATE TABLE IF NOT EXISTS order_cook_tracking (
+    tracking_id SERIAL PRIMARY KEY,
+    order_item_id INTEGER NOT NULL REFERENCES order_items(order_item_id) ON DELETE CASCADE,
+    master_order_id INTEGER NOT NULL REFERENCES orders(master_order_id) ON DELETE CASCADE,
+    estimated_cook_minutes INT NOT NULL DEFAULT 10,
+    actual_cook_minutes INT DEFAULT NULL,
+    status VARCHAR(30) DEFAULT 'pending' CHECK (status IN ('pending', 'cooking', 'ready', 'held', 'overdue')),
+    held_until TIMESTAMP DEFAULT NULL,
+    cooking_started_at TIMESTAMP DEFAULT NULL,
+    overdue_notified BOOLEAN DEFAULT FALSE,
+    overdue_notified_at TIMESTAMP DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_cook_tracking_order ON order_cook_tracking(master_order_id);
+CREATE INDEX IF NOT EXISTS idx_cook_tracking_status ON order_cook_tracking(status);
+
+-- 26. SALES AUDIT CONFIG (customizable schedule)
+CREATE TABLE IF NOT EXISTS sales_audit_config (
+    config_id SERIAL PRIMARY KEY,
+    schedule_type VARCHAR(30) NOT NULL CHECK (schedule_type IN ('once', 'daily', 'every_x_days', 'weekly', 'every_x_weeks', 'monthly', 'every_x_months')),
+    interval_value INT DEFAULT 1,
+    day_of_week INT DEFAULT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+    day_of_month INT DEFAULT NULL CHECK (day_of_month BETWEEN 1 AND 31),
+    hour INT DEFAULT 0 CHECK (hour BETWEEN 0 AND 23),
+    minute INT DEFAULT 0 CHECK (minute BETWEEN 0 AND 59),
+    is_active BOOLEAN DEFAULT TRUE,
+    last_run TIMESTAMP DEFAULT NULL,
+    next_run TIMESTAMP DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 27. SALES AUDIT RESULTS
+CREATE TABLE IF NOT EXISTS sales_audit_results (
+    result_id SERIAL PRIMARY KEY,
+    config_id INTEGER REFERENCES sales_audit_config(config_id) ON DELETE CASCADE,
+    period_start TIMESTAMP NOT NULL,
+    period_end TIMESTAMP NOT NULL,
+    top_item_id INTEGER REFERENCES menu_items(item_id) ON DELETE SET NULL,
+    top_item_name VARCHAR(150),
+    top_item_quantity INT DEFAULT 0,
+    top_item_revenue DECIMAL(10, 2) DEFAULT 0.00,
+    total_revenue DECIMAL(10, 2) DEFAULT 0.00,
+    total_orders INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_sales_audit_results_config ON sales_audit_results(config_id);
+CREATE INDEX IF NOT EXISTS idx_sales_audit_results_period ON sales_audit_results(period_start);
+
+-- 28. RESTAURANT CONFIG (customization)
+CREATE TABLE IF NOT EXISTS restaurant_config (
+    config_key VARCHAR(100) PRIMARY KEY,
+    config_value JSONB NOT NULL DEFAULT '{}',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO restaurant_config (config_key, config_value) VALUES
+    ('branding', '{"restaurant_name": "TableReady", "logo_url": null, "primary_color": "#1a73e8", "secondary_color": "#ffffff", "font": "system"}'),
+    ('business_hours', '{"monday": {"open": "08:00", "close": "22:00"}, "tuesday": {"open": "08:00", "close": "22:00"}, "wednesday": {"open": "08:00", "close": "22:00"}, "thursday": {"open": "08:00", "close": "22:00"}, "friday": {"open": "08:00", "close": "23:00"}, "saturday": {"open": "09:00", "close": "23:00"}, "sunday": {"open": "09:00", "close": "21:00"}}'),
+    ('delivery_radius', '{"max_miles": 10}'),
+    ('tax_rate', '{"rate": 0.00}'),
+    ('order_statuses', '{"IN_HOUSE": {"label": "Dine-In", "color": "#34a853"}, "DRIVE_THRU": {"label": "Drive-Thru", "color": "#ea4335"}, "DELIVERY": {"label": "Delivery", "color": "#fbbc04"}, "ORDER_FROM_HOME": {"label": "Order from Home", "color": "#4285f4"}, "PICKUP": {"label": "Pickup", "color": "#ff6d01"}}')
+ON CONFLICT (config_key) DO NOTHING;
+
+-- 29. ORDER PAYMENTS (track split payments)
+CREATE TABLE IF NOT EXISTS order_payments (
+    payment_id SERIAL PRIMARY KEY,
+    master_order_id INTEGER NOT NULL REFERENCES orders(master_order_id) ON DELETE CASCADE,
+    payment_method VARCHAR(30) NOT NULL CHECK (payment_method IN ('stripe', 'cash', 'gift_card', 'other')),
+    amount DECIMAL(10, 2) NOT NULL,
+    stripe_payment_intent_id VARCHAR(255) DEFAULT NULL,
+    status VARCHAR(30) DEFAULT 'pending' CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded')),
+    paid_by_customer_id INTEGER DEFAULT NULL REFERENCES customer_profiles(customer_id) ON DELETE SET NULL,
+    paid_by_user_id INTEGER DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_payments_order_id ON order_payments(master_order_id);
+
+-- 30. WASTE LOGS
+CREATE TABLE IF NOT EXISTS waste_logs (
+    waste_id SERIAL PRIMARY KEY,
+    inventory_id INTEGER NOT NULL REFERENCES inventory(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL,
+    reason VARCHAR(255) DEFAULT NULL,
+    logged_by INTEGER DEFAULT NULL REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_waste_logs_inventory_id ON waste_logs(inventory_id);
+
+-- Post-table-creation ALTER statements (moved to end to avoid FK ordering issues)
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS image_url VARCHAR(255) DEFAULT NULL;
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INTEGER DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);

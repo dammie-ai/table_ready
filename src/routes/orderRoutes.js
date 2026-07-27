@@ -28,7 +28,39 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
   }
 
   try {
-    const { order_type, is_held, items, table_number, notes, ordered_by_user_id } = req.body;
+    const { order_type, is_held, items, table_number, notes, ordered_by_user_id, idempotency_key } = req.body;
+
+    if (idempotency_key) {
+      const existingOrder = await pool.query(
+        `SELECT master_order_id FROM orders WHERE idempotency_key = $1 AND created_at > NOW() - INTERVAL '5 minutes'`,
+        [idempotency_key]
+      );
+
+      if (existingOrder.rows.length > 0) {
+        const fullOrder = await pool.query(
+          `SELECT o.*,
+                  json_agg(
+                    json_build_object(
+                      'order_item_id', oi.order_item_id,
+                      'item_id', oi.item_id,
+                      'quantity', oi.quantity,
+                      'item_status', oi.item_status,
+                      'custom_instructions', oi.custom_instructions
+                    )
+                  ) AS items
+           FROM orders o
+           LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
+           WHERE o.master_order_id = $1
+           GROUP BY o.master_order_id`,
+          [existingOrder.rows[0].master_order_id]
+        );
+        return res.status(200).json({
+          success: true,
+          message: 'Order already exists (idempotency key match).',
+          order: fullOrder.rows[0],
+        });
+      }
+    }
 
     // Automatically hold the order if placed from home or explicitly flagged as held
     const shouldHold = is_held === true || order_type === 'ORDER_FROM_HOME';
@@ -108,8 +140,8 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
 
     // 3. Create master order row
     const insertOrderQuery = `
-      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage)
-      VALUES ($1, $2, $3, $4, $5, $6, 0)
+      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key)
+      VALUES ($1, $2, $3, $4, $5, $6, 0, $7)
       RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at;
     `;
 
@@ -119,7 +151,8 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
       calculatedTotal,
       order_type || 'IN_HOUSE',
       table_number || null,
-      notes || null
+      notes || null,
+      idempotency_key || null
     ]);
 
     const createdOrder = orderResult.rows[0];
@@ -140,26 +173,60 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
       );
     }
 
-    // 5. Link items to order row
+    // 5. Link items to order row and collect order_item_ids
+    const insertedOrderItemIds = [];
     if (items && items.length > 0) {
       for (const item of items) {
         const menuItemId = item.menu_item_id || item.item_id || item.inventory_id;
         const quantity = item.quantity || 1;
 
-        await client.query(
-          `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id)
-           VALUES ($1, $2, $3, $4)`,
-          [createdOrder.master_order_id, menuItemId, quantity, ordered_by_user_id || 1]
+        const inserted = await client.query(
+          `INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id, custom_instructions)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING order_item_id`,
+          [createdOrder.master_order_id, menuItemId, quantity, ordered_by_user_id || 1, item.custom_instructions || null]
         );
+        insertedOrderItemIds.push(inserted.rows[0].order_item_id);
       }
     }
 
     await client.query('COMMIT');
 
+    // Create cook tracking entries for staggered timing with real order_item_ids
+    if (insertedOrderItemIds.length > 0) {
+      try {
+        const { createCookTrackingForOrder } = require('../utils/kitchenStagger');
+        await createCookTrackingForOrder(createdOrder.master_order_id, insertedOrderItemIds);
+      } catch (trackingErr) {
+        console.error('Cook tracking creation failed:', trackingErr.message);
+      }
+    }
+
+    // Fetch complete order with items for broadcast
+    const fullOrder = await pool.query(
+      `SELECT o.*,
+              json_agg(
+                json_build_object(
+                  'order_item_id', oi.order_item_id,
+                  'item_id', oi.item_id,
+                  'quantity', oi.quantity,
+                  'item_status', oi.item_status,
+                  'custom_instructions', oi.custom_instructions
+                )
+              ) AS items
+       FROM orders o
+       LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
+       WHERE o.master_order_id = $1
+       GROUP BY o.master_order_id`,
+      [createdOrder.master_order_id]
+    );
+
+    const broadcastOrder = fullOrder.rows[0];
+
     // Live Broadcast to Kitchen (if not held)
     const io = req.app.get('io');
     if (io && !shouldHold) {
-      io.emit('new_kitchen_order', createdOrder);
+      io.emit('new_kitchen_order', broadcastOrder);
     }
 
     return res.status(201).json({
@@ -167,7 +234,7 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
       message: shouldHold
         ? "Order received and placed ON_HOLD (hidden from kitchen display)."
         : "Order received and sent to kitchen.",
-      order: createdOrder,
+      order: broadcastOrder,
       appliedMultiplier: multiplier
     });
 
@@ -183,7 +250,7 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
  * GET /api/orders/kitchen
  * Fetch active kitchen orders (filters out held, completed, served, and cancelled orders)
  */
-router.get('/kitchen', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
+  router.get('/kitchen-orders', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
   try {
     const kitchenOrders = await pool.query(
       `SELECT * FROM orders
@@ -204,7 +271,7 @@ router.get('/kitchen', authenticateToken, authorizeRoles('admin', 'manager', 'ki
  * GET /api/orders/user/:userId
  * Fetch customer order history
  */
-router.get('/user/:userId', authenticateToken, async (req, res) => {
+  router.get('/history/:userId', authenticateToken, async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -274,54 +341,70 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * GET /api/orders/:id/receipt
- * Generate detailed itemized receipt view for a specific order (public)
- */
-router.get('/:id/receipt', async (req, res) => {
-  const { id } = req.params;
+  * GET /api/orders/:id/receipt
+  * Generate detailed itemized receipt view for a specific order (public)
+  */
+  router.get('/:id/receipt', async (req, res) => {
+    const { id } = req.params;
 
-  try {
-    const orderRes = await pool.query(
-      `SELECT * FROM orders WHERE master_order_id = $1`,
-      [id]
-    );
+    try {
+      const orderRes = await pool.query(
+        `SELECT * FROM orders WHERE master_order_id = $1`,
+        [id]
+      );
 
-    if (orderRes.rows.length === 0) {
-      return res.status(404).json({ success: false, error: `Order #${id} not found.` });
+      if (orderRes.rows.length === 0) {
+        return res.status(404).json({ success: false, error: `Order #${id} not found.` });
+      }
+
+      const order = orderRes.rows[0];
+
+      const itemsRes = await pool.query(
+        `SELECT oi.quantity, COALESCE(mi.name, 'Menu Item #' || oi.item_id) AS item_name, oi.custom_instructions, mi.base_price
+         FROM order_items oi
+         LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
+         WHERE oi.master_order_id = $1`,
+        [id]
+      );
+
+      const taxRate = await require('../services/configService').getTaxRate();
+      const subtotal = parseFloat(order.total_amount || 0);
+      const tax = subtotal * taxRate;
+      const tip = parseFloat(order.tip_value || 0);
+      const total = subtotal + tax + tip;
+
+      const receipt = {
+        receiptNumber: `TR-REC-${order.master_order_id.toString().padStart(6, '0')}`,
+        orderId: order.master_order_id,
+        tableNumber: order.table_number,
+        orderType: order.order_type,
+        status: order.status,
+        date: order.created_at,
+        items: itemsRes.rows.map(item => ({
+          name: item.item_name,
+          quantity: item.quantity,
+          unit_price: parseFloat(item.base_price || 0),
+          subtotal: parseFloat((item.base_price || 0) * item.quantity),
+          custom_instructions: item.custom_instructions,
+        })),
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        tax: parseFloat(tax.toFixed(2)),
+        tax_rate: taxRate,
+        tip: parseFloat(tip.toFixed(2)),
+        total: parseFloat(total.toFixed(2)),
+        payment_status: order.payment_status,
+        stripe_charge_id: order.stripe_charge_id,
+        notes: order.notes,
+      };
+
+      return res.status(200).json({
+        success: true,
+        receipt
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
     }
-
-    const order = orderRes.rows[0];
-
-    const itemsRes = await pool.query(
-      `SELECT oi.quantity, COALESCE(i.item_name, 'Menu Item #' || oi.item_id) AS item_name
-       FROM order_items oi
-       LEFT JOIN inventory i ON oi.item_id = i.id
-       WHERE oi.master_order_id = $1`,
-      [id]
-    );
-
-    const receipt = {
-      receiptNumber: `TR-REC-${order.master_order_id.toString().padStart(6, '0')}`,
-      orderId: order.master_order_id,
-      tableNumber: order.table_number,
-      orderType: order.order_type,
-      status: order.status,
-      date: order.created_at,
-      items: itemsRes.rows,
-      subtotal: order.total_amount,
-      tax: order.tax_calculation || "0.00",
-      tip: order.tip_value || "0.00",
-      totalPaid: order.total_amount
-    };
-
-    return res.status(200).json({
-      success: true,
-      receipt
-    });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
+  });
 
 /**
  * PATCH /api/orders/:id/status
@@ -405,7 +488,7 @@ router.patch('/:id/status', authenticateToken, authorizeRoles('admin', 'manager'
  * POST /api/orders/:id/release
  * Release an ON_HOLD order to the kitchen display
  */
-router.post('/:id/release', async (req, res) => {
+  router.post('/:id/release-hold', async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -486,6 +569,44 @@ router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager')
       [id]
     );
 
+    const orderItems = await client.query(
+      `SELECT oi.item_id, oi.quantity FROM order_items oi WHERE oi.master_order_id = $1`,
+      [id]
+    );
+
+    for (const item of orderItems.rows) {
+      const menuItemId = item.item_id;
+      const recipeRes = await client.query(
+        `SELECT inventory_id, quantity_required FROM menu_item_ingredients WHERE menu_item_id = $1`,
+        [menuItemId]
+      );
+
+      if (recipeRes.rows.length > 0) {
+        for (const ingredient of recipeRes.rows) {
+          const totalRestore = ingredient.quantity_required * item.quantity;
+          await client.query(
+            `UPDATE inventory SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+            [totalRestore, ingredient.inventory_id]
+          );
+          await client.query(
+            `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+             VALUES ($1, (SELECT stock_quantity FROM inventory WHERE id = $1), $2, $3)`,
+            [ingredient.inventory_id, totalRestore, `Order #${id} refunded - stock restored`]
+          );
+        }
+      } else {
+        await client.query(
+          `UPDATE inventory SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+          [item.quantity, menuItemId]
+        );
+        await client.query(
+          `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+           VALUES ($1, (SELECT stock_quantity FROM inventory WHERE id = $1), $2, $3)`,
+          [menuItemId, item.quantity, `Order #${id} refunded - stock restored`]
+        );
+      }
+    }
+
     await client.query('COMMIT');
 
     await logAudit({
@@ -554,6 +675,44 @@ router.patch('/:id/cancel', authenticateToken, authorizeRoles('admin', 'manager'
       [id]
     );
 
+    const orderItems = await client.query(
+      `SELECT oi.item_id, oi.quantity FROM order_items oi WHERE oi.master_order_id = $1`,
+      [id]
+    );
+
+    for (const item of orderItems.rows) {
+      const menuItemId = item.item_id;
+      const recipeRes = await client.query(
+        `SELECT inventory_id, quantity_required FROM menu_item_ingredients WHERE menu_item_id = $1`,
+        [menuItemId]
+      );
+
+      if (recipeRes.rows.length > 0) {
+        for (const ingredient of recipeRes.rows) {
+          const totalRestore = ingredient.quantity_required * item.quantity;
+          await client.query(
+            `UPDATE inventory SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+            [totalRestore, ingredient.inventory_id]
+          );
+          await client.query(
+            `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+             VALUES ($1, (SELECT stock_quantity FROM inventory WHERE id = $1), $2, $3)`,
+            [ingredient.inventory_id, totalRestore, `Order #${id} cancelled - stock restored`]
+          );
+        }
+      } else {
+        await client.query(
+          `UPDATE inventory SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+          [item.quantity, menuItemId]
+        );
+        await client.query(
+          `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+           VALUES ($1, (SELECT stock_quantity FROM inventory WHERE id = $1), $2, $3)`,
+          [menuItemId, item.quantity, `Order #${id} cancelled - stock restored`]
+        );
+      }
+    }
+
     await client.query('COMMIT');
 
     await logAudit({
@@ -578,6 +737,34 @@ router.patch('/:id/cancel', authenticateToken, authorizeRoles('admin', 'manager'
     return res.status(500).json({ success: false, error: err.message });
   } finally {
     if (client) client.release();
+  }
+});
+
+  router.get('/type-summary', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT order_type,
+              COUNT(*) AS total_orders,
+              SUM(CASE WHEN status NOT IN ('COMPLETED', 'CANCELLED', 'SERVED', 'CANCELLED_AND_REFUNDED') THEN 1 ELSE 0 END) AS active_orders,
+              SUM(total_amount) AS total_revenue
+       FROM orders
+       GROUP BY order_type
+       ORDER BY total_orders DESC`
+    );
+
+    const summary = result.rows.map((row) => ({
+      order_type: row.order_type,
+      total_orders: parseInt(row.total_orders),
+      active_orders: parseInt(row.active_orders),
+      total_revenue: parseFloat(row.total_revenue),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      summary,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

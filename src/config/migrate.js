@@ -8,13 +8,29 @@ const runMigration = async () => {
     const sqlPath = path.join(__dirname, 'init.sql');
     const sql = fs.readFileSync(sqlPath, 'utf8');
 
-    console.log('[Migration] Executing queries on PostgreSQL container...');
+    console.log('[Migration] Executing core schema...');
     await pool.query(sql);
+    console.log('[Migration] Core schema initialized.');
 
-    console.log('[Migration] Success! All core tables initialized.');
+    const migrationsDir = path.join(__dirname, 'db', 'migrations');
+    if (fs.existsSync(migrationsDir)) {
+      const files = fs.readdirSync(migrationsDir)
+        .filter(f => f.endsWith('.sql'))
+        .sort((a, b) => a.localeCompare(b));
+
+      for (const file of files) {
+        console.log(`[Migration] Running ${file}...`);
+        const filePath = path.join(migrationsDir, file);
+        const migrationSql = fs.readFileSync(filePath, 'utf8');
+        await pool.query(migrationSql);
+        console.log(`[Migration] ${file} completed.`);
+      }
+    }
+
+    console.log('[Migration] All migrations completed successfully.');
     process.exit(0);
   } catch (err) {
-    console.error('[Migration] Failed to compile schema:', err);
+    console.error('[Migration] Failed:', err.message);
     process.exit(1);
   }
 };
