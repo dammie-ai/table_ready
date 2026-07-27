@@ -1512,11 +1512,11 @@
               "raw": "{\r\n  \"latitude\": 40.7128,\r\n  \"longitude\": -74.0060,\r\n  \"check_type\": \"dine_in\"\r\n}"
             },
             "url": {
-              "raw": "{{base_url}}/tables/verify-location",
+              "raw": "{{base_url}}/tables/check-location",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8001",
-              "path": ["api", "tables", "verify-location"]
+              "path": ["api", "tables", "check-location"]
             }
           },
           "response": []
@@ -1612,11 +1612,11 @@
               "raw": "{\r\n  \"add_items\": [\r\n    { \"menu_item_id\": 2, \"quantity\": 1 }\r\n  ],\r\n  \"remove_items\": [\r\n    { \"order_item_id\": 5, \"quantity\": 1 }\r\n  ]\r\n}"
             },
             "url": {
-              "raw": "{{base_url}}/orders/{{order_id}}/items",
+              "raw": "{{base_url}}/orders/{{order_id}}/modify-items",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "items"]
+              "path": ["api", "orders", "{{order_id}}", "modify-items"]
             }
           },
           "response": []
