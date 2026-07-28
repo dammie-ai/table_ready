@@ -271,6 +271,74 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
   }
 });
 
+
+  router.get('/type-summary', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT order_type,
+              COUNT(*) AS total_orders,
+              SUM(CASE WHEN status NOT IN ('COMPLETED', 'CANCELLED', 'SERVED', 'CANCELLED_AND_REFUNDED', 'PICKED_UP') THEN 1 ELSE 0 END) AS active_orders,
+              SUM(total_amount) AS total_revenue
+       FROM orders
+       GROUP BY order_type
+       ORDER BY total_orders DESC`
+    );
+
+    const summary = result.rows.map((row) => ({
+      order_type: row.order_type,
+      total_orders: parseInt(row.total_orders),
+      active_orders: parseInt(row.active_orders),
+      total_revenue: parseFloat(row.total_revenue),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      summary,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/orders/pickup-queue
+// Fetch pending pickup orders sorted by scheduled time
+router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT o.*,
+              json_agg(
+                json_build_object(
+                  'order_item_id', oi.order_item_id,
+                  'item_id', oi.item_id,
+                  'quantity', oi.quantity,
+                  'item_status', oi.item_status,
+                  'custom_instructions', oi.custom_instructions
+                )
+              ) AS items
+       FROM orders o
+       LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
+       WHERE o.order_type = 'PICKUP'
+         AND o.status NOT IN ('COMPLETED', 'CANCELLED', 'CANCELLED_AND_REFUNDED', 'PICKED_UP')
+       GROUP BY o.master_order_id
+       ORDER BY o.pickup_scheduled_time ASC NULLS LAST, o.created_at ASC`
+    );
+
+    const orders = result.rows.map((row) => ({
+      ...row,
+      items: row.items.filter((item) => item.order_item_id !== null),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: orders.length,
+      orders,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 /**
  * GET /api/orders/kitchen
  * Fetch active kitchen orders (filters out held, completed, served, and cancelled orders)
@@ -332,63 +400,6 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
  * GET /api/orders/:id
  * Fetch order with items for customer/staff tracking (public for order lookup)
  */
-
-  router.get('/type-summary', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT order_type,
-              COUNT(*) AS total_orders,
-              SUM(CASE WHEN status NOT IN ('COMPLETED', 'CANCELLED', 'SERVED', 'CANCELLED_AND_REFUNDED', 'PICKED_UP') THEN 1 ELSE 0 END) AS active_orders,
-              SUM(total_amount) AS total_revenue
-       FROM orders
-       GROUP BY order_type
-       ORDER BY total_orders DESC`
-    );
-
-    const summary = result.rows.map((row) => ({
-      order_type: row.order_type,
-      total_orders: parseInt(row.total_orders),
-      active_orders: parseInt(row.active_orders),
-      total_revenue: parseFloat(row.total_revenue),
-    }));
-
-    return res.status(200).json({
-      success: true,
-      summary,
-    });
-
-router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT o.*,
-              json_agg(
-                json_build_object(
-                  'order_item_id', oi.order_item_id,
-                  'item_id', oi.item_id,
-                  'quantity', oi.quantity,
-                  'item_status', oi.item_status,
-                  'custom_instructions', oi.custom_instructions
-                )
-              ) AS items
-       FROM orders o
-       LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
-       WHERE o.order_type = 'PICKUP'
-         AND o.status NOT IN ('COMPLETED', 'CANCELLED', 'CANCELLED_AND_REFUNDED', 'PICKED_UP')
-       GROUP BY o.master_order_id
-       ORDER BY o.pickup_scheduled_time ASC NULLS LAST, o.created_at ASC`
-    );
-
-    const orders = result.rows.map((row) => ({
-      ...row,
-      items: row.items.filter((item) => item.order_item_id !== null),
-    }));
-
-    return res.status(200).json({
-      success: true,
-      count: orders.length,
-      orders,
-    });
-
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -860,18 +871,6 @@ router.patch('/:id/cancel', authenticateToken, authorizeRoles('admin', 'manager'
     return res.status(500).json({ success: false, error: err.message });
   } finally {
     if (client) client.release();
-  }
-});
-
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// GET /api/orders/pickup-queue
-// Fetch pending pickup orders sorted by scheduled time
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

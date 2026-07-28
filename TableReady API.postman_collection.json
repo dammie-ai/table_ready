@@ -3005,7 +3005,7 @@
               "raw": "{\r\n  \"table_id\": 1,\r\n  \"customer_name\": \"John Doe\",\r\n  \"party_size\": 4\r\n}"
             },
             "url": {
-              "raw": "{{base_url}}/waitlist",
+              "raw": "{{base_url}}/waitlist/join",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -3013,7 +3013,8 @@
               "port": "8001",
               "path": [
                 "api",
-                "waitlist"
+                "waitlist",
+                "join"
               ]
             }
           },
@@ -3063,7 +3064,7 @@
             },
             "method": "POST",
             "url": {
-              "raw": "{{base_url}}/waitlist/tables/1/seat-next",
+              "raw": "{{base_url}}/waitlist/queue/1/seat",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -3072,9 +3073,9 @@
               "path": [
                 "api",
                 "waitlist",
-                "tables",
+                "queue",
                 "1",
-                "seat-next"
+                "seat"
               ]
             }
           },
@@ -3095,7 +3096,7 @@
             },
             "method": "PATCH",
             "url": {
-              "raw": "{{base_url}}/waitlist/entries/1/cancel",
+              "raw": "{{base_url}}/waitlist/1/cancel",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -3104,7 +3105,6 @@
               "path": [
                 "api",
                 "waitlist",
-                "entries",
                 "1",
                 "cancel"
               ]
@@ -3127,7 +3127,7 @@
             },
             "method": "PATCH",
             "url": {
-              "raw": "{{base_url}}/waitlist/entries/1/no-show",
+              "raw": "{{base_url}}/waitlist/1/noshow",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -3136,9 +3136,8 @@
               "path": [
                 "api",
                 "waitlist",
-                "entries",
                 "1",
-                "no-show"
+                "noshow"
               ]
             }
           },

@@ -8,10 +8,10 @@ router.post('/suppliers', authenticateToken, authorizeRoles('admin', 'manager'),
 router.get('/suppliers', authenticateToken, purchaseOrderController.getSuppliers);
 router.patch('/suppliers/:id', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.updateSupplier), purchaseOrderController.updateSupplier);
 
-router.post('/purchase-orders', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.createPurchaseOrder), purchaseOrderController.createPurchaseOrder);
-router.get('/purchase-orders', authenticateToken, purchaseOrderController.getPurchaseOrders);
-router.patch('/purchase-orders/:id/status', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.updatePurchaseOrderStatus), purchaseOrderController.updatePurchaseOrderStatus);
-router.post('/purchase-orders/:id/receive', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), validate(schemas.receivePurchaseOrder), purchaseOrderController.receivePurchaseOrder);
+router.post('/', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.createPurchaseOrder), purchaseOrderController.createPurchaseOrder);
+router.get('/', authenticateToken, purchaseOrderController.getPurchaseOrders);
+router.patch('/:id/status', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.updatePurchaseOrderStatus), purchaseOrderController.updatePurchaseOrderStatus);
+router.post('/:id/receive', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), validate(schemas.receivePurchaseOrder), purchaseOrderController.receivePurchaseOrder);
 
 router.post('/reorder-rules', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.createReorderRule), purchaseOrderController.createReorderRule);
 router.get('/reorder-rules', authenticateToken, purchaseOrderController.getReorderRules);

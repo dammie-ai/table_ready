@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 1000,
   message: { success: false, error: 'Too many login attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -38,7 +38,7 @@ const authLimiter = rateLimit({
 
 const orderLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: 1000,
   message: { success: false, error: 'Too many order requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
