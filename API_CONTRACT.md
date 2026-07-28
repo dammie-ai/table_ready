@@ -31,10 +31,10 @@
 
 ### Orders (Public — for guest order tracking)
 - `GET /orders/:id`
-  - Response: `{ success: true, order: { ...order, items: Array<{ quantity, custom_instructions, item_status, item_name }> } }`
+  - Response: `{ success: true, order: { ...order, items: Array<{ quantity, custom_instructions, item_status, item_name, modifiers }> } }`
 
 - `GET /orders/:id/receipt`
-  - Response: `{ success: true, receipt: { ... } }`
+  - Response: `{ success: true, receipt: { ..., items: Array<{ name, quantity, unit_price, custom_instructions, modifiers }> } }`
 
 ### Service Requests (Public — guests can create)
 - `POST /service-requests`
@@ -374,7 +374,7 @@ cart_id, customer_id, session_token, status (active|checked_out|abandoned), crea
 ### CartItem
 ```
 cart_item_id, cart_id, menu_item_id?, inventory_id?, quantity,
-custom_instructions, unit_price, created_at, updated_at
+custom_instructions, unit_price, modifiers (JSONB), created_at, updated_at
 ```
 
 ### Order
@@ -387,7 +387,7 @@ tax_calculation, tip_value, refund_eligible, stripe_charge_id, created_at, updat
 ### OrderItem
 ```
 order_item_id, master_order_id, item_id, quantity, ordered_by_user_id,
-custom_instructions, has_allergy_alert, item_status
+custom_instructions, has_allergy_alert, item_status, modifiers (JSONB)
 ```
 
 ### OrderDiscount
@@ -444,6 +444,94 @@ id, table_number, waiter_id?, code?, party_size, status (active|closed),
 ended_at?, verification_code?, verification_attempts?, verification_verified?, created_at
 ```
 
+### Schedule
+```
+schedule_id, employee_id, schedule_date, start_time, end_time,
+role?, is_published, notes?, created_by_user_id?, created_at, updated_at
+```
+
+### TimeEntry
+```
+time_entry_id, employee_id, user_id?, clock_in, clock_out?,
+total_hours?, status (active|completed|adjusted|flagged), notes?,
+location?, ip_address?, created_at, updated_at
+```
+
+### Supplier
+```
+supplier_id, name, contact_name?, email?, phone?, address?, tax_id?, payment_terms?,
+is_active, created_at, updated_at
+```
+
+### PurchaseOrder
+```
+purchase_order_id, supplier_id, order_date, expected_delivery_date?, received_date?,
+status (draft|sent|confirmed|shipped|received|cancelled|partially_received),
+total_amount, tax_amount, shipping_cost, grand_total, notes?,
+created_by_user_id?, approved_by_user_id?, created_at, updated_at
+```
+
+### PurchaseOrderItem
+```
+purchase_order_item_id, purchase_order_id, inventory_id,
+quantity_ordered, quantity_received, unit_cost, line_total, notes?,
+created_at, updated_at
+```
+
+### ReorderRule
+```
+reorder_rule_id, inventory_id, supplier_id?, reorder_quantity, min_quantity,
+is_enabled, last_ordered_at?, created_at, updated_at
+```
+
+### NotificationTemplate
+```
+template_id, name, channel (email|sms|push|in_app), event_type,
+subject_template?, body_template, is_active, created_at, updated_at
+```
+
+### NotificationLog
+```
+notification_log_id, template_id?, channel, recipient, subject?, body,
+status (pending|sent|delivered|failed|bounced), error_message?,
+sent_at?, delivered_at?, opened_at?, clicked_at?,
+related_entity_type?, related_entity_id?, created_at, updated_at
+```
+
+### NotificationPreference
+```
+preference_id, customer_id?, session_token?, channel, event_type, is_enabled,
+created_at, updated_at
+```
+
+### TaxJurisdiction
+```
+tax_jurisdiction_id, name, jurisdiction_type (country|state|county|city|special),
+parent_jurisdiction_id?, code?, is_active, effective_date, end_date,
+created_at, updated_at
+```
+
+### TaxRate
+```
+tax_rate_id, jurisdiction_id, name, rate_percentage,
+applies_to (all|food|alcohol|merchandise|delivery|service),
+is_tax_inclusive, is_active, effective_date, end_date,
+created_at, updated_at
+```
+
+### TaxExemption
+```
+tax_exemption_id, customer_id?, organization_name, exemption_number,
+jurisdiction_id, expires_at?, is_active, created_at, updated_at
+```
+
+### OrderTaxDetail
+```
+order_tax_detail_id, master_order_id, jurisdiction_id?, tax_rate_id?,
+taxable_amount, tax_rate, tax_amount, tax_type (sales|use|vat|gst|hst),
+created_at
+```
+
 ---
 
 ## Seed Data (Postman Test Data)
@@ -492,3 +580,138 @@ INSERT INTO users (username, password_hash, role) VALUES
 7. `PATCH /api/orders/1/status` → advance status
 8. `GET /api/orders/1` → customer tracks order (public)
 9. `POST /api/service-requests` → guest calls server (public)
+
+## Employee Scheduling & Time-Clock (Auth: admin/manager/assistant_manager)
+
+- `POST /schedules`
+  - Body: `{ employee_id, schedule_date, start_time, end_time, role?, is_published?, notes? }`
+  - Response: `{ success: true, schedule }`
+
+- `GET /schedules`
+  - Query: `?start_date=&end_date=&employee_id=&role=&is_published=`
+  - Response: `{ success: true, schedules: Array<Schedule> }`
+
+- `GET /schedules/my`
+  - Query: `?start_date=&end_date=`
+  - Response: `{ success: true, schedules: Array<Schedule> }`
+
+- `PATCH /schedules/:id`
+  - Body: `{ start_time?, end_time?, role?, is_published?, notes?, schedule_date? }`
+  - Response: `{ success: true, schedule }`
+
+- `DELETE /schedules/:id`
+  - Response: `{ success: true, message }`
+
+- `POST /time-entries/clock-in`
+  - Body: `{ employee_id, location?, notes? }`
+  - Response: `{ success: true, time_entry }`
+
+- `POST /time-entries/clock-out`
+  - Body: `{ employee_id, notes? }`
+  - Response: `{ success: true, time_entry }`
+
+- `GET /time-entries`
+  - Query: `?employee_id=&start_date=&end_date=&status=`
+  - Response: `{ success: true, time_entries: Array<TimeEntry> }`
+
+## Purchase Orders & Supplier Management (Auth: admin/manager)
+
+- `POST /purchase-orders/suppliers`
+  - Body: `{ name, contact_name?, email?, phone?, address?, tax_id?, payment_terms?, is_active? }`
+  - Response: `{ success: true, supplier }`
+
+- `GET /purchase-orders/suppliers`
+  - Query: `?is_active=`
+  - Response: `{ success: true, suppliers: Array<Supplier> }`
+
+- `PATCH /purchase-orders/suppliers/:id`
+  - Body: `{ name?, contact_name?, email?, phone?, address?, tax_id?, payment_terms?, is_active? }`
+  - Response: `{ success: true, supplier }`
+
+- `POST /purchase-orders`
+  - Body: `{ supplier_id, expected_delivery_date?, notes?, items: Array<{ inventory_id, quantity_ordered, unit_cost, notes? }> }`
+  - Response: `{ success: true, purchase_order }`
+
+- `GET /purchase-orders`
+  - Query: `?status=&supplier_id=&start_date=&end_date=`
+  - Response: `{ success: true, purchase_orders: Array<PurchaseOrder> }`
+
+- `PATCH /purchase-orders/:id/status`
+  - Body: `{ status }`
+  - Valid statuses: `draft`, `sent`, `confirmed`, `shipped`, `received`, `cancelled`, `partially_received`
+  - Response: `{ success: true, purchase_order }`
+
+- `POST /purchase-orders/:id/receive`
+  - Body: `{ items: Array<{ purchase_order_item_id, quantity_received }> }`
+  - Response: `{ success: true, purchase_order }`
+
+- `POST /purchase-orders/reorder-rules`
+  - Body: `{ inventory_id, supplier_id?, reorder_quantity, min_quantity, is_enabled? }`
+  - Response: `{ success: true, reorder_rule }`
+
+- `GET /purchase-orders/reorder-rules`
+  - Query: `?is_enabled=&inventory_id=`
+  - Response: `{ success: true, reorder_rules: Array<ReorderRule> }`
+
+- `GET /purchase-orders/reorder-rules/auto-check`
+  - Response: `{ success: true, items_to_reorder: Array<ReorderRule> }`
+
+## Notifications (Auth: admin/manager for management; public for some customer pref ops)
+
+- `GET /notifications/templates`
+  - Response: `{ success: true, templates: Array<NotificationTemplate> }`
+
+- `POST /notifications/templates`
+  - Body: `{ name, channel, event_type, subject_template?, body_template }`
+  - Valid channels: `email`, `sms`, `push`, `in_app`
+  - Response: `{ success: true, template }`
+
+- `PATCH /notifications/templates/:id`
+  - Body: `{ name?, channel?, event_type?, subject_template?, body_template?, is_active? }`
+  - Response: `{ success: true, template }`
+
+- `POST /notifications/send`
+  - Body: `{ channel, recipient, template_id?, subject?, body, related_entity_type?, related_entity_id? }`
+  - Response: `{ success: true, notification }`
+
+- `GET /notifications/logs`
+  - Query: `?channel=&status=&recipient=&related_entity_type=&related_entity_id=&limit=&offset=`
+  - Response: `{ success: true, notifications: Array<NotificationLog> }`
+
+- `GET /notifications/preferences`
+  - Query: `?customer_id=&session_token=`
+  - Response: `{ success: true, preferences: Array<NotificationPreference> }`
+
+- `PATCH /notifications/preferences`
+  - Body: `{ customer_id?, session_token?, preferences: Array<{ channel, event_type, is_enabled }> }`
+  - Response: `{ success: true, message }`
+
+## Tax Compliance (Auth: admin/manager for management)
+
+- `POST /tax/jurisdictions`
+  - Body: `{ name, jurisdiction_type, parent_jurisdiction_id?, code?, is_active?, effective_date?, end_date? }`
+  - Valid types: `country`, `state`, `county`, `city`, `special`
+  - Response: `{ success: true, jurisdiction }`
+
+- `GET /tax/jurisdictions`
+  - Response: `{ success: true, jurisdictions: Array<TaxJurisdiction> }`
+
+- `POST /tax/rates`
+  - Body: `{ jurisdiction_id, name, rate_percentage, applies_to?, is_tax_inclusive?, is_active?, effective_date?, end_date? }`
+  - Valid applies_to: `all`, `food`, `alcohol`, `merchandise`, `delivery`, `service`
+  - Response: `{ success: true, tax_rate }`
+
+- `GET /tax/rates`
+  - Query: `?jurisdiction_id=&is_active=`
+  - Response: `{ success: true, tax_rates: Array<TaxRate> }`
+
+- `GET /tax/orders/:order_id/calculate`
+  - Response: `{ success: true, order_id, subtotal, tax_inclusive, tax_rates_applied, total_tax, grand_total }`
+
+- `POST /tax/exemptions`
+  - Body: `{ customer_id?, organization_name, exemption_number, jurisdiction_id, expires_at? }`
+  - Response: `{ success: true, exemption }`
+
+- `GET /tax/exemptions`
+  - Query: `?customer_id=&jurisdiction_id=`
+  - Response: `{ success: true, exemptions: Array<TaxExemption> }`

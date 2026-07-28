@@ -12,7 +12,7 @@ const checkEmployeeShift = async (req, res) => {
 
   try {
     const userRes = await pool.query(
-      `SELECT id, username, role FROM users WHERE id = $1`,
+      `SELECT id, username, role, employee_id FROM users WHERE id = $1`,
       [waiter_id]
     );
 
@@ -78,7 +78,7 @@ const checkEmployeeShift = async (req, res) => {
     });
   } catch (err) {
     console.error('Error checking employee shift:', err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 };
 
@@ -110,7 +110,7 @@ const createSession = async (req, res) => {
     return res.status(201).json({ success: true, ...result.rows[0] });
   } catch (err) {
     console.error('Error creating session:', err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 };
 
@@ -126,7 +126,7 @@ const getActiveSessions = async (req, res) => {
     return res.status(200).json({ success: true, sessions: result.rows });
   } catch (err) {
     console.error('Error fetching active sessions:', err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 };
 
@@ -171,7 +171,7 @@ const closeSession = async (req, res) => {
     return res.status(200).json({ success: true, ...session });
   } catch (err) {
     console.error('Error closing session:', err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 };
 
@@ -215,7 +215,7 @@ const joinSessionByCode = async (req, res) => {
     });
   } catch (err) {
     console.error('Error joining session:', err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 };
 

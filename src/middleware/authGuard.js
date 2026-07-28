@@ -28,7 +28,7 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Access denied. Security token missing.' });
+    return res.status(401).json({ success: false, error: 'Access denied. Security token missing.' });
   }
 
   try {
@@ -36,14 +36,14 @@ const authenticateToken = (req, res, next) => {
     req.user = verified;
     next();
   } catch (err) {
-    return res.status(403).json({ error: 'Session expired or invalid token.' });
+    return res.status(403).json({ success: false, error: 'Session expired or invalid token.' });
   }
 };
 
 const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required.' });
+      return res.status(401).json({ success: false, error: 'Authentication required.' });
     }
 
     const userRoles = Array.isArray(req.user.roles) 
@@ -58,6 +58,7 @@ const authorizeRoles = (...allowedRoles) => {
 
     if (!hasPermission) {
       return res.status(403).json({
+        success: false,
         error: `Access Denied. Your role (${userRoles.join(', ')}) cannot access this department's services.`
       });
     }
@@ -68,7 +69,7 @@ const authorizeRoles = (...allowedRoles) => {
 
 const requireMasterControl = (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({ error: 'Authentication required.' });
+    return res.status(401).json({ success: false, error: 'Authentication required.' });
   }
 
   const userRoles = Array.isArray(req.user.roles) 
@@ -77,6 +78,7 @@ const requireMasterControl = (req, res, next) => {
 
   if (!hasMasterControl(userRoles)) {
     return res.status(403).json({
+      success: false,
       error: 'Access Denied. Only the Manager has master control access to customiser features.'
     });
   }

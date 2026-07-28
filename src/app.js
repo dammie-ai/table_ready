@@ -73,6 +73,10 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const deliveryRoutes = require('./routes/deliveryRoutes');
 const modifierRoutes = require('./routes/modifierRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
+const scheduleRoutes = require('./routes/scheduleRoutes');
+const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const taxRoutes = require('./routes/taxRoutes');
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -104,6 +108,10 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/modifiers', modifierRoutes);
 app.use('/api/reservations', reservationRoutes);
+app.use('/api/schedules', scheduleRoutes);
+app.use('/api/purchase-orders', purchaseOrderRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/tax', taxRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

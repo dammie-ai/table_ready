@@ -26,7 +26,7 @@ const getMenuItems = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching menu:', error);
-    return res.status(500).json({ error: 'Internal server error.' });
+    return res.status(500).json({ success: false, error: 'Internal server error.' });
   }
 };
 
@@ -71,7 +71,7 @@ const getMenuItemDetail = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching menu item detail:', error);
-    return res.status(500).json({ error: 'Internal server error.' });
+    return res.status(500).json({ success: false, error: 'Internal server error.' });
   }
 };
 
@@ -98,12 +98,13 @@ const addIngredientToMenuItem = async (req, res) => {
         );
 
         return res.status(201).json({
+            success: true,
             message: 'Ingredient linked to menu item successfully.',
             data: link
         });
     } catch (error) {
         console.error('Error linking ingredient:', error);
-        return res.status(500).json({ error: 'Internal server error.' });
+        return res.status(500).json({ success: false, error: 'Internal server error.' });
     }
 };
 
@@ -117,12 +118,13 @@ const getMenuItemIngredients = async (req, res) => {
         const ingredients = await menuItemModel.getMenuItemIngredients(menuItemId);
 
         return res.status(200).json({
+            success: true,
             menu_item_id: Number(menuItemId),
             ingredients
         });
     } catch (error) {
         console.error('Error fetching ingredients:', error);
-        return res.status(500).json({ error: 'Internal server error.' });
+        return res.status(500).json({ success: false, error: 'Internal server error.' });
     }
 };
 
@@ -141,12 +143,13 @@ const removeIngredientFromMenuItem = async (req, res) => {
         }
 
         return res.status(200).json({
+            success: true,
             message: 'Ingredient removed from menu item successfully.',
             data: removed
         });
     } catch (error) {
         console.error('Error removing ingredient:', error);
-        return res.status(500).json({ error: 'Internal server error.' });
+        return res.status(500).json({ success: false, error: 'Internal server error.' });
     }
 };
 

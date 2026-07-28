@@ -114,4 +114,78 @@ describe('TableReady API', () => {
       expect(res.body.error).toBe('Validation failed');
     });
   });
+
+  describe('Scheduling', () => {
+    it('should create a schedule', async () => {
+      const res = await request(app)
+        .post('/api/schedules')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          employee_id: 1,
+          schedule_date: '2026-07-29',
+          start_time: '09:00:00',
+          end_time: '17:00:00'
+        });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('should get schedules', async () => {
+      const res = await request(app)
+        .get('/api/schedules')
+        .set('Authorization', `Bearer ${authToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
+
+  describe('Purchase Orders', () => {
+    it('should create a supplier', async () => {
+      const res = await request(app)
+        .post('/api/purchase-orders/suppliers')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Test Supplier',
+          email: 'test@supplier.com'
+        });
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('should get suppliers', async () => {
+      const res = await request(app)
+        .get('/api/purchase-orders/suppliers')
+        .set('Authorization', `Bearer ${authToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
+
+  describe('Notifications', () => {
+    it('should get notification templates', async () => {
+      const res = await request(app)
+        .get('/api/notifications/templates')
+        .set('Authorization', `Bearer ${authToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
+
+  describe('Tax Compliance', () => {
+    it('should get tax jurisdictions', async () => {
+      const res = await request(app)
+        .get('/api/tax/jurisdictions')
+        .set('Authorization', `Bearer ${authToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('should get tax rates', async () => {
+      const res = await request(app)
+        .get('/api/tax/rates')
+        .set('Authorization', `Bearer ${authToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
 });

@@ -47,9 +47,14 @@
             "url": {
               "raw": "{{base_url}}/health",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "health"]
+              "path": [
+                "api",
+                "health"
+              ]
             }
           },
           "response": []
@@ -90,9 +95,15 @@
             "url": {
               "raw": "{{base_url}}/auth/login",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "auth", "login"]
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "response": []
@@ -133,9 +144,15 @@
             "url": {
               "raw": "{{base_url}}/auth/login",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "auth", "login"]
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "response": []
@@ -174,9 +191,15 @@
             "url": {
               "raw": "{{base_url}}/auth/login",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "auth", "login"]
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "response": []
@@ -215,9 +238,15 @@
             "url": {
               "raw": "{{base_url}}/auth/login",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "auth", "login"]
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           },
           "response": []
@@ -240,9 +269,15 @@
             "url": {
               "raw": "{{base_url}}/auth/register",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "auth", "register"]
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
             }
           },
           "response": []
@@ -265,9 +300,15 @@
             "url": {
               "raw": "{{base_url}}/sessions/check-shift",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "sessions", "check-shift"]
+              "path": [
+                "api",
+                "sessions",
+                "check-shift"
+              ]
             }
           },
           "response": []
@@ -289,9 +330,15 @@
             "url": {
               "raw": "{{base_url}}/auth/account",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "auth", "account"]
+              "path": [
+                "api",
+                "auth",
+                "account"
+              ]
             }
           },
           "response": []
@@ -318,9 +365,15 @@
             "url": {
               "raw": "{{base_url}}/dashboard/config",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "dashboard", "config"]
+              "path": [
+                "api",
+                "dashboard",
+                "config"
+              ]
             }
           },
           "response": []
@@ -342,9 +395,15 @@
             "url": {
               "raw": "{{base_url}}/dashboard/manager",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "dashboard", "manager"]
+              "path": [
+                "api",
+                "dashboard",
+                "manager"
+              ]
             }
           },
           "response": []
@@ -366,9 +425,15 @@
             "url": {
               "raw": "{{base_url}}/dashboard/admin",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "dashboard", "admin"]
+              "path": [
+                "api",
+                "dashboard",
+                "admin"
+              ]
             }
           },
           "response": []
@@ -390,9 +455,15 @@
             "url": {
               "raw": "{{base_url}}/dashboard/assistant_manager",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "dashboard", "assistant_manager"]
+              "path": [
+                "api",
+                "dashboard",
+                "assistant_manager"
+              ]
             }
           },
           "response": []
@@ -414,9 +485,15 @@
             "url": {
               "raw": "{{base_url}}/dashboard/kitchen",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "dashboard", "kitchen"]
+              "path": [
+                "api",
+                "dashboard",
+                "kitchen"
+              ]
             }
           },
           "response": []
@@ -438,9 +515,15 @@
             "url": {
               "raw": "{{base_url}}/dashboard/delivery",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "dashboard", "delivery"]
+              "path": [
+                "api",
+                "dashboard",
+                "delivery"
+              ]
             }
           },
           "response": []
@@ -462,9 +545,15 @@
             "url": {
               "raw": "{{base_url}}/dashboard/waiter",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "dashboard", "waiter"]
+              "path": [
+                "api",
+                "dashboard",
+                "waiter"
+              ]
             }
           },
           "response": []
@@ -486,9 +575,15 @@
             "url": {
               "raw": "{{base_url}}/dashboard/other",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "dashboard", "other"]
+              "path": [
+                "api",
+                "dashboard",
+                "other"
+              ]
             }
           },
           "response": []
@@ -516,9 +611,14 @@
             "url": {
               "raw": "{{base_url}}/sessions",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "sessions"]
+              "path": [
+                "api",
+                "sessions"
+              ]
             }
           },
           "response": []
@@ -541,9 +641,15 @@
             "url": {
               "raw": "{{base_url}}/sessions/join-by-code",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "sessions", "join-by-code"]
+              "path": [
+                "api",
+                "sessions",
+                "join-by-code"
+              ]
             }
           },
           "response": []
@@ -565,9 +671,14 @@
             "url": {
               "raw": "{{base_url}}/sessions",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "sessions"]
+              "path": [
+                "api",
+                "sessions"
+              ]
             }
           },
           "response": []
@@ -589,9 +700,16 @@
             "url": {
               "raw": "{{base_url}}/sessions/1/close",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "sessions", "1", "close"]
+              "path": [
+                "api",
+                "sessions",
+                "1",
+                "close"
+              ]
             }
           },
           "response": []
@@ -603,9 +721,15 @@
             "url": {
               "raw": "{{base_url}}/tables/floor-layout",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "tables", "floor-layout"]
+              "path": [
+                "api",
+                "tables",
+                "floor-layout"
+              ]
             }
           },
           "response": []
@@ -628,12 +752,60 @@
             "url": {
               "raw": "{{base_url}}/tables/verify-code",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "tables", "verify-code"]
+              "path": [
+                "api",
+                "tables",
+                "verify-code"
+              ]
             }
           },
           "response": []
+        },
+        {
+          "name": "remove cart item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cart/{{cart_id}}/items/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "cart",
+                "{{cart_id}}",
+                "items",
+                "1"
+              ]
+            },
+            "response": []
+          }
+        },
+        {
+          "name": "clear cart",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cart/{{cart_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "cart",
+                "{{cart_id}}"
+              ]
+            },
+            "response": []
+          }
         }
       ]
     },
@@ -668,9 +840,14 @@
             "url": {
               "raw": "{{base_url}}/orders",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders"]
+              "path": [
+                "api",
+                "orders"
+              ]
             }
           },
           "response": []
@@ -703,9 +880,14 @@
             "url": {
               "raw": "{{base_url}}/orders",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders"]
+              "path": [
+                "api",
+                "orders"
+              ]
             }
           },
           "response": []
@@ -717,9 +899,15 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}"
+              ]
             }
           },
           "response": []
@@ -731,9 +919,16 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/receipt",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "receipt"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "receipt"
+              ]
             }
           },
           "response": []
@@ -755,9 +950,15 @@
             "url": {
               "raw": "{{base_url}}/orders/kitchen-orders",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "kitchen-orders"]
+              "path": [
+                "api",
+                "orders",
+                "kitchen-orders"
+              ]
             }
           },
           "response": []
@@ -790,9 +991,16 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/status",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "status"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "status"
+              ]
             }
           },
           "response": []
@@ -804,9 +1012,16 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/release-hold",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "release-hold"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "release-hold"
+              ]
             }
           },
           "response": []
@@ -839,9 +1054,16 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/refund",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "refund"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "refund"
+              ]
             }
           },
           "response": []
@@ -874,9 +1096,16 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/cancel",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "cancel"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "cancel"
+              ]
             }
           },
           "response": []
@@ -898,9 +1127,16 @@
             "url": {
               "raw": "{{base_url}}/orders/by-type/DINE_IN",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "by-type", "DINE_IN"]
+              "path": [
+                "api",
+                "orders",
+                "by-type",
+                "DINE_IN"
+              ]
             }
           },
           "response": []
@@ -922,9 +1158,15 @@
             "url": {
               "raw": "{{base_url}}/orders/type-summary",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "type-summary"]
+              "path": [
+                "api",
+                "orders",
+                "type-summary"
+              ]
             }
           },
           "response": []
@@ -946,9 +1188,19 @@
             "url": {
               "raw": "{{base_url}}/kitchen/orders/{{order_id}}/cook/start/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "kitchen", "orders", "{{order_id}}", "cook", "start", "1"]
+              "path": [
+                "api",
+                "kitchen",
+                "orders",
+                "{{order_id}}",
+                "cook",
+                "start",
+                "1"
+              ]
             }
           },
           "response": []
@@ -970,9 +1222,18 @@
             "url": {
               "raw": "{{base_url}}/kitchen/orders/{{order_id}}/cook/release-held",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "kitchen", "orders", "{{order_id}}", "cook", "release-held"]
+              "path": [
+                "api",
+                "kitchen",
+                "orders",
+                "{{order_id}}",
+                "cook",
+                "release-held"
+              ]
             }
           },
           "response": []
@@ -994,9 +1255,19 @@
             "url": {
               "raw": "{{base_url}}/kitchen/orders/{{order_id}}/cook/ready/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "kitchen", "orders", "{{order_id}}", "cook", "ready", "1"]
+              "path": [
+                "api",
+                "kitchen",
+                "orders",
+                "{{order_id}}",
+                "cook",
+                "ready",
+                "1"
+              ]
             }
           },
           "response": []
@@ -1018,12 +1289,174 @@
             "url": {
               "raw": "{{base_url}}/kitchen/orders/{{order_id}}/cook-tracking",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "kitchen", "orders", "{{order_id}}", "cook-tracking"]
+              "path": [
+                "api",
+                "kitchen",
+                "orders",
+                "{{order_id}}",
+                "cook-tracking"
+              ]
             }
           },
           "response": []
+        },
+        {
+          "name": "get order history by user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/history/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "orders",
+                "history",
+                "1"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "get pickup queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/pickup-queue",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "orders",
+                "pickup-queue"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{kitchen_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "customer arrived",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/customer-arrived",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "orders",
+                "{{order_id}}",
+                "customer-arrived"
+              ]
+            },
+            "response": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"vehicle\": \"Toyota Camry\",\r\n  \"curbside_lane\": \"A\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "mark ready for pickup",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/mark-ready-pickup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "orders",
+                "{{order_id}}",
+                "mark-ready-pickup"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{kitchen_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "complete pickup",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/complete-pickup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "orders",
+                "{{order_id}}",
+                "complete-pickup"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{kitchen_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -1058,9 +1491,15 @@
             "url": {
               "raw": "{{base_url}}/delivery/assign",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "delivery", "assign"]
+              "path": [
+                "api",
+                "delivery",
+                "assign"
+              ]
             }
           },
           "response": []
@@ -1093,9 +1532,16 @@
             "url": {
               "raw": "{{base_url}}/delivery/2/status",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "delivery", "2", "status"]
+              "path": [
+                "api",
+                "delivery",
+                "2",
+                "status"
+              ]
             }
           },
           "response": []
@@ -1128,9 +1574,16 @@
             "url": {
               "raw": "{{base_url}}/delivery/2/location",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "delivery", "2", "location"]
+              "path": [
+                "api",
+                "delivery",
+                "2",
+                "location"
+              ]
             }
           },
           "response": []
@@ -1152,9 +1605,15 @@
             "url": {
               "raw": "{{base_url}}/delivery/history",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "delivery", "history"]
+              "path": [
+                "api",
+                "delivery",
+                "history"
+              ]
             }
           },
           "response": []
@@ -1181,9 +1640,14 @@
             "url": {
               "raw": "{{base_url}}/modifiers",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "modifiers"]
+              "path": [
+                "api",
+                "modifiers"
+              ]
             }
           },
           "response": []
@@ -1216,9 +1680,14 @@
             "url": {
               "raw": "{{base_url}}/modifiers",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "modifiers"]
+              "path": [
+                "api",
+                "modifiers"
+              ]
             }
           },
           "response": []
@@ -1240,9 +1709,16 @@
             "url": {
               "raw": "{{base_url}}/modifiers/item/{{menu_item_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "modifiers", "item", "{{menu_item_id}}"]
+              "path": [
+                "api",
+                "modifiers",
+                "item",
+                "{{menu_item_id}}"
+              ]
             }
           },
           "response": []
@@ -1275,9 +1751,16 @@
             "url": {
               "raw": "{{base_url}}/modifiers/item/{{menu_item_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "modifiers", "item", "{{menu_item_id}}"]
+              "path": [
+                "api",
+                "modifiers",
+                "item",
+                "{{menu_item_id}}"
+              ]
             }
           },
           "response": []
@@ -1299,9 +1782,17 @@
             "url": {
               "raw": "{{base_url}}/modifiers/item/{{menu_item_id}}/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "modifiers", "item", "{{menu_item_id}}", "1"]
+              "path": [
+                "api",
+                "modifiers",
+                "item",
+                "{{menu_item_id}}",
+                "1"
+              ]
             }
           },
           "response": []
@@ -1339,9 +1830,14 @@
             "url": {
               "raw": "{{base_url}}/reservations",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "reservations"]
+              "path": [
+                "api",
+                "reservations"
+              ]
             }
           },
           "response": []
@@ -1363,9 +1859,14 @@
             "url": {
               "raw": "{{base_url}}/reservations",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "reservations"]
+              "path": [
+                "api",
+                "reservations"
+              ]
             }
           },
           "response": []
@@ -1387,9 +1888,16 @@
             "url": {
               "raw": "{{base_url}}/reservations/date/2026-07-28",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "reservations", "date", "2026-07-28"]
+              "path": [
+                "api",
+                "reservations",
+                "date",
+                "2026-07-28"
+              ]
             }
           },
           "response": []
@@ -1411,9 +1919,15 @@
             "url": {
               "raw": "{{base_url}}/reservations/{{reservation_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "reservations", "{{reservation_id}}"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}"
+              ]
             }
           },
           "response": []
@@ -1446,9 +1960,15 @@
             "url": {
               "raw": "{{base_url}}/reservations/{{reservation_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "reservations", "{{reservation_id}}"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}"
+              ]
             }
           },
           "response": []
@@ -1470,9 +1990,16 @@
             "url": {
               "raw": "{{base_url}}/reservations/{{reservation_id}}/cancel",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "reservations", "{{reservation_id}}", "cancel"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}",
+                "cancel"
+              ]
             }
           },
           "response": []
@@ -1494,9 +2021,16 @@
             "url": {
               "raw": "{{base_url}}/reservations/{{reservation_id}}/seat",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "reservations", "{{reservation_id}}", "seat"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}",
+                "seat"
+              ]
             }
           },
           "response": []
@@ -1513,9 +2047,14 @@
             "url": {
               "raw": "{{base_url}}/menu",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "menu"]
+              "path": [
+                "api",
+                "menu"
+              ]
             }
           },
           "response": []
@@ -1527,9 +2066,15 @@
             "url": {
               "raw": "{{base_url}}/menu/{{menu_item_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "menu", "{{menu_item_id}}"]
+              "path": [
+                "api",
+                "menu",
+                "{{menu_item_id}}"
+              ]
             }
           },
           "response": []
@@ -1552,9 +2097,14 @@
             "url": {
               "raw": "{{base_url}}/cart",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "cart"]
+              "path": [
+                "api",
+                "cart"
+              ]
             }
           },
           "response": []
@@ -1577,9 +2127,16 @@
             "url": {
               "raw": "{{base_url}}/cart/{{cart_id}}/items",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "cart", "{{cart_id}}", "items"]
+              "path": [
+                "api",
+                "cart",
+                "{{cart_id}}",
+                "items"
+              ]
             }
           },
           "response": []
@@ -1591,9 +2148,15 @@
             "url": {
               "raw": "{{base_url}}/cart/{{cart_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "cart", "{{cart_id}}"]
+              "path": [
+                "api",
+                "cart",
+                "{{cart_id}}"
+              ]
             }
           },
           "response": []
@@ -1616,9 +2179,16 @@
             "url": {
               "raw": "{{base_url}}/cart/{{cart_id}}/checkout",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "cart", "{{cart_id}}", "checkout"]
+              "path": [
+                "api",
+                "cart",
+                "{{cart_id}}",
+                "checkout"
+              ]
             }
           },
           "response": []
@@ -1630,9 +2200,15 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}"
+              ]
             }
           },
           "response": []
@@ -1660,9 +2236,15 @@
             "url": {
               "raw": "{{base_url}}/payments/create-intent",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "payments", "create-intent"]
+              "path": [
+                "api",
+                "payments",
+                "create-intent"
+              ]
             }
           },
           "response": []
@@ -1685,9 +2267,15 @@
             "url": {
               "raw": "{{base_url}}/payments/confirm",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "payments", "confirm"]
+              "path": [
+                "api",
+                "payments",
+                "confirm"
+              ]
             }
           },
           "response": []
@@ -1710,9 +2298,16 @@
             "url": {
               "raw": "{{base_url}}/payments/split-bill/calculate",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "payments", "split-bill", "calculate"]
+              "path": [
+                "api",
+                "payments",
+                "split-bill",
+                "calculate"
+              ]
             }
           },
           "response": []
@@ -1745,9 +2340,16 @@
             "url": {
               "raw": "{{base_url}}/payments/split-bill/create-intents",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "payments", "split-bill", "create-intents"]
+              "path": [
+                "api",
+                "payments",
+                "split-bill",
+                "create-intents"
+              ]
             }
           },
           "response": []
@@ -1764,9 +2366,14 @@
             "url": {
               "raw": "{{base_url}}/inventory",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "inventory"]
+              "path": [
+                "api",
+                "inventory"
+              ]
             }
           },
           "response": []
@@ -1789,9 +2396,14 @@
             "url": {
               "raw": "{{base_url}}/inventory",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "inventory"]
+              "path": [
+                "api",
+                "inventory"
+              ]
             }
           },
           "response": []
@@ -1824,9 +2436,16 @@
             "url": {
               "raw": "{{base_url}}/inventory/1/toggle",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "inventory", "1", "toggle"]
+              "path": [
+                "api",
+                "inventory",
+                "1",
+                "toggle"
+              ]
             }
           },
           "response": []
@@ -1859,9 +2478,15 @@
             "url": {
               "raw": "{{base_url}}/inventory/log-waste",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "inventory", "log-waste"]
+              "path": [
+                "api",
+                "inventory",
+                "log-waste"
+              ]
             }
           },
           "response": []
@@ -1873,9 +2498,14 @@
             "url": {
               "raw": "{{base_url}}/menu",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "menu"]
+              "path": [
+                "api",
+                "menu"
+              ]
             }
           },
           "response": []
@@ -1908,9 +2538,14 @@
             "url": {
               "raw": "{{base_url}}/menu",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "menu"]
+              "path": [
+                "api",
+                "menu"
+              ]
             }
           },
           "response": []
@@ -1943,12 +2578,167 @@
             "url": {
               "raw": "{{base_url}}/menu/{{menu_item_id}}/toggle",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "menu", "{{menu_item_id}}", "toggle"]
+              "path": [
+                "api",
+                "menu",
+                "{{menu_item_id}}",
+                "toggle"
+              ]
             }
           },
           "response": []
+        },
+        {
+          "name": "get inventory alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory/alerts",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "inventory",
+                "alerts"
+              ]
+            },
+            "response": []
+          }
+        },
+        {
+          "name": "get inventory alerts history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory/alerts/history",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "inventory",
+                "alerts",
+                "history"
+              ]
+            },
+            "response": []
+          }
+        },
+        {
+          "name": "acknowledge inventory alert",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory/alerts/1/acknowledge",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "inventory",
+                "alerts",
+                "1",
+                "acknowledge"
+              ]
+            },
+            "response": []
+          }
+        },
+        {
+          "name": "resolve inventory alert",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory/alerts/1/resolve",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "inventory",
+                "alerts",
+                "1",
+                "resolve"
+              ]
+            },
+            "response": []
+          }
+        },
+        {
+          "name": "get menu item ingredients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/menu/{{menu_item_id}}/ingredients",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "menu",
+                "{{menu_item_id}}",
+                "ingredients"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "remove ingredient from menu item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/menu/{{menu_item_id}}/ingredients/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "menu",
+                "{{menu_item_id}}",
+                "ingredients",
+                "1"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -1972,9 +2762,16 @@
             "url": {
               "raw": "{{base_url}}/admin/surge-pricing/config",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "admin", "surge-pricing", "config"]
+              "path": [
+                "api",
+                "admin",
+                "surge-pricing",
+                "config"
+              ]
             }
           },
           "response": []
@@ -2007,9 +2804,16 @@
             "url": {
               "raw": "{{base_url}}/admin/surge-pricing/toggle",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "admin", "surge-pricing", "toggle"]
+              "path": [
+                "api",
+                "admin",
+                "surge-pricing",
+                "toggle"
+              ]
             }
           },
           "response": []
@@ -2031,9 +2835,15 @@
             "url": {
               "raw": "{{base_url}}/admin/restaurant-config",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "admin", "restaurant-config"]
+              "path": [
+                "api",
+                "admin",
+                "restaurant-config"
+              ]
             }
           },
           "response": []
@@ -2066,9 +2876,16 @@
             "url": {
               "raw": "{{base_url}}/admin/restaurant-config/branding",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "admin", "restaurant-config", "branding"]
+              "path": [
+                "api",
+                "admin",
+                "restaurant-config",
+                "branding"
+              ]
             }
           },
           "response": []
@@ -2090,9 +2907,15 @@
             "url": {
               "raw": "{{base_url}}/admin/audit-logs",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "admin", "audit-logs"]
+              "path": [
+                "api",
+                "admin",
+                "audit-logs"
+              ]
             }
           },
           "response": []
@@ -2114,9 +2937,18 @@
             "url": {
               "raw": "{{base_url}}/audit/sales/configs/1/run-now",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "audit", "sales", "configs", "1", "run-now"]
+              "path": [
+                "api",
+                "audit",
+                "sales",
+                "configs",
+                "1",
+                "run-now"
+              ]
             }
           },
           "response": []
@@ -2138,9 +2970,16 @@
             "url": {
               "raw": "{{base_url}}/audit/sales/results",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "audit", "sales", "results"]
+              "path": [
+                "api",
+                "audit",
+                "sales",
+                "results"
+              ]
             }
           },
           "response": []
@@ -2168,9 +3007,14 @@
             "url": {
               "raw": "{{base_url}}/waitlist",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "waitlist"]
+              "path": [
+                "api",
+                "waitlist"
+              ]
             }
           },
           "response": []
@@ -2192,9 +3036,14 @@
             "url": {
               "raw": "{{base_url}}/waitlist",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "waitlist"]
+              "path": [
+                "api",
+                "waitlist"
+              ]
             }
           },
           "response": []
@@ -2216,9 +3065,17 @@
             "url": {
               "raw": "{{base_url}}/waitlist/tables/1/seat-next",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "waitlist", "tables", "1", "seat-next"]
+              "path": [
+                "api",
+                "waitlist",
+                "tables",
+                "1",
+                "seat-next"
+              ]
             }
           },
           "response": []
@@ -2240,9 +3097,17 @@
             "url": {
               "raw": "{{base_url}}/waitlist/entries/1/cancel",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "waitlist", "entries", "1", "cancel"]
+              "path": [
+                "api",
+                "waitlist",
+                "entries",
+                "1",
+                "cancel"
+              ]
             }
           },
           "response": []
@@ -2264,9 +3129,17 @@
             "url": {
               "raw": "{{base_url}}/waitlist/entries/1/no-show",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "waitlist", "entries", "1", "no-show"]
+              "path": [
+                "api",
+                "waitlist",
+                "entries",
+                "1",
+                "no-show"
+              ]
             }
           },
           "response": []
@@ -2294,9 +3167,15 @@
             "url": {
               "raw": "{{base_url}}/tables/check-location",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "tables", "check-location"]
+              "path": [
+                "api",
+                "tables",
+                "check-location"
+              ]
             }
           },
           "response": []
@@ -2329,9 +3208,16 @@
             "url": {
               "raw": "{{base_url}}/tables/qr/generate",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "tables", "qr", "generate"]
+              "path": [
+                "api",
+                "tables",
+                "qr",
+                "generate"
+              ]
             }
           },
           "response": []
@@ -2354,9 +3240,16 @@
             "url": {
               "raw": "{{base_url}}/tables/qr/verify",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "tables", "qr", "verify"]
+              "path": [
+                "api",
+                "tables",
+                "qr",
+                "verify"
+              ]
             }
           },
           "response": []
@@ -2394,9 +3287,16 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/modify-items",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "modify-items"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "modify-items"
+              ]
             }
           },
           "response": []
@@ -2418,9 +3318,17 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/void-item/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "void-item", "1"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "void-item",
+                "1"
+              ]
             }
           },
           "response": []
@@ -2453,9 +3361,16 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/cash-payment",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "cash-payment"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "cash-payment"
+              ]
             }
           },
           "response": []
@@ -2488,12 +3403,1758 @@
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/tips/distribute",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8001",
-              "path": ["api", "orders", "{{order_id}}", "tips", "distribute"]
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "tips",
+                "distribute"
+              ]
             }
           },
           "response": []
+        }
+      ]
+    },
+    {
+      "name": "analytics",
+      "item": [
+        {
+          "name": "category sales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/category-sales",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "analytics",
+                "category-sales"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "staff performance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/staff-performance",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "analytics",
+                "staff-performance"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "dish of week stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/dish-of-week-stats",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "analytics",
+                "dish-of-week-stats"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "audit logs",
+      "item": [
+        {
+          "name": "get audit logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/audit-logs",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "admin",
+                "audit-logs"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "create audit log",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/audit-logs",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "admin",
+                "audit-logs"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"action\": \"TEST_ACTION\",\r\n  \"entity_type\": \"test\"\r\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "usual orders",
+      "item": [
+        {
+          "name": "get the usual by session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/usual?session_token=guest-session-abc",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "customer",
+                "usual?session_token=guest-session-abc"
+              ]
+            },
+            "response": []
+          }
+        },
+        {
+          "name": "get the usual by customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customer/1/usual",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "customer",
+                "1",
+                "usual"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "reorder the usual by session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/usual/reorder",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "customer",
+                "usual",
+                "reorder"
+              ]
+            },
+            "response": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"session_token\": \"guest-session-abc\",\r\n  \"order_type\": \"Dine-In\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "reorder the usual by customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/1/usual/reorder",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "customer",
+                "1",
+                "usual",
+                "reorder"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"order_type\": \"Dine-In\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "set the usual by session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/usual",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "customer",
+                "usual"
+              ]
+            },
+            "response": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"session_token\": \"guest-session-abc\",\r\n  \"item_ids\": [1],\r\n  \"quantities\": [1]\r\n}"
+            }
+          }
+        },
+        {
+          "name": "set the usual by customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customer/1/usual",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "customer",
+                "1",
+                "usual"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"item_ids\": [1],\r\n  \"quantities\": [1]\r\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "service requests",
+      "item": [
+        {
+          "name": "create service request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/service-requests",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "service-requests"
+              ]
+            },
+            "response": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"table_number\": 1,\r\n  \"request_type\": \"call_server\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get service requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/service-requests",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "service-requests"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "?status=&table_number="
+            }
+          }
+        },
+        {
+          "name": "acknowledge request",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/service-requests/1/acknowledge",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "service-requests",
+                "1",
+                "acknowledge"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "complete request",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/service-requests/1/complete",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "service-requests",
+                "1",
+                "complete"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "cancel request",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/service-requests/1/cancel",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "service-requests",
+                "1",
+                "cancel"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "scheduling",
+      "item": [
+        {
+          "name": "create schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "schedules"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"employee_id\": 1,\r\n  \"start_time\": \"2026-07-28T09:00:00\",\r\n  \"end_time\": \"2026-07-28T17:00:00\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get schedules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "schedules"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "?start_date=&end_date="
+            }
+          }
+        },
+        {
+          "name": "get my schedule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/schedules/my",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "schedules",
+                "my"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{waiter_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "update schedule",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "schedules",
+                "1"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"start_time\": \"2026-07-28T10:00:00\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "delete schedule",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/schedules/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "schedules",
+                "1"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "clock in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/time-entries/clock-in",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "time-entries",
+                "clock-in"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{waiter_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"employee_id\": 1\r\n}"
+            }
+          }
+        },
+        {
+          "name": "clock out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/time-entries/clock-out",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "time-entries",
+                "clock-out"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{waiter_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"time_entry_id\": 1\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get time entries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/time-entries",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "time-entries"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "?start_date=&end_date="
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "purchase orders",
+      "item": [
+        {
+          "name": "create supplier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders/suppliers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders",
+                "suppliers"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Sysco\",\r\n  \"contact_name\": \"John\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get suppliers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders/suppliers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders",
+                "suppliers"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "update supplier",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders/suppliers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders",
+                "suppliers",
+                "1"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Sysco Updated\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "create purchase order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"supplier_id\": 1,\r\n  \"items\": [{\"inventory_id\":1,\"quantity_ordered\":50}]\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get purchase orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "?status=&supplier_id="
+            }
+          }
+        },
+        {
+          "name": "update PO status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders/1/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders",
+                "1",
+                "status"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"status\": \"confirmed\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "receive PO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders/1/receive",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders",
+                "1",
+                "receive"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"items\": [{\"purchase_order_item_id\":1,\"quantity_received\":50}]\r\n}"
+            }
+          }
+        },
+        {
+          "name": "create reorder rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders/reorder-rules",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders",
+                "reorder-rules"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"inventory_id\": 1,\r\n  \"reorder_quantity\": 100,\r\n  \"min_quantity\": 20\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get reorder rules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders/reorder-rules",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders",
+                "reorder-rules"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "auto reorder check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/purchase-orders/reorder-rules/auto-check",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "purchase-orders",
+                "reorder-rules",
+                "auto-check"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "notifications",
+      "item": [
+        {
+          "name": "get templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/templates",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "notifications",
+                "templates"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "create template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/templates",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "notifications",
+                "templates"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Order Ready\",\r\n  \"channel\": \"sms\",\r\n  \"event_type\": \"order_ready\",\r\n  \"body_template\": \"Your order is ready!\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "update template",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/templates/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "notifications",
+                "templates",
+                "1"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"is_active\": false\r\n}"
+            }
+          }
+        },
+        {
+          "name": "send notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/send",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "notifications",
+                "send"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"channel\": \"sms\",\r\n  \"recipient\": \"+1234567890\",\r\n  \"body\": \"Test message\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/logs",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "notifications",
+                "logs"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "?channel=&status="
+            }
+          }
+        },
+        {
+          "name": "get preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/preferences",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "notifications",
+                "preferences"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{waiter_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "?customer_id=1"
+            }
+          }
+        },
+        {
+          "name": "update preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/preferences",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "notifications",
+                "preferences"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{waiter_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"preferences\": [{\"channel\":\"sms\",\"event_type\":\"order_ready\",\"is_enabled\":true}]\r\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "tax compliance",
+      "item": [
+        {
+          "name": "create jurisdiction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tax/jurisdictions",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "tax",
+                "jurisdictions"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"California\",\r\n  \"jurisdiction_type\": \"state\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get jurisdictions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tax/jurisdictions",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "tax",
+                "jurisdictions"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "create tax rate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tax/rates",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "tax",
+                "rates"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"jurisdiction_id\": 1,\r\n  \"name\": \"Sales Tax\",\r\n  \"rate_percentage\": 8.5,\r\n  \"applies_to\": \"all\"\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get tax rates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tax/rates",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "tax",
+                "rates"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "calculate order tax",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tax/orders/{{order_id}}/calculate",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "tax",
+                "orders",
+                "{{order_id}}",
+                "calculate"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "create exemption",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tax/exemptions",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "tax",
+                "exemptions"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"organization_name\": \"ABC Corp\",\r\n  \"exemption_number\": \"EX-12345\",\r\n  \"jurisdiction_id\": 1\r\n}"
+            }
+          }
+        },
+        {
+          "name": "get exemptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tax/exemptions",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8001",
+              "path": [
+                "tax",
+                "exemptions"
+              ]
+            },
+            "response": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     }

@@ -4,11 +4,13 @@ Tester: _______________
 
 HOW TO USE:
 1. Open Postman, import "TableReady API.postman_collection.json"
-2. Create a new environment with variables: base_url, manager_token, waiter_token, order_id, cart_id, menu_item_id
+2. Create a new environment with variables: base_url, manager_token, waiter_token, kitchen_token, delivery_token, order_id, cart_id, menu_item_id, table_id, reservation_id, entry_id, modifier_id, config_id
 3. Set base_url = http://localhost:8001/api
 4. Run these requests FIRST (in order):
-   - "login as manager" → auto-saves manager_token
-   - "login as waiter" → auto-saves waiter_token
+    - "login as manager" → auto-saves manager_token
+    - "login as waiter" → auto-saves waiter_token
+    - "login as kitchen" → auto-saves kitchen_token
+    - "login as delivery" → auto-saves delivery_token
    (Check Postman Console to confirm tokens saved)
 5. Test remaining endpoints in order
 6. Record results below

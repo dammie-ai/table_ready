@@ -346,18 +346,23 @@ router.get('/:id', async (req, res) => {
     }
 
     const itemsRes = await pool.query(
-      `SELECT oi.quantity, oi.custom_instructions, oi.item_status, COALESCE(mi.name, 'Item #' || oi.item_id) AS item_name
+      `SELECT oi.quantity, oi.custom_instructions, oi.item_status, oi.modifiers, COALESCE(mi.name, 'Item #' || oi.item_id) AS item_name
        FROM order_items oi
        LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
        WHERE oi.master_order_id = $1`,
       [id]
     );
 
+    const items = itemsRes.rows.map(item => ({
+      ...item,
+      modifiers: typeof item.modifiers === 'string' ? JSON.parse(item.modifiers || '[]') : (item.modifiers || [])
+    }));
+
     return res.status(200).json({
       success: true,
       order: {
         ...orderRes.rows[0],
-        items: itemsRes.rows
+        items
       }
     });
   } catch (err) {
@@ -385,12 +390,17 @@ router.get('/:id', async (req, res) => {
       const order = orderRes.rows[0];
 
       const itemsRes = await pool.query(
-        `SELECT oi.quantity, COALESCE(mi.name, 'Menu Item #' || oi.item_id) AS item_name, oi.custom_instructions, mi.base_price
+        `SELECT oi.quantity, COALESCE(mi.name, 'Menu Item #' || oi.item_id) AS item_name, oi.custom_instructions, mi.base_price, oi.modifiers
          FROM order_items oi
          LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
          WHERE oi.master_order_id = $1`,
         [id]
       );
+
+      const receiptItems = itemsRes.rows.map(item => ({
+        ...item,
+        modifiers: typeof item.modifiers === 'string' ? JSON.parse(item.modifiers || '[]') : (item.modifiers || [])
+      }));
 
       const taxRate = await require('../services/configService').getTaxRate();
       const subtotal = parseFloat(order.total_amount || 0) - parseFloat(order.tax_calculation || 0);
@@ -405,12 +415,13 @@ router.get('/:id', async (req, res) => {
         orderType: order.order_type,
         status: order.status,
         date: order.created_at,
-        items: itemsRes.rows.map(item => ({
+        items: receiptItems.map(item => ({
           name: item.item_name,
           quantity: item.quantity,
           unit_price: parseFloat(item.base_price || 0),
           subtotal: parseFloat((item.base_price || 0) * item.quantity),
           custom_instructions: item.custom_instructions,
+          modifiers: item.modifiers,
         })),
         subtotal: parseFloat(subtotal.toFixed(2)),
         tax: parseFloat(tax.toFixed(2)),

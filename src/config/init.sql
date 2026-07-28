@@ -217,6 +217,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     ordered_by_user_id INT NOT NULL,
     custom_instructions TEXT,
     has_allergy_alert BOOLEAN DEFAULT FALSE,
+    modifiers JSONB DEFAULT '[]',
     item_status VARCHAR(30) DEFAULT 'Received' CHECK (item_status IN ('Received', 'Preparing', 'Ready', 'Bumped'))
 );
 
@@ -287,12 +288,14 @@ CREATE TABLE IF NOT EXISTS cart_items (
     inventory_id INTEGER DEFAULT NULL REFERENCES inventory(id) ON DELETE CASCADE,
     quantity INTEGER NOT NULL DEFAULT 1,
     custom_instructions TEXT DEFAULT NULL,
+    modifiers JSONB DEFAULT '[]',
     unit_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON cart_items(cart_id);
+CREATE INDEX IF NOT EXISTS idx_cart_items_modifiers ON cart_items USING GIN (modifiers);
 
 -- 17. CUSTOMER PROFILES (guest/registered customers)
 CREATE TABLE IF NOT EXISTS customer_profiles (

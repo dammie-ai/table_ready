@@ -358,6 +358,146 @@ const schemas = {
     party_size: z.number().int().positive().optional(),
     status: z.enum(['confirmed', 'seated', 'cancelled', 'completed', 'no_show']).optional(),
     notes: z.string().optional()
+  }),
+
+  createSchedule: z.object({
+    employee_id: z.number().int().positive('Employee ID must be a positive integer'),
+    schedule_date: z.string().min(1, 'Schedule date is required'),
+    start_time: z.string().min(1, 'Start time is required'),
+    end_time: z.string().min(1, 'End time is required'),
+    role: z.string().optional(),
+    is_published: z.boolean().optional(),
+    notes: z.string().optional()
+  }),
+
+  updateSchedule: z.object({
+    start_time: z.string().optional(),
+    end_time: z.string().optional(),
+    role: z.string().optional(),
+    is_published: z.boolean().optional(),
+    notes: z.string().optional(),
+    schedule_date: z.string().optional()
+  }),
+
+  clockInOut: z.object({
+    employee_id: z.number().int().positive('Employee ID must be a positive integer'),
+    location: z.string().optional(),
+    notes: z.string().optional()
+  }),
+
+  createSupplier: z.object({
+    name: z.string().min(1, 'Supplier name is required'),
+    contact_name: z.string().optional(),
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    tax_id: z.string().optional(),
+    payment_terms: z.string().optional(),
+    is_active: z.boolean().optional()
+  }),
+
+  updateSupplier: z.object({
+    name: z.string().min(1).optional(),
+    contact_name: z.string().optional(),
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    tax_id: z.string().optional(),
+    payment_terms: z.string().optional(),
+    is_active: z.boolean().optional()
+  }),
+
+  createPurchaseOrder: z.object({
+    supplier_id: z.number().int().positive('Supplier ID must be a positive integer'),
+    expected_delivery_date: z.string().optional(),
+    notes: z.string().optional(),
+    items: z.array(z.object({
+      inventory_id: z.number().int().positive('Inventory ID must be a positive integer'),
+      quantity_ordered: z.number().positive('Quantity must be greater than 0'),
+      unit_cost: z.number().positive('Unit cost must be greater than 0'),
+      notes: z.string().optional()
+    })).min(1, 'At least one item is required')
+  }),
+
+  updatePurchaseOrderStatus: z.object({
+    status: z.enum(['draft', 'sent', 'confirmed', 'shipped', 'received', 'cancelled', 'partially_received'])
+  }),
+
+  receivePurchaseOrder: z.object({
+    items: z.array(z.object({
+      purchase_order_item_id: z.number().int().positive(),
+      quantity_received: z.number().nonnegative()
+    })).min(1, 'At least one item is required')
+  }),
+
+  createReorderRule: z.object({
+    inventory_id: z.number().int().positive('Inventory ID must be a positive integer'),
+    supplier_id: z.number().int().positive().optional(),
+    reorder_quantity: z.number().positive('Reorder quantity must be greater than 0'),
+    min_quantity: z.number().positive('Min quantity must be greater than 0'),
+    is_enabled: z.boolean().optional()
+  }),
+
+  updateReorderRule: z.object({
+    reorder_quantity: z.number().positive().optional(),
+    min_quantity: z.number().positive().optional(),
+    is_enabled: z.boolean().optional()
+  }),
+
+  createNotificationTemplate: z.object({
+    name: z.string().min(1, 'Template name is required'),
+    channel: z.enum(['email', 'sms', 'push', 'in_app']),
+    event_type: z.string().min(1, 'Event type is required'),
+    subject_template: z.string().optional(),
+    body_template: z.string().min(1, 'Body template is required')
+  }),
+
+  updateNotificationTemplate: z.object({
+    name: z.string().min(1).optional(),
+    channel: z.enum(['email', 'sms', 'push', 'in_app']).optional(),
+    event_type: z.string().min(1).optional(),
+    subject_template: z.string().optional(),
+    body_template: z.string().min(1).optional(),
+    is_active: z.boolean().optional()
+  }),
+
+  sendTestNotification: z.object({
+    channel: z.enum(['email', 'sms', 'push', 'in_app']),
+    recipient: z.string().min(1, 'Recipient is required'),
+    template_id: z.number().int().positive().optional(),
+    subject: z.string().optional(),
+    body: z.string().min(1, 'Body is required'),
+    related_entity_type: z.string().optional(),
+    related_entity_id: z.number().int().positive().optional()
+  }),
+
+  createTaxJurisdiction: z.object({
+    name: z.string().min(1, 'Jurisdiction name is required'),
+    jurisdiction_type: z.enum(['country', 'state', 'county', 'city', 'special']),
+    parent_jurisdiction_id: z.number().int().positive().optional(),
+    code: z.string().optional(),
+    is_active: z.boolean().optional(),
+    effective_date: z.string().optional(),
+    end_date: z.string().optional()
+  }),
+
+  createTaxRate: z.object({
+    jurisdiction_id: z.number().int().positive('Jurisdiction ID must be a positive integer'),
+    name: z.string().min(1, 'Tax rate name is required'),
+    rate_percentage: z.number().positive('Rate must be greater than 0'),
+    applies_to: z.enum(['all', 'food', 'alcohol', 'merchandise', 'delivery', 'service']).optional(),
+    is_tax_inclusive: z.boolean().optional(),
+    is_active: z.boolean().optional(),
+    effective_date: z.string().optional(),
+    end_date: z.string().optional()
+  }),
+
+  createTaxExemption: z.object({
+    customer_id: z.number().int().positive().optional(),
+    organization_name: z.string().min(1, 'Organization name is required'),
+    exemption_number: z.string().min(1, 'Exemption number is required'),
+    jurisdiction_id: z.number().int().positive('Jurisdiction ID must be a positive integer'),
+    expires_at: z.string().optional()
   })
 };
 
