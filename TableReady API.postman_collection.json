@@ -28,6 +28,10 @@
     },
     {
       "key": "menu_item_id",
+      "value": "5"
+    },
+    {
+      "key": "reservation_id",
       "value": "1"
     }
   ],
@@ -137,6 +141,88 @@
           "response": []
         },
         {
+          "name": "login as kitchen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const code = pm.response.code;",
+                  "const body = pm.response.json();",
+                  "console.log('Login status:', code, body.success ? 'OK' : 'FAIL');",
+                  "if (code === 200 && body.success && body.token) {",
+                  "    pm.environment.set('kitchen_token', body.token);",
+                  "    console.log('kitchen_token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"kitchen_test\",\r\n  \"password\": \"password123\"\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login as delivery",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const code = pm.response.code;",
+                  "const body = pm.response.json();",
+                  "console.log('Login status:', code, body.success ? 'OK' : 'FAIL');",
+                  "if (code === 200 && body.success && body.token) {",
+                  "    pm.environment.set('delivery_token', body.token);",
+                  "    console.log('delivery_token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"delivery_test\",\r\n  \"password\": \"password123\"\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "register",
           "request": {
             "method": "POST",
@@ -206,6 +292,203 @@
               "host": ["localhost"],
               "port": "8001",
               "path": ["api", "auth", "account"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "dashboards",
+      "item": [
+        {
+          "name": "dashboard config",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/config",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "dashboard", "config"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "manager dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/manager",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "dashboard", "manager"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "admin dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/admin",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "dashboard", "admin"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant manager dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/assistant_manager",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "dashboard", "assistant_manager"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "kitchen dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{kitchen_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/kitchen",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "dashboard", "kitchen"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delivery dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/delivery",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "dashboard", "delivery"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "waiter dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{waiter_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/waiter",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "dashboard", "waiter"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "other staff dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{waiter_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/other",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "dashboard", "other"]
             }
           },
           "response": []
@@ -542,6 +825,17 @@
               ]
             },
             "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"reason\": \"Customer changed mind\"\r\n}"
+            },
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/refund",
               "protocol": "http",
@@ -727,6 +1021,482 @@
               "host": ["localhost"],
               "port": "8001",
               "path": ["api", "kitchen", "orders", "{{order_id}}", "cook-tracking"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "delivery",
+      "item": [
+        {
+          "name": "assign driver",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"order_id\": 2,\r\n  \"driver_id\": 10\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/assign",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "delivery", "assign"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update delivery status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"status\": \"accepted\"\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/2/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "delivery", "2", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update driver location",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"latitude\": 40.7128,\r\n  \"longitude\": -74.0060\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/delivery/2/location",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "delivery", "2", "location"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delivery history",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{delivery_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/delivery/history",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "delivery", "history"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "modifiers",
+      "item": [
+        {
+          "name": "get all modifiers",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/modifiers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "modifiers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "create modifier",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Extra Bacon\",\r\n  \"description\": \"Add crispy bacon\",\r\n  \"price_adjustment\": 2.00,\r\n  \"modifier_type\": \"extra\"\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/modifiers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "modifiers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get modifiers for item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/modifiers/item/{{menu_item_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "modifiers", "item", "{{menu_item_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add modifier to item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"modifier_id\": 1,\r\n  \"is_required\": false,\r\n  \"max_quantity\": 2,\r\n  \"sort_order\": 1\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/modifiers/item/{{menu_item_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "modifiers", "item", "{{menu_item_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remove modifier from item",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/modifiers/item/{{menu_item_id}}/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "modifiers", "item", "{{menu_item_id}}", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "reservations",
+      "item": [
+        {
+          "name": "create reservation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customer_name\": \"John Doe\",\r\n  \"customer_phone\": \"555-0100\",\r\n  \"table_id\": 1,\r\n  \"reservation_date\": \"2026-07-28\",\r\n  \"reservation_time\": \"19:00:00\",\r\n  \"party_size\": 4,\r\n  \"notes\": \"Window seat preferred\"\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reservations",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "reservations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get reservations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/reservations",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "reservations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get reservations by date",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/reservations/date/2026-07-28",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "reservations", "date", "2026-07-28"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get reservation by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/reservations/{{reservation_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "reservations", "{{reservation_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update reservation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"party_size\": 6,\r\n  \"notes\": \"Updated notes\"\r\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reservations/{{reservation_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "reservations", "{{reservation_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "cancel reservation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{manager_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/reservations/{{reservation_id}}/cancel",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "reservations", "{{reservation_id}}", "cancel"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "seat reservation",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{waiter_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/reservations/{{reservation_id}}/seat",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8001",
+              "path": ["api", "reservations", "{{reservation_id}}", "seat"]
             }
           },
           "response": []
