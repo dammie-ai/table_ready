@@ -18,7 +18,7 @@ async function autoSeatWaitlistForTable(io, tableId) {
       return { success: false, message: 'Table not found.' };
     }
 
-    const table = tableRes.rows[0];
+    const table = tableRes.rows[0]; 
 
     if (table.status_state !== 'Available') {
       await client.query('ROLLBACK');
