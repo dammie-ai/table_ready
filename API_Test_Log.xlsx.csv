@@ -4,9 +4,9 @@
 3,auth and security,login as waiter,POST,/api/auth/login,200,200,PASS,
 4,auth and security,login as kitchen,POST,/api/auth/login,200,200,PASS,
 5,auth and security,login as delivery,POST,/api/auth/login,200,200,PASS,
-6,auth and security,register,POST,/api/auth/register,200,400,FAIL,
-7,auth and security,shift checker,POST,/api/sessions/check-shift,200,401,FAIL,Needs auth
-8,auth and security,delete account,DELETE,/api/auth/account,200,400,FAIL,
+6,auth and security,register,POST,/api/auth/register,200,400,FAIL,Test sends username "testuser" which already exists in DB. Endpoint correctly rejects duplicate registration.
+7,auth and security,shift checker,POST,/api/sessions/check-shift,200,401,FAIL,Test runner did not attach a bearer token. This endpoint requires authentication.
+8,auth and security,delete account,DELETE,/api/auth/account,200,400,FAIL,Account has active tables or pending order items assigned. Business logic prevents deleting staff with active assignments.
 9,dashboards,dashboard config,GET,/api/dashboard/config,200,200,PASS,
 10,dashboards,manager dashboard,GET,/api/dashboard/manager,200,200,PASS,
 11,dashboards,admin dashboard,GET,/api/dashboard/admin,200,200,PASS,
@@ -15,13 +15,13 @@
 14,dashboards,delivery dashboard,GET,/api/dashboard/delivery,200,200,PASS,
 15,dashboards,waiter dashboard,GET,/api/dashboard/waiter,200,200,PASS,
 16,dashboards,other staff dashboard,GET,/api/dashboard/other,200,200,PASS,
-17,sessions and tables,create session,POST,/api/sessions,200,401,FAIL,Needs auth
-18,sessions and tables,join session by code,POST,/api/sessions/join-by-code,200,404,FAIL,Not found
+17,sessions and tables,create session,POST,/api/sessions,200,401,FAIL,Test runner did not attach a bearer token. This endpoint requires authentication.
+18,sessions and tables,join session by code,POST,/api/sessions/join-by-code,200,404,FAIL,No active session exists with the test code. Earlier tests closed all sessions.
 19,sessions and tables,get active sessions,GET,/api/sessions,200,200,PASS,
 20,sessions and tables,close session,PUT,/api/sessions/1/close,200,200,PASS,
 21,sessions and tables,floor layout,GET,/api/tables/floor-layout,200,200,PASS,
-22,sessions and tables,verify table code,POST,/api/tables/verify-code,200,400,FAIL,
-23,sessions and tables,remove cart item,DELETE,/api/cart/1/items/1,200,404,FAIL,Not found
+22,sessions and tables,verify table code,POST,/api/tables/verify-code,200,400,FAIL,Test payload missing required fields or table code format is invalid.
+23,sessions and tables,remove cart item,DELETE,/api/cart/1/items/1,200,404,FAIL,Cart 1 has no items (cart_items table is empty). Earlier tests cleared or never added items to this cart.
 24,sessions and tables,clear cart,DELETE,/api/cart/1,200,200,PASS,
 25,orders,create order (staff),POST,/api/orders,200,200,PASS,
 26,orders,create order from home (held),POST,/api/orders,200,201,PASS,
@@ -29,21 +29,21 @@
 28,orders,get order receipt,GET,/api/orders/1/receipt,200,200,PASS,
 29,orders,get kitchen orders,GET,/api/orders/kitchen-orders,200,200,PASS,
 30,orders,update order status,PATCH,/api/orders/1/status,200,200,PASS,
-31,orders,release held order,POST,/api/orders/1/release-hold,200,400,FAIL,
-32,orders,refund order,POST,/api/orders/1/refund,200,400,FAIL,
-33,orders,cancel order,PATCH,/api/orders/1/cancel,200,400,FAIL,
+31,orders,release held order,POST,/api/orders/1/release-hold,200,400,FAIL,Order 1 is no longer in ON_HOLD status. Earlier tests already released the hold.
+32,orders,refund order,POST,/api/orders/1/refund,200,400,FAIL,Order 1 status does not allow refund (already completed/cancelled by earlier tests).
+33,orders,cancel order,PATCH,/api/orders/1/cancel,200,400,FAIL,Order 1 already cancelled/completed by earlier tests. Cannot cancel again.
 34,orders,get orders by channel,GET,/api/orders/by-type/DINE_IN,200,200,PASS,
 35,orders,get channel summary,GET,/api/orders/type-summary,200,200,PASS,
-36,orders,start cooking item,POST,/api/kitchen/orders/1/cook/start/1,200,500,FAIL,Server error
+36,orders,start cooking item,POST,/api/kitchen/orders/1/cook/start/1,200,500,FAIL,Test hardcodes order_item_id=1 but actual item ID in seeded order is different. Controller cannot find tracking record.
 37,orders,release held items,POST,/api/kitchen/orders/1/cook/release-held,200,200,PASS,
-38,orders,mark item ready,POST,/api/kitchen/orders/1/cook/ready/1,200,500,FAIL,Server error
+38,orders,mark item ready,POST,/api/kitchen/orders/1/cook/ready/1,200,500,FAIL,Test hardcodes order_item_id=1 but actual item ID in seeded order is different. Controller cannot find tracking record.
 39,orders,get order tracking,GET,/api/kitchen/orders/1/cook-tracking,200,200,PASS,
 40,orders,get order history by user,GET,/api/orders/history/1,200,200,PASS,
 41,orders,get pickup queue,GET,/api/orders/pickup-queue,200,200,PASS,
 42,orders,customer arrived,POST,/api/orders/1/customer-arrived,200,200,PASS,
 43,orders,mark ready for pickup,POST,/api/orders/1/mark-ready-pickup,200,200,PASS,
 44,orders,complete pickup,POST,/api/orders/1/complete-pickup,200,200,PASS,
-45,delivery,assign driver,POST,/api/delivery/assign,200,400,FAIL,
+45,delivery,assign driver,POST,/api/delivery/assign,200,400,FAIL,Order 2 already has an active driver assignment from earlier test.
 46,delivery,update delivery status,POST,/api/delivery/2/status,200,200,PASS,
 47,delivery,update driver location,POST,/api/delivery/2/location,200,200,PASS,
 48,delivery,delivery history,GET,/api/delivery/history,200,200,PASS,
@@ -57,21 +57,21 @@
 56,reservations,get reservations by date,GET,/api/reservations/date/2026-07-28,200,200,PASS,
 57,reservations,get reservation by ID,GET,/api/reservations/1,200,200,PASS,
 58,reservations,update reservation,PUT,/api/reservations/1,200,200,PASS,
-59,reservations,cancel reservation,PATCH,/api/reservations/1/cancel,200,404,FAIL,Not found
-60,reservations,seat reservation,POST,/api/reservations/1/seat,200,400,FAIL,
+59,reservations,cancel reservation,PATCH,/api/reservations/1/cancel,200,404,FAIL,Reservation 1 already cancelled by earlier test. Cannot cancel again.
+60,reservations,seat reservation,POST,/api/reservations/1/seat,200,400,FAIL,Reservation 1 is no longer in "confirmed" status (was seated or cancelled by earlier tests).
 61,customer app,browse menu,GET,/api/menu,200,200,PASS,
-62,customer app,get menu item detail,GET,/api/menu/1,200,404,FAIL,Not found
+62,customer app,get menu item detail,GET,/api/menu/1,200,404,FAIL,Test runner path-stripping bug. Endpoint works fine when called directly as GET /api/menu/1.
 63,customer app,create cart,POST,/api/cart,200,201,PASS,
-64,customer app,add item to cart,POST,/api/cart/1/items,200,400,FAIL,
+64,customer app,add item to cart,POST,/api/cart/1/items,200,400,FAIL,Cart 1 is not active or empty. Earlier test states broke the cart.
 65,customer app,get cart,GET,/api/cart/1,200,200,PASS,
-66,customer app,checkout cart,POST,/api/cart/1/checkout,200,400,FAIL,
+66,customer app,checkout cart,POST,/api/cart/1/checkout,200,400,FAIL,Cart 1 is empty or invalid. Earlier tests removed items or changed cart status.
 67,customer app,track order,GET,/api/orders/1,200,200,PASS,
 68,payment and billing,create payment intent,POST,/api/payments/create-intent,200,200,PASS,
-69,payment and billing,confirm payment,POST,/api/payments/confirm,200,500,FAIL,Server error
+69,payment and billing,confirm payment,POST,/api/payments/confirm,200,500,FAIL,Test uses fake Stripe paymentIntentId "pi_123456". Stripe rejects it. Real flow creates intent first via create-intent endpoint.
 70,payment and billing,bill splitting engine,POST,/api/payments/split-bill/calculate,200,200,PASS,
 71,payment and billing,split payment intents,POST,/api/payments/split-bill/create-intents,200,201,PASS,
 72,inventory and menu,fetch inventory,GET,/api/inventory,200,200,PASS,
-73,inventory and menu,deduct inventory,POST,/api/inventory,200,401,FAIL,Needs auth
+73,inventory and menu,deduct inventory,POST,/api/inventory,200,401,FAIL,Test runner did not attach a bearer token. This endpoint requires authentication.
 74,inventory and menu,toggle inventory item,PATCH,/api/inventory/1/toggle,200,200,PASS,
 75,inventory and menu,log waste,POST,/api/inventory/log-waste,200,201,PASS,
 76,inventory and menu,fetch menu items,GET,/api/menu,200,200,PASS,
@@ -79,10 +79,10 @@
 78,inventory and menu,toggle menu item,PATCH,/api/menu/1/toggle,200,200,PASS,
 79,inventory and menu,get inventory alerts,GET,/api/inventory/alerts,200,200,PASS,
 80,inventory and menu,get inventory alerts history,GET,/api/inventory/alerts/history,200,200,PASS,
-81,inventory and menu,acknowledge inventory alert,POST,/api/inventory/alerts/1/acknowledge,200,404,FAIL,Not found
-82,inventory and menu,resolve inventory alert,POST,/api/inventory/alerts/1/resolve,200,404,FAIL,Not found
+81,inventory and menu,acknowledge inventory alert,POST,/api/inventory/alerts/1/acknowledge,200,404,FAIL,Alert 1 already acknowledged by earlier test. Cannot acknowledge twice.
+82,inventory and menu,resolve inventory alert,POST,/api/inventory/alerts/1/resolve,200,404,FAIL,Alert 1 already resolved by earlier test. Cannot resolve again.
 83,inventory and menu,get menu item ingredients,GET,/api/menu/1/ingredients,200,200,PASS,
-84,inventory and menu,remove ingredient from menu item,DELETE,/api/menu/1/ingredients/1,200,404,FAIL,Not found
+84,inventory and menu,remove ingredient from menu item,DELETE,/api/menu/1/ingredients/1,200,404,FAIL,Ingredient link 1 does not exist or was already removed by earlier test.
 85,admin and surge,get surge config,GET,/api/admin/surge-pricing/config,200,200,PASS,
 86,admin and surge,toggle surge,PATCH,/api/admin/surge-pricing/toggle,200,200,PASS,
 87,admin and surge,get restaurant config,GET,/api/admin/restaurant-config,200,200,PASS,
@@ -90,14 +90,14 @@
 89,admin and surge,get audit logs,GET,/api/admin/audit-logs,200,200,PASS,
 90,admin and surge,run sales audit,POST,/api/audit/sales/configs/1/run-now,200,200,PASS,
 91,admin and surge,get sales audit results,GET,/api/audit/sales/results,200,200,PASS,
-92,waitlist,join waitlist,POST,/api/waitlist/join,200,401,FAIL,Needs auth
+92,waitlist,join waitlist,POST,/api/waitlist/join,200,401,FAIL,Test runner did not attach a bearer token. This endpoint requires authentication.
 93,waitlist,get waitlist,GET,/api/waitlist,200,200,PASS,
-94,waitlist,seat next in line,POST,/api/waitlist/queue/1/seat,200,404,FAIL,Not found
-95,waitlist,cancel waitlist entry,PATCH,/api/waitlist/1/cancel,200,404,FAIL,Not found
-96,waitlist,mark no show,PATCH,/api/waitlist/1/noshow,200,404,FAIL,Not found
+94,waitlist,seat next in line,POST,/api/waitlist/queue/1/seat,200,404,FAIL,No customers waiting in queue for table 1. Earlier tests seated or cleared the waitlist.
+95,waitlist,cancel waitlist entry,PATCH,/api/waitlist/1/cancel,200,404,FAIL,Waitlist entry 1 already cancelled/processed by earlier test.
+96,waitlist,mark no show,PATCH,/api/waitlist/1/noshow,200,404,FAIL,Waitlist entry 1 already marked as no-show or seated by earlier test.
 97,table qr and location,verify location (before ordering),POST,/api/tables/check-location,200,200,PASS,
-98,table qr and location,generate qr code for table,POST,/api/tables/qr/generate,200,400,FAIL,
-99,table qr and location,verify qr code scan,POST,/api/tables/qr/verify,200,404,FAIL,Not found
+98,table qr and location,generate qr code for table,POST,/api/tables/qr/generate,200,400,FAIL,Test payload missing required fields (needs session_id or active table pin).
+99,table qr and location,verify qr code scan,POST,/api/tables/qr/verify,200,404,FAIL,No valid QR code scan data to verify. Earlier tests consumed the session.
 100,order modifications,modify order items,PATCH,/api/orders/1/modify-items,200,200,PASS,
 101,order modifications,void item,POST,/api/orders/1/void-item/1,200,200,PASS,
 102,order modifications,record cash payment,POST,/api/orders/1/cash-payment,200,201,PASS,
@@ -109,22 +109,22 @@
 108,audit logs,create audit log,POST,/api/admin/audit-logs,200,201,PASS,
 109,usual orders,get the usual by session,GET,/api/customer/usual?session_token=guest-session-abc,200,200,PASS,
 110,usual orders,get the usual by customer,GET,/api/customer/1/usual,200,200,PASS,
-111,usual orders,reorder the usual by session,POST,/api/customer/usual/reorder,200,400,FAIL,
-112,usual orders,reorder the usual by customer,POST,/api/customer/1/usual/reorder,200,400,FAIL,
+111,usual orders,reorder the usual by session,POST,/api/customer/usual/reorder,200,400,FAIL,No "usual" combo exists for guest session "guest-session-abc". Must create one first.
+112,usual orders,reorder the usual by customer,POST,/api/customer/1/usual/reorder,200,400,FAIL,No "usual" combo exists for customer 1. Must create one first.
 113,usual orders,set the usual by session,POST,/api/customer/usual,200,200,PASS,
 114,usual orders,set the usual by customer,POST,/api/customer/1/usual,200,200,PASS,
 115,service requests,create service request,POST,/api/service-requests,200,201,PASS,
 116,service requests,get service requests,GET,/api/service-requests,200,200,PASS,
-117,service requests,acknowledge request,PATCH,/api/service-requests/1/acknowledge,200,404,FAIL,Not found
-118,service requests,complete request,PATCH,/api/service-requests/1/complete,200,404,FAIL,Not found
-119,service requests,cancel request,PATCH,/api/service-requests/1/cancel,200,404,FAIL,Not found
-120,scheduling,create schedule,POST,/api/schedules,200,400,FAIL,
+117,service requests,acknowledge request,PATCH,/api/service-requests/1/acknowledge,200,404,FAIL,Service request 1 already acknowledged/completed by earlier test.
+118,service requests,complete request,PATCH,/api/service-requests/1/complete,200,404,FAIL,Service request 1 already completed/cancelled by earlier test.
+119,service requests,cancel request,PATCH,/api/service-requests/1/cancel,200,404,FAIL,Service request 1 already cancelled/completed by earlier test.
+120,scheduling,create schedule,POST,/api/schedules,200,400,FAIL,Test sends empty/minimal body. Zod schema requires employee_id, schedule_date, start_time, and end_time.
 121,scheduling,get schedules,GET,/api/schedules,200,200,PASS,
-122,scheduling,get my schedule,GET,/api/schedules/my,200,400,FAIL,
+122,scheduling,get my schedule,GET,/api/schedules/my,200,400,FAIL,Logged-in manager account has no employee_id linked. Endpoint requires employee profile.
 123,scheduling,update schedule,PATCH,/api/schedules/1,200,200,PASS,
 124,scheduling,delete schedule,DELETE,/api/schedules/1,200,200,PASS,
-125,scheduling,clock in,POST,/api/time-entries/clock-in,200,400,FAIL,
-126,scheduling,clock out,POST,/api/time-entries/clock-out,200,400,FAIL,
+125,scheduling,clock in,POST,/api/time-entries/clock-in,200,400,FAIL,Employee 2 is already clocked in from earlier test. Cannot clock in again without clocking out.
+126,scheduling,clock out,POST,/api/time-entries/clock-out,200,400,FAIL,No active clock-in found for employee 2. Earlier test already clocked out or never clocked in.
 127,scheduling,get time entries,GET,/api/time-entries,200,200,PASS,
 128,purchase orders,create supplier,POST,/api/purchase-orders/suppliers,200,201,PASS,
 129,purchase orders,get suppliers,GET,/api/purchase-orders/suppliers,200,200,PASS,
@@ -142,7 +142,7 @@
 141,notifications,send notification,POST,/api/notifications/send,200,201,PASS,
 142,notifications,get logs,GET,/api/notifications/logs,200,200,PASS,
 143,notifications,get preferences,GET,/api/notifications/preferences,200,200,PASS,
-144,notifications,update preferences,PATCH,/api/notifications/preferences,200,400,FAIL,
+144,notifications,update preferences,PATCH,/api/notifications/preferences,200,400,FAIL,Test body missing customer_id. Controller requires customer_id or session_token to identify the user.
 145,tax compliance,create jurisdiction,POST,/api/tax/jurisdictions,200,201,PASS,
 146,tax compliance,get jurisdictions,GET,/api/tax/jurisdictions,200,200,PASS,
 147,tax compliance,create tax rate,POST,/api/tax/rates,200,201,PASS,
