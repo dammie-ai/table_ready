@@ -11,6 +11,6 @@ router.patch('/templates/:id', authenticateToken, authorizeRoles('admin', 'manag
 router.post('/send', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.sendTestNotification), notificationController.sendNotification);
 router.get('/logs', authenticateToken, authorizeRoles('admin', 'manager'), notificationController.getNotificationLogs);
 router.get('/preferences', authenticateToken, notificationController.getNotificationPreferences);
-router.patch('/preferences', authenticateToken, notificationController.updateNotificationPreferences);
+router.patch('/preferences', authenticateToken, validate(schemas.updateNotificationPreferences), notificationController.updateNotificationPreferences);
 
 module.exports = router;

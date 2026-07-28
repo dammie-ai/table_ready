@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { logAudit } = require('../utils/auditLogger');

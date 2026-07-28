@@ -6,7 +6,7 @@
 5,auth and security,login as delivery,POST,/api/auth/login,200,200,PASS,
 6,auth and security,register,POST,/api/auth/register,200,400,FAIL,
 7,auth and security,shift checker,POST,/api/sessions/check-shift,200,401,FAIL,Needs auth
-8,auth and security,delete account,DELETE,/api/auth/account,200,500,FAIL,Server error
+8,auth and security,delete account,DELETE,/api/auth/account,200,400,FAIL,
 9,dashboards,dashboard config,GET,/api/dashboard/config,200,200,PASS,
 10,dashboards,manager dashboard,GET,/api/dashboard/manager,200,200,PASS,
 11,dashboards,admin dashboard,GET,/api/dashboard/admin,200,200,PASS,
@@ -23,7 +23,7 @@
 22,sessions and tables,verify table code,POST,/api/tables/verify-code,200,400,FAIL,
 23,sessions and tables,remove cart item,DELETE,/api/cart/1/items/1,200,404,FAIL,Not found
 24,sessions and tables,clear cart,DELETE,/api/cart/1,200,200,PASS,
-25,orders,create order (staff),POST,/api/orders,200,400,FAIL,
+25,orders,create order (staff),POST,/api/orders,200,200,PASS,
 26,orders,create order from home (held),POST,/api/orders,200,201,PASS,
 27,orders,get order,GET,/api/orders/1,200,200,PASS,
 28,orders,get order receipt,GET,/api/orders/1/receipt,200,200,PASS,
@@ -32,19 +32,19 @@
 31,orders,release held order,POST,/api/orders/1/release-hold,200,400,FAIL,
 32,orders,refund order,POST,/api/orders/1/refund,200,400,FAIL,
 33,orders,cancel order,PATCH,/api/orders/1/cancel,200,400,FAIL,
-34,orders,get orders by channel,GET,/api/orders/by-type/DINE_IN,200,404,FAIL,Not found
+34,orders,get orders by channel,GET,/api/orders/by-type/DINE_IN,200,200,PASS,
 35,orders,get channel summary,GET,/api/orders/type-summary,200,200,PASS,
-36,orders,start cooking item,POST,/api/kitchen/orders/1/cook/start/1,200,403,FAIL,Forbidden
-37,orders,release held items,POST,/api/kitchen/orders/1/cook/release-held,200,403,FAIL,Forbidden
-38,orders,mark item ready,POST,/api/kitchen/orders/1/cook/ready/1,200,403,FAIL,Forbidden
+36,orders,start cooking item,POST,/api/kitchen/orders/1/cook/start/1,200,500,FAIL,Server error
+37,orders,release held items,POST,/api/kitchen/orders/1/cook/release-held,200,200,PASS,
+38,orders,mark item ready,POST,/api/kitchen/orders/1/cook/ready/1,200,500,FAIL,Server error
 39,orders,get order tracking,GET,/api/kitchen/orders/1/cook-tracking,200,200,PASS,
 40,orders,get order history by user,GET,/api/orders/history/1,200,200,PASS,
 41,orders,get pickup queue,GET,/api/orders/pickup-queue,200,200,PASS,
-42,orders,customer arrived,POST,/api/orders/1/customer-arrived,200,404,FAIL,Not found
-43,orders,mark ready for pickup,POST,/api/orders/1/mark-ready-pickup,200,404,FAIL,Not found
-44,orders,complete pickup,POST,/api/orders/1/complete-pickup,200,404,FAIL,Not found
-45,delivery,assign driver,POST,/api/delivery/assign,200,404,FAIL,Not found
-46,delivery,update delivery status,POST,/api/delivery/2/status,200,404,FAIL,Not found
+42,orders,customer arrived,POST,/api/orders/1/customer-arrived,200,200,PASS,
+43,orders,mark ready for pickup,POST,/api/orders/1/mark-ready-pickup,200,200,PASS,
+44,orders,complete pickup,POST,/api/orders/1/complete-pickup,200,200,PASS,
+45,delivery,assign driver,POST,/api/delivery/assign,200,400,FAIL,
+46,delivery,update delivery status,POST,/api/delivery/2/status,200,200,PASS,
 47,delivery,update driver location,POST,/api/delivery/2/location,200,200,PASS,
 48,delivery,delivery history,GET,/api/delivery/history,200,200,PASS,
 49,modifiers,get all modifiers,GET,/api/modifiers,200,200,PASS,
@@ -61,7 +61,7 @@
 60,reservations,seat reservation,POST,/api/reservations/1/seat,200,400,FAIL,
 61,customer app,browse menu,GET,/api/menu,200,200,PASS,
 62,customer app,get menu item detail,GET,/api/menu/1,200,404,FAIL,Not found
-63,customer app,create cart,POST,/api/cart,200,400,FAIL,
+63,customer app,create cart,POST,/api/cart,200,201,PASS,
 64,customer app,add item to cart,POST,/api/cart/1/items,200,400,FAIL,
 65,customer app,get cart,GET,/api/cart/1,200,200,PASS,
 66,customer app,checkout cart,POST,/api/cart/1/checkout,200,400,FAIL,
@@ -87,7 +87,7 @@
 86,admin and surge,toggle surge,PATCH,/api/admin/surge-pricing/toggle,200,200,PASS,
 87,admin and surge,get restaurant config,GET,/api/admin/restaurant-config,200,200,PASS,
 88,admin and surge,update restaurant config,PATCH,/api/admin/restaurant-config/branding,200,200,PASS,
-89,admin and surge,get audit logs,GET,/api/admin/audit-logs,200,404,FAIL,Not found
+89,admin and surge,get audit logs,GET,/api/admin/audit-logs,200,200,PASS,
 90,admin and surge,run sales audit,POST,/api/audit/sales/configs/1/run-now,200,200,PASS,
 91,admin and surge,get sales audit results,GET,/api/audit/sales/results,200,200,PASS,
 92,waitlist,join waitlist,POST,/api/waitlist/join,200,401,FAIL,Needs auth
@@ -98,21 +98,21 @@
 97,table qr and location,verify location (before ordering),POST,/api/tables/check-location,200,200,PASS,
 98,table qr and location,generate qr code for table,POST,/api/tables/qr/generate,200,400,FAIL,
 99,table qr and location,verify qr code scan,POST,/api/tables/qr/verify,200,404,FAIL,Not found
-100,order modifications,modify order items,PATCH,/api/orders/1/modify-items,200,500,FAIL,Server error
+100,order modifications,modify order items,PATCH,/api/orders/1/modify-items,200,200,PASS,
 101,order modifications,void item,POST,/api/orders/1/void-item/1,200,200,PASS,
 102,order modifications,record cash payment,POST,/api/orders/1/cash-payment,200,201,PASS,
-103,order modifications,distribute tips,POST,/api/orders/1/tips/distribute,200,400,FAIL,
-104,analytics,category sales,GET,/api/analytics/category-sales,200,500,FAIL,Server error
-105,analytics,staff performance,GET,/api/analytics/staff-performance,200,500,FAIL,Server error
+103,order modifications,distribute tips,POST,/api/orders/1/tips/distribute,200,200,PASS,
+104,analytics,category sales,GET,/api/analytics/category-sales,200,200,PASS,
+105,analytics,staff performance,GET,/api/analytics/staff-performance,200,200,PASS,
 106,analytics,dish of week stats,GET,/api/analytics/dish-of-week-stats,200,200,PASS,
-107,audit logs,get audit logs,GET,/api/admin/audit-logs,200,404,FAIL,Not found
-108,audit logs,create audit log,POST,/api/admin/audit-logs,200,404,FAIL,Not found
-109,usual orders,get the usual by session,GET,/api/customer/usual?session_token=guest-session-abc,200,404,FAIL,Not found
-110,usual orders,get the usual by customer,GET,/api/customer/1/usual,200,404,FAIL,Not found
-111,usual orders,reorder the usual by session,POST,/api/customer/usual/reorder,200,500,FAIL,Server error
-112,usual orders,reorder the usual by customer,POST,/api/customer/1/usual/reorder,200,500,FAIL,Server error
-113,usual orders,set the usual by session,POST,/api/customer/usual,200,500,FAIL,Server error
-114,usual orders,set the usual by customer,POST,/api/customer/1/usual,200,500,FAIL,Server error
+107,audit logs,get audit logs,GET,/api/admin/audit-logs,200,200,PASS,
+108,audit logs,create audit log,POST,/api/admin/audit-logs,200,201,PASS,
+109,usual orders,get the usual by session,GET,/api/customer/usual?session_token=guest-session-abc,200,200,PASS,
+110,usual orders,get the usual by customer,GET,/api/customer/1/usual,200,200,PASS,
+111,usual orders,reorder the usual by session,POST,/api/customer/usual/reorder,200,400,FAIL,
+112,usual orders,reorder the usual by customer,POST,/api/customer/1/usual/reorder,200,400,FAIL,
+113,usual orders,set the usual by session,POST,/api/customer/usual,200,200,PASS,
+114,usual orders,set the usual by customer,POST,/api/customer/1/usual,200,200,PASS,
 115,service requests,create service request,POST,/api/service-requests,200,201,PASS,
 116,service requests,get service requests,GET,/api/service-requests,200,200,PASS,
 117,service requests,acknowledge request,PATCH,/api/service-requests/1/acknowledge,200,404,FAIL,Not found
@@ -121,32 +121,32 @@
 120,scheduling,create schedule,POST,/api/schedules,200,400,FAIL,
 121,scheduling,get schedules,GET,/api/schedules,200,200,PASS,
 122,scheduling,get my schedule,GET,/api/schedules/my,200,400,FAIL,
-123,scheduling,update schedule,PATCH,/api/schedules/1,200,500,FAIL,Server error
+123,scheduling,update schedule,PATCH,/api/schedules/1,200,200,PASS,
 124,scheduling,delete schedule,DELETE,/api/schedules/1,200,200,PASS,
-125,scheduling,clock in,POST,/api/time-entries/clock-in,200,404,FAIL,Not found
-126,scheduling,clock out,POST,/api/time-entries/clock-out,200,404,FAIL,Not found
-127,scheduling,get time entries,GET,/api/time-entries,200,404,FAIL,Not found
+125,scheduling,clock in,POST,/api/time-entries/clock-in,200,400,FAIL,
+126,scheduling,clock out,POST,/api/time-entries/clock-out,200,400,FAIL,
+127,scheduling,get time entries,GET,/api/time-entries,200,200,PASS,
 128,purchase orders,create supplier,POST,/api/purchase-orders/suppliers,200,201,PASS,
 129,purchase orders,get suppliers,GET,/api/purchase-orders/suppliers,200,200,PASS,
 130,purchase orders,update supplier,PATCH,/api/purchase-orders/suppliers/1,200,200,PASS,
-131,purchase orders,create purchase order,POST,/api/purchase-orders,200,400,FAIL,
+131,purchase orders,create purchase order,POST,/api/purchase-orders,200,201,PASS,
 132,purchase orders,get purchase orders,GET,/api/purchase-orders,200,200,PASS,
 133,purchase orders,update PO status,PATCH,/api/purchase-orders/1/status,200,200,PASS,
-134,purchase orders,receive PO,POST,/api/purchase-orders/1/receive,200,404,FAIL,Not found
+134,purchase orders,receive PO,POST,/api/purchase-orders/1/receive,200,200,PASS,
 135,purchase orders,create reorder rule,POST,/api/purchase-orders/reorder-rules,200,200,PASS,
-136,purchase orders,get reorder rules,GET,/api/purchase-orders/reorder-rules,200,500,FAIL,Server error
-137,purchase orders,auto reorder check,GET,/api/purchase-orders/reorder-rules/auto-check,200,500,FAIL,Server error
+136,purchase orders,get reorder rules,GET,/api/purchase-orders/reorder-rules,200,200,PASS,
+137,purchase orders,auto reorder check,GET,/api/purchase-orders/reorder-rules/auto-check,200,200,PASS,
 138,notifications,get templates,GET,/api/notifications/templates,200,200,PASS,
 139,notifications,create template,POST,/api/notifications/templates,200,201,PASS,
 140,notifications,update template,PATCH,/api/notifications/templates/1,200,200,PASS,
 141,notifications,send notification,POST,/api/notifications/send,200,201,PASS,
 142,notifications,get logs,GET,/api/notifications/logs,200,200,PASS,
-143,notifications,get preferences,GET,/api/notifications/preferences,200,400,FAIL,
+143,notifications,get preferences,GET,/api/notifications/preferences,200,200,PASS,
 144,notifications,update preferences,PATCH,/api/notifications/preferences,200,400,FAIL,
 145,tax compliance,create jurisdiction,POST,/api/tax/jurisdictions,200,201,PASS,
 146,tax compliance,get jurisdictions,GET,/api/tax/jurisdictions,200,200,PASS,
 147,tax compliance,create tax rate,POST,/api/tax/rates,200,201,PASS,
 148,tax compliance,get tax rates,GET,/api/tax/rates,200,200,PASS,
-149,tax compliance,calculate order tax,GET,/api/tax/orders/1/calculate,200,500,FAIL,Server error
+149,tax compliance,calculate order tax,GET,/api/tax/orders/1/calculate,200,200,PASS,
 150,tax compliance,create exemption,POST,/api/tax/exemptions,200,201,PASS,
 151,tax compliance,get exemptions,GET,/api/tax/exemptions,200,200,PASS,

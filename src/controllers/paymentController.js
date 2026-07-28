@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 
 // Creates a Stripe PaymentIntent for the given order amount
 exports.createPaymentIntent = async (req, res) => {
@@ -63,7 +64,7 @@ exports.confirmPayment = async (req, res) => {
     const values = [paymentIntentId, orderId];
     const result = await pool.query(query, values);
 
-    if (result.rowCount === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         error: `Order with ID ${orderId} not found in database.`

@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 
 async function seed() {
   const users = [

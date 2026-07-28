@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 
 /**
  * GET /api/analytics/category-sales
@@ -14,7 +15,7 @@ exports.getCategorySales = async (req, res) => {
         o.order_type,
         COUNT(DISTINCT o.master_order_id) as order_count,
         SUM(oi.quantity) as total_quantity,
-        SUM(oi.quantity * o.total_amount / COUNT(oi.order_item_id) OVER (PARTITION BY oi.master_order_id)) as revenue
+        SUM(oi.quantity * mi.base_price) as revenue
       FROM orders o
       JOIN order_items oi ON o.master_order_id = oi.master_order_id
       JOIN menu_items mi ON oi.item_id = mi.item_id
@@ -71,7 +72,7 @@ exports.getStaffPerformance = async (req, res) => {
         COUNT(DISTINCT CASE WHEN o.status = 'COMPLETED' THEN o.master_order_id END) as completed_orders,
         COUNT(DISTINCT CASE WHEN o.status = 'CANCELLED' THEN o.master_order_id END) as cancelled_orders
       FROM users u
-      LEFT JOIN orders o ON o.ordered_by_user_id = u.id OR o.waiter_id = u.id
+      LEFT JOIN orders o ON o.customer_id = u.id
       WHERE 1=1
     `;
     const params = [];

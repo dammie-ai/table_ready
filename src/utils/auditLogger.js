@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 
 /**
  * Logs a sensitive action to the audit_logs table.

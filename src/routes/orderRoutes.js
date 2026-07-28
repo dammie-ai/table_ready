@@ -300,6 +300,27 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
   }
 });
 
+// GET /api/orders/by-type/:order_type
+// Fetch orders filtered by order type
+router.get('/by-type/:order_type', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
+  const { order_type } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM orders WHERE order_type = $1 ORDER BY created_at DESC`,
+      [order_type]
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      orders: result.rows
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET /api/orders/pickup-queue
 // Fetch pending pickup orders sorted by scheduled time
 router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {

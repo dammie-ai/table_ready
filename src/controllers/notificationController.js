@@ -158,7 +158,11 @@ exports.updateNotificationPreferences = async (req, res) => {
   try {
     const { customer_id, session_token, preferences } = req.body;
 
-    if ((!customer_id && !session_token) || !preferences) {
+    // If no customer_id or session_token in body, try to use authenticated user's customer_id
+    const resolvedCustomerId = customer_id || req.user?.customer_id || null;
+    const resolvedSessionToken = session_token || null;
+
+    if ((!resolvedCustomerId && !resolvedSessionToken) || !preferences) {
       return res.status(400).json({ success: false, error: 'customer_id or session_token and preferences are required.' });
     }
 
@@ -174,7 +178,7 @@ exports.updateNotificationPreferences = async (req, res) => {
           `INSERT INTO customer_notification_preferences (customer_id, session_token, channel, event_type, is_enabled)
            VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (customer_id, channel, event_type) DO UPDATE SET is_enabled = EXCLUDED.is_enabled`,
-          [customer_id || null, session_token || null, channel, event_type, is_enabled]
+          [resolvedCustomerId, resolvedSessionToken, channel, event_type, is_enabled]
         );
       }
 
@@ -196,8 +200,9 @@ exports.getNotificationPreferences = async (req, res) => {
   try {
     const { customer_id, session_token } = req.query;
 
+    // If no customer_id or session_token provided, return empty preferences
     if (!customer_id && !session_token) {
-      return res.status(400).json({ success: false, error: 'customer_id or session_token is required.' });
+      return res.status(200).json({ success: true, preferences: [] });
     }
 
     let sql = `SELECT * FROM customer_notification_preferences WHERE 1=1`;

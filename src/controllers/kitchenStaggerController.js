@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 const { startCooking, releaseHeldItems, markItemReady, syncOrderItemStatuses } = require('../utils/kitchenStagger');
 const { logAudit } = require('../utils/auditLogger');
 

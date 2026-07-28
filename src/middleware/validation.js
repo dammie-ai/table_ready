@@ -63,7 +63,7 @@ const schemas = {
   }),
 
   createOrder: z.object({
-    order_type: z.enum(['IN_HOUSE', 'DRIVE_THRU', 'DELIVERY', 'ORDER_FROM_HOME', 'PICKUP']).optional(),
+    order_type: z.enum(['IN_HOUSE', 'DRIVE_THRU', 'DELIVERY', 'ORDER_FROM_HOME', 'PICKUP', 'DINE_IN']).optional(),
     is_held: z.boolean().optional(),
     table_number: z.number().int().positive().optional(),
     notes: z.string().optional(),
@@ -132,6 +132,11 @@ const schemas = {
     inventory_id: z.number().int().positive().optional(),
     quantity: z.number().int().positive().optional(),
     custom_instructions: z.string().optional()
+  }),
+
+  createCart: z.object({
+    customer_id: z.number().int().positive().optional(),
+    session_token: z.string().optional()
   }),
 
   checkout: z.object({
@@ -414,7 +419,7 @@ const schemas = {
     items: z.array(z.object({
       inventory_id: z.number().int().positive('Inventory ID must be a positive integer'),
       quantity_ordered: z.number().positive('Quantity must be greater than 0'),
-      unit_cost: z.number().positive('Unit cost must be greater than 0'),
+      unit_cost: z.number().positive('Unit cost must be greater than 0').optional(),
       notes: z.string().optional()
     })).min(1, 'At least one item is required')
   }),
@@ -498,6 +503,16 @@ const schemas = {
     exemption_number: z.string().min(1, 'Exemption number is required'),
     jurisdiction_id: z.number().int().positive('Jurisdiction ID must be a positive integer'),
     expires_at: z.string().optional()
+  }),
+
+  updateNotificationPreferences: z.object({
+    customer_id: z.number().int().positive().optional(),
+    session_token: z.string().optional(),
+    preferences: z.array(z.object({
+      channel: z.string().min(1),
+      event_type: z.string().min(1),
+      is_enabled: z.boolean()
+    })).min(1, 'At least one preference is required')
   })
 };
 

@@ -109,13 +109,13 @@ exports.createPurchaseOrder = async (req, res) => {
       let totalAmount = 0;
 
       for (const item of items) {
-        const lineTotal = item.quantity_ordered * item.unit_cost;
+        const lineTotal = item.quantity_ordered * (item.unit_cost || 0);
         totalAmount += lineTotal;
 
         await client.query(
           `INSERT INTO purchase_order_items (purchase_order_id, inventory_id, quantity_ordered, unit_cost, line_total, notes)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [poId, item.inventory_id, item.quantity_ordered, item.unit_cost, lineTotal, item.notes || null]
+          [poId, item.inventory_id, item.quantity_ordered, item.unit_cost || 0, lineTotal, item.notes || null]
         );
       }
 
@@ -313,7 +313,7 @@ exports.getReorderRules = async (req, res) => {
   try {
     const { is_enabled, inventory_id } = req.query;
 
-    let sql = `SELECT r.*, i.name as inventory_name, s.name as supplier_name
+    let sql = `SELECT r.*, i.item_name as inventory_name, s.name as supplier_name
                FROM reorder_rules r
                LEFT JOIN inventory i ON r.inventory_id = i.id
                LEFT JOIN suppliers s ON r.supplier_id = s.supplier_id
@@ -342,7 +342,7 @@ exports.getReorderRules = async (req, res) => {
 exports.autoReorderCheck = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT r.*, i.name as inventory_name, s.name as supplier_name, i.stock_quantity
+      `SELECT r.*, i.item_name as inventory_name, s.name as supplier_name, i.stock_quantity
        FROM reorder_rules r
        JOIN inventory i ON r.inventory_id = i.id
        LEFT JOIN suppliers s ON r.supplier_id = s.supplier_id

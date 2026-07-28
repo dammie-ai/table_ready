@@ -236,4 +236,9 @@ router.patch('/settings/:key', async (req, res) => {
   }
 });
 
+// Audit log routes (moved here to avoid router mount conflicts)
+const auditLogController = require('../controllers/auditLogController');
+router.post('/audit-logs', auditLogController.createLog);
+router.get('/audit-logs', auditLogController.getLogs);
+
 module.exports = router;

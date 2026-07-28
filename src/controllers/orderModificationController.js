@@ -68,7 +68,7 @@ exports.modifyOrderItems = async (req, res) => {
 
         const inserted = await client.query(
           'INSERT INTO order_items (master_order_id, item_id, quantity, ordered_by_user_id, custom_instructions, modifiers) VALUES ($1, $2, $3, $4, $5, $6) RETURNING order_item_id',
-          [orderId, itemId, quantity, req.user?.id || null, custom_instructions || null, JSON.stringify(modifiers || [])]
+          [orderId, itemId, quantity, req.user?.id || null, custom_instructions || null, JSON.stringify(add.modifiers || [])]
         );
         const newOrderItemId = inserted.rows[0].order_item_id;
 

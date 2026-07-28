@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 
 const ORDER_TYPE_CHANNELS = {
   IN_HOUSE: 'kitchen_dine_in',

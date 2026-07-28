@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 const { getOrdersByType, getAllOrderTypesSummary, getOrderTypeLabel, getOrderTypeColor } = require('../utils/orderSorting');
 
 exports.getOrdersByType = async (req, res) => {

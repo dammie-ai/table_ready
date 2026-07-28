@@ -57,7 +57,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const orderModificationRoutes = require('./routes/orderModificationRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const auditLogRoutes = require('./routes/auditLogRoutes');
+// const auditLogRoutes = require('./routes/auditLogRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const promotionsRoutes = require('./routes/promotionsRoutes');
 const usualOrderRoutes = require('./routes/usualOrderRoutes');
@@ -92,7 +92,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/orders', orderModificationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/admin', auditLogRoutes);
+// app.use('/api/admin', auditLogRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/promotions', promotionsRoutes);
 app.use('/api/customer', usualOrderRoutes);
@@ -110,6 +110,15 @@ app.use('/api/modifiers', modifierRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
+
+// Time entries aliases matching Postman collection paths
+const scheduleCtrl = require('./controllers/scheduleController');
+const { authenticateToken, authorizeRoles } = require('./middleware/authGuard');
+const { validate, schemas } = require('./middleware/validation');
+
+app.post('/api/time-entries/clock-in', authenticateToken, validate(schemas.clockInOut), scheduleCtrl.clockIn);
+app.post('/api/time-entries/clock-out', authenticateToken, validate(schemas.clockInOut), scheduleCtrl.clockOut);
+app.get('/api/time-entries', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), scheduleCtrl.getTimeEntries);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/tax', taxRoutes);
 

@@ -1,4 +1,5 @@
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 
 /**
  * GET /api/customer/usual
@@ -322,16 +323,28 @@ exports.setTheUsual = async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `INSERT INTO customer_favorite_combos (customer_id, item_ids, quantities, combo_name)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (customer_id) WHERE customer_id = $1 AND combo_name = 'The Usual'
-       DO UPDATE SET item_ids = EXCLUDED.item_ids,
-                    quantities = EXCLUDED.quantities,
-                    updated_at = NOW()
-       RETURNING *`,
-      [customerId, JSON.stringify(item_ids), JSON.stringify(quantities), combo_name || 'The Usual']
+    const existing = await pool.query(
+      `SELECT combo_id FROM customer_favorite_combos WHERE customer_id = $1 AND combo_name = $2`,
+      [customerId, combo_name || 'The Usual']
     );
+
+    if (existing.rows.length > 0) {
+      const result = await pool.query(
+        `UPDATE customer_favorite_combos SET item_ids = $1, quantities = $2, updated_at = NOW()
+         WHERE combo_id = $3
+         RETURNING *`,
+        [JSON.stringify(item_ids), JSON.stringify(quantities), existing.rows[0].combo_id]
+      );
+      return res.status(200).json({ success: true, message: 'The Usual updated successfully.', combo: result.rows[0] });
+    } else {
+      const result = await pool.query(
+        `INSERT INTO customer_favorite_combos (customer_id, item_ids, quantities, combo_name)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [customerId, JSON.stringify(item_ids), JSON.stringify(quantities), combo_name || 'The Usual']
+      );
+      return res.status(201).json({ success: true, message: 'The Usual created successfully.', combo: result.rows[0] });
+    }
 
     return res.status(200).json({
       success: true,

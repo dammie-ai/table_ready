@@ -90,7 +90,7 @@ exports.calculateOrderTax = async (req, res) => {
   try {
     const { order_id } = req.params;
 
-    const orderRes = await pool.query(`SELECT * FROM orders WHERE order_id = $1`, [order_id]);
+    const orderRes = await pool.query(`SELECT * FROM orders WHERE master_order_id = $1`, [order_id]);
     if (orderRes.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Order not found.' });
     }

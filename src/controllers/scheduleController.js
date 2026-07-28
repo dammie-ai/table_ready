@@ -97,8 +97,20 @@ exports.updateSchedule = async (req, res) => {
     const params = [];
     let idx = 1;
 
-    if (start_time !== undefined) { updates.push(`start_time = $${idx++}`); params.push(start_time); }
-    if (end_time !== undefined) { updates.push(`end_time = $${idx++}`); params.push(end_time); }
+    if (start_time !== undefined) {
+      const timeStr = typeof start_time === 'string' && start_time.includes('T') 
+        ? start_time.split('T')[1]?.substring(0, 8) || start_time 
+        : start_time;
+      updates.push(`start_time = $${idx++}`); 
+      params.push(timeStr);
+    }
+    if (end_time !== undefined) {
+      const timeStr = typeof end_time === 'string' && end_time.includes('T') 
+        ? end_time.split('T')[1]?.substring(0, 8) || end_time 
+        : end_time;
+      updates.push(`end_time = $${idx++}`); 
+      params.push(timeStr);
+    }
     if (role !== undefined) { updates.push(`role = $${idx++}`); params.push(role); }
     if (is_published !== undefined) { updates.push(`is_published = $${idx++}`); params.push(is_published); }
     if (notes !== undefined) { updates.push(`notes = $${idx++}`); params.push(notes); }

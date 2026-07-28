@@ -4,7 +4,8 @@ const paymentController = require('../controllers/paymentController');
 const { isWithinDeliveryRadius } = require('../utils/distance');
 const { splitEvenly, splitByItem, checkBalanceStatus } = require('../utils/billSplitter');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const pool = require('../config/db');
+const db = require('../config/db');
+const pool = db.pool || db;
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 const { validate, schemas } = require('../middleware/validation');
 
