@@ -77,6 +77,8 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const taxRoutes = require('./routes/taxRoutes');
+const comboMealRoutes = require('./routes/comboMealRoutes');
+const configRoutes = require('./routes/configRoutes');
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -121,6 +123,8 @@ app.post('/api/time-entries/clock-out', authenticateToken, validate(schemas.cloc
 app.get('/api/time-entries', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), scheduleCtrl.getTimeEntries);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/tax', taxRoutes);
+app.use('/api/combo-meals', comboMealRoutes);
+app.use('/api/config', configRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

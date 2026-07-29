@@ -815,16 +815,6 @@
         {
           "name": "create order (staff)",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{manager_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -855,16 +845,6 @@
         {
           "name": "create order from home (held)",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{manager_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [
               {
@@ -1071,16 +1051,6 @@
         {
           "name": "cancel order",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{waiter_token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "PATCH",
             "header": [
               {
@@ -1322,17 +1292,7 @@
                 "1"
               ]
             },
-            "response": [],
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{manager_token}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "response": []
           }
         },
         {
@@ -1352,17 +1312,7 @@
                 "pickup-queue"
               ]
             },
-            "response": [],
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{kitchen_token}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "response": []
           }
         },
         {
@@ -1414,17 +1364,7 @@
                 "mark-ready-pickup"
               ]
             },
-            "response": [],
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{kitchen_token}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "response": []
           }
         },
         {
@@ -1445,17 +1385,7 @@
                 "complete-pickup"
               ]
             },
-            "response": [],
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{kitchen_token}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "response": []
           }
         }
       ]
@@ -2695,17 +2625,7 @@
                 "ingredients"
               ]
             },
-            "response": [],
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{manager_token}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "response": []
           }
         },
         {

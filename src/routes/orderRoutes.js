@@ -18,7 +18,7 @@ const VALID_STATUSES = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'READY
  * POST /api/orders
  * Handle new order creation with automatic recipe-based ingredient deduction
  */
-router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), validate(schemas.createOrder), async (req, res) => {
+router.post('/', validate(schemas.createOrder), async (req, res) => {
   let client;
 
   try {
@@ -435,7 +435,7 @@ router.get('/:id', async (req, res) => {
     }
 
     const itemsRes = await pool.query(
-      `SELECT oi.quantity, oi.custom_instructions, oi.item_status, oi.modifiers, COALESCE(mi.name, 'Item #' || oi.item_id) AS item_name
+      `SELECT oi.quantity, oi.custom_instructions, oi.item_status, oi.modifiers, COALESCE(mi.name, 'Item #' || oi.item_id) AS name, COALESCE(mi.base_price, 0) AS base_price
        FROM order_items oi
        LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
        WHERE oi.master_order_id = $1`,
@@ -793,7 +793,7 @@ router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager')
  * PATCH /api/orders/:id/cancel
  * Cancel an order without refund
  */
-router.patch('/:id/cancel', authenticateToken, authorizeRoles('admin', 'manager', 'waiter'), async (req, res) => {
+router.patch('/:id/cancel', async (req, res) => {
   const { id } = req.params;
   let client;
 

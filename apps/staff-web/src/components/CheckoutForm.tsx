@@ -1,0 +1,139 @@
+import { useState } from 'react'
+import { useStripe, useElements } from '@stripe/react-stripe-js'
+import { apiClient } from '../lib/api'
+import { useCartStore } from '../stores/cartStore'
+
+interface CheckoutFormProps {
+  orderType: string
+  tableNumber: string
+  deliveryAddress: string
+  specialInstructions: string
+  onSuccess: () => void
+}
+
+export default function CheckoutForm({
+  orderType,
+  tableNumber,
+  deliveryAddress,
+  specialInstructions,
+  onSuccess,
+}: CheckoutFormProps) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setProcessing(true)
+    setError('')
+
+    if (!stripe || !elements) {
+      setError('Stripe not loaded')
+      setProcessing(false)
+      return
+    }
+
+    try {
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: window.location.href },
+        redirect: 'if_required',
+      })
+
+      if (stripeError) {
+        setError(stripeError.message || 'Payment failed')
+        setProcessing(false)
+        return
+      }
+
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        const items = useCartStore.getState().items
+        const orderItems = items.flatMap((i) => {
+          if (i.combo_id && i.combo_main) {
+            const comboItems = [
+              {
+                menu_item_id: i.combo_main.menu_item_id,
+                quantity: i.quantity,
+                custom_instructions: i.custom_instructions,
+              },
+            ]
+            if (i.combo_sides) {
+              i.combo_sides.forEach((side) => {
+                comboItems.push({
+                  menu_item_id: side.menu_item_id,
+                  quantity: i.quantity,
+                  custom_instructions: i.custom_instructions,
+                })
+              })
+            }
+            return comboItems
+          }
+          return [
+            {
+              menu_item_id: i.menu_item_id,
+              quantity: i.quantity,
+              custom_instructions: i.custom_instructions,
+            },
+          ]
+        })
+
+        const orderRes = await apiClient<{ master_order_id: number }>('/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            order_type: orderType,
+            table_number: tableNumber ? Number(tableNumber) : undefined,
+            items: orderItems,
+            notes: specialInstructions || undefined,
+            idempotency_key: `checkout-${Date.now()}`,
+          }),
+        })
+
+        await apiClient('/payments/confirm', {
+          method: 'POST',
+          body: JSON.stringify({
+            paymentIntentId: paymentIntent.id,
+            orderId: orderRes.master_order_id,
+          }),
+        })
+
+        useCartStore.getState().clearCart()
+        onSuccess()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Checkout failed')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium mb-2">Card Details</label>
+        <div className="border rounded-lg p-4">
+          <div className="mb-4">
+            <input
+              placeholder="Card number"
+              className="w-full border rounded px-3 py-2 mb-2"
+              disabled
+            />
+            <p className="text-sm text-gray-500">
+              Test card: 4242 4242 4242 4242 • Any future expiry • Any CVC
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium"
+      >
+        {processing ? 'Processing...' : `Pay $${useCartStore.getState().total().toFixed(2)}`}
+      </button>
+    </form>
+  )
+}

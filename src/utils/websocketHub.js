@@ -65,6 +65,22 @@ function setupWebSocketHub(io) {
       socket.emit('pong', { timestamp: Date.now() });
     });
 
+    socket.on('join_cart_room', (room) => {
+      socket.join(`cart_${room}`);
+      console.log(`Socket ${socket.id} joined cart room cart_${room}`);
+    });
+
+    socket.on('leave_cart_room', (room) => {
+      socket.leave(`cart_${room}`);
+      console.log(`Socket ${socket.id} left cart room cart_${room}`);
+    });
+
+    socket.on('cart_update', (data) => {
+      const { room, ...payload } = data
+      socket.to(`cart_${room}`).emit(`cart_update:${room}`, payload)
+      console.log(`Cart update broadcast to cart_${room}`)
+    });
+
     socket.on('disconnect', () => {
       console.log(`🔥 WebSocket client disconnected: ${socket.id}`);
     });

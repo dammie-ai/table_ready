@@ -73,6 +73,11 @@ async function getDeliveryRadius() {
   return radius ? parseInt(radius.max_miles || 10) : 10;
 }
 
+async function getGeofenceRadius() {
+  const radius = await getConfig('geofence');
+  return radius ? parseInt(radius.radius_meters || 100) : 100;
+}
+
 async function refreshCache() {
   return loadConfig(true);
 }
@@ -87,5 +92,6 @@ module.exports = {
   getOrderTypeConfig,
   getBranding,
   getDeliveryRadius,
+  getGeofenceRadius,
   refreshCache,
 };

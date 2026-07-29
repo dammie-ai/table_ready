@@ -9,7 +9,7 @@ const pool = db.pool || db;
 const getMenuItems = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT item_id, name, category_type, description, base_price, image_url, is_trending, prep_time_minutes
+      `SELECT item_id, name, category_type, description, base_price, image_url, is_trending, prep_time_minutes, stock_quantity, out_of_stock_flag, is_active
        FROM menu_items
        WHERE is_active = true
        ORDER BY category_type, name ASC`
@@ -40,7 +40,7 @@ const getMenuItemDetail = async (req, res) => {
     const { id } = req.params;
 
     const itemRes = await pool.query(
-      `SELECT item_id, name, category_type, description, base_price, image_url, is_trending, prep_time_minutes, allergens, custom_sides_array
+      `SELECT item_id, name, category_type, description, base_price, image_url, is_trending, prep_time_minutes, allergens, custom_sides_array, stock_quantity, out_of_stock_flag, is_active
        FROM menu_items
        WHERE item_id = $1 AND is_active = true`,
       [id]
@@ -251,6 +251,11 @@ const toggleMenuItem = async (req, res) => {
 
         const item = result.rows[0];
         item.base_price = parseFloat(item.base_price);
+
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('menu_item_updated', { item_id: item.item_id, is_active: item.is_active });
+        }
 
         return res.status(200).json({
             success: true,

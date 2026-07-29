@@ -1,47 +1,23 @@
 {
-  "name": "table_ready",
+  "name": "table-ready-monorepo",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "migrate": "node src/config/migrate.js",
-    "backup": "node src/scripts/backup-db.js",
-    "backup:list": "node src/scripts/backup-db.js list",
-    "backup:restore": "node src/scripts/backup-db.js restore",
-    "test": "jest --detectOpenHandles --forceExit",
-    "test:watch": "jest --watch"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dammie-ai/table_ready.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/dammie-ai/table_ready/issues"
-  },
-  "homepage": "https://github.com/dammie-ai/table_ready#readme",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "dependencies": {
-    "bcrypt": "^6.0.0",
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-rate-limit": "^7.5.1",
-    "helmet": "^7.2.0",
-    "jsonwebtoken": "^9.0.3",
-    "pg": "^8.22.0",
-    "qrcode": "^1.5.4",
-    "socket.io": "^4.8.3",
-    "stripe": "^22.3.2",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "jest": "^30.4.2",
-    "supertest": "^7.2.2"
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "qrcode": "^1.5.3",
+    "socket.io": "^4.7.2",
+    "stripe": "^14.10.0",
+    "zod": "^3.22.4"
   }
 }

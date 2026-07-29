@@ -3,3 +3,7 @@ node_modules/
 backups/
 *.sql
 *.sql.gz
+apps/*/node_modules/
+packages/*/node_modules/
+apps/customer-mobile/.expo/
+apps/customer-mobile/dist/
