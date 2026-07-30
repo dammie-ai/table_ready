@@ -1,9 +1,0 @@
-refactor: separate backend and frontend into distinct folders
-
-- Move backend code to backend/
-- Move staff web app to frontend/apps/staff-web/
-- Move customer mobile app to frontend/apps/customer-mobile/
-- Move shared package to frontend/packages/shared/
-- Update root package.json workspaces
-- Add backend/package.json with backend dependencies
-- Add frontend/package.json as frontend workspace root

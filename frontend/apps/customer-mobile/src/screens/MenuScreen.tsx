@@ -53,7 +53,11 @@ export default function MenuScreen({ route, navigation }: any) {
   const renderItem = ({ item }: { item: MenuItem }) => {
     const outOfStock = isOutOfStock(item)
     return (
-      <View style={[styles.card, outOfStock && styles.cardDisabled]}>
+      <TouchableOpacity
+        style={[styles.card, outOfStock && styles.cardDisabled]}
+        onPress={() => !outOfStock && navigation.navigate('ItemDetail', { item })}
+        disabled={outOfStock}
+      >
         {item.image_url && (
           <Image source={{ uri: item.image_url }} style={styles.image} resizeMode="cover" />
         )}
@@ -84,7 +88,7 @@ export default function MenuScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     )
   }
 

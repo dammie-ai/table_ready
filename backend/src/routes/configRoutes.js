@@ -3,6 +3,22 @@ const router = express.Router();
 const db = require('../config/db');
 const pool = db.pool || db;
 
+router.get('/', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT config_key, config_value FROM restaurant_config");
+    const config = {};
+    for (const row of result.rows) {
+      config[row.config_key] = row.config_value;
+    }
+    return res.status(200).json({
+      success: true,
+      config,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/geofence', async (req, res) => {
   try {
     const result = await pool.query(

@@ -1,5 +1,5 @@
 export * from './types'
-export { apiClient } from './api'
+export { api } from './api'
 export { getSocket, disconnectSocket } from './socket'
 export { useCartStore } from './cartStore'
 export { useAuthStore } from './authStore'

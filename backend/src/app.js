@@ -5,9 +5,9 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const app = express();
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',') 
-  : ['http://localhost:3000', 'http://localhost:5173'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8001'];
 
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -83,6 +83,10 @@ const configRoutes = require('./routes/configRoutes');
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'TableReady backend is operational' });
+});
+
+app.get('/api-tester', (req, res) => {
+  res.sendFile(require('path').join(__dirname, 'api-tester.html'));
 });
 
 // API Route Mounts

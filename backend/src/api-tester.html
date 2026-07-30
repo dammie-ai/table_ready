@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TableReady API Tester</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; margin: 0; padding: 24px; background: #0b1020; color: #e5e7eb; }
+    h1 { font-size: 18px; margin-bottom: 4px; }
+    p { color: #9ca3af; margin-top: 0; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
+    .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #93c5fd; margin: 0 0 12px 0; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    select, input, textarea, button { font: inherit; color: inherit; }
+    select, input, textarea { background: #0b1020; border: 1px solid #374151; border-radius: 8px; padding: 8px 10px; width: 100%; }
+    textarea { min-height: 80px; resize: vertical; }
+    button { background: #2563eb; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 600; }
+    button.secondary { background: #374151; }
+    .method { font-size: 11px; padding: 4px 6px; border-radius: 6px; background: #1f2937; color: #e5e7eb; white-space: nowrap; }
+    .response { background: #0b1020; border: 1px solid #1f2937; border-radius: 10px; padding: 12px; margin-top: 12px; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; }
+    .ok { color: #4ade80; }
+    .err { color: #f87171; }
+    .url { color: #fbbf24; }
+    .footer { margin-top: 24px; color: #6b7280; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>TableReady API Tester</h1>
+  <p>Base URL: <span class="url">http://localhost:8001/api</span></p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Health</h2>
+      <div class="row">
+        <span class="method">GET</span>
+        <code>/api/health</code>
+      </div>
+      <button onclick="fetchApi('GET','/api/health',null,this)">Send</button>
+      <pre class="response" id="res-/api/health"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Menu</h2>
+      <div class="row"><span class="method">GET</span><code>/api/menu</code></div>
+      <button onclick="fetchApi('GET','/api/menu',null,this)">Get Menu</button>
+      <pre class="response" id="res-/api/menu"></pre>
+
+      <div class="row" style="margin-top:10px"><span class="method">GET</span><code>/api/menu/:id</code></div>
+      <div class="row">
+        <input id="menu-id" type="number" value="1" placeholder="item_id" />
+        <button class="secondary" onclick="fetchApi('GET','/api/menu/'+document.getElementById('menu-id').value,null,this)">Get Item</button>
+      </div>
+      <pre class="response" id="res-/api/menu/:id"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Combo Meals</h2>
+      <div class="row"><span class="method">GET</span><code>/api/combo-meals</code></div>
+      <button onclick="fetchApi('GET','/api/combo-meals',null,this)">Get Combos</button>
+      <pre class="response" id="res-/api/combo-meals"></pre>
+
+      <div class="row" style="margin-top:10px"><span class="method">GET</span><code>/api/combo-meals/:id</code></div>
+      <div class="row">
+        <input id="combo-id" type="number" value="1" placeholder="combo_id" />
+        <button class="secondary" onclick="fetchApi('GET','/api/combo-meals/'+document.getElementById('combo-id').value,null,this)">Get Combo</button>
+      </div>
+      <pre class="response" id="res-/api/combo-meals/:id"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Config</h2>
+      <div class="row"><span class="method">GET</span><code>/api/config</code></div>
+      <button onclick="fetchApi('GET','/api/config',null,this)">Get Config</button>
+      <pre class="response" id="res-/api/config"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Orders</h2>
+      <div class="row"><span class="method">GET</span><code>/api/orders/:id</code></div>
+      <div class="row">
+        <input id="order-id" type="number" value="1" placeholder="master_order_id" />
+        <button class="secondary" onclick="fetchApi('GET','/api/orders/'+document.getElementById('order-id').value,null,this)">Get Order</button>
+      </div>
+      <pre class="response" id="res-/api/orders/:id"></pre>
+
+      <div class="row" style="margin-top:10px"><span class="method">GET</span><code>/api/orders/:id/receipt</code></div>
+      <div class="row">
+        <button class="secondary" onclick="fetchApi('GET','/api/orders/'+document.getElementById('order-id').value+'/receipt',null,this)">Get Receipt</button>
+      </div>
+      <pre class="response" id="res-/api/orders/:id/receipt"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Promotions</h2>
+      <div class="row"><span class="method">GET</span><code>/api/promotions/dish-of-week</code></div>
+      <button onclick="fetchApi('GET','/api/promotions/dish-of-week',null,this)">Get Dish of Week</button>
+      <pre class="response" id="res-/api/promotions/dish-of-week"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Inventory</h2>
+      <div class="row"><span class="method">GET</span><code>/api/inventory</code></div>
+      <button onclick="fetchApi('GET','/api/inventory',null,this)">Get Inventory</button>
+      <pre class="response" id="res-/api/inventory"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Create Order</h2>
+      <div class="row"><span class="method">POST</span><code>/api/orders</code></div>
+      <textarea id="order-body">{
+  "order_type": "PICKUP",
+  "is_held": false,
+  "items": [
+    {
+      "menu_item_id": 1,
+      "quantity": 1,
+      "price": 18.99,
+      "custom_instructions": "No onions",
+      "modifiers": []
+    }
+  ],
+  "notes": "Test order from API tester",
+  "ordered_by_user_id": 1,
+  "idempotency_key": "test-123"
+}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button onclick="fetchApi('POST','/api/orders',document.getElementById('order-body').value,this)">Create Order</button>
+      </div>
+      <pre class="response" id="res-/api/orders"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Create Cart + Add Item + Checkout</h2>
+      <div class="row"><span class="method">POST</span><code>/api/cart</code></div>
+      <button class="secondary" onclick="fetchApi('POST','/api/cart','{}',this,'res-/api/cart')">Create Cart</button>
+      <pre class="response" id="res-/api/cart"></pre>
+
+      <div class="row" style="margin-top:10px"><span class="method">POST</span><code>/api/cart/:id/items</code></div>
+      <textarea id="cart-item-body">{
+  "menu_item_id": 1,
+  "quantity": 1,
+  "price": 18.99,
+  "custom_instructions": "Extra napkins",
+  "modifiers": []
+}</textarea>
+      <div class="row" style="margin-top:8px">
+        <input id="cart-id" type="number" value="1" placeholder="cart_id" />
+        <button class="secondary" onclick="fetchApi('POST','/api/cart/'+document.getElementById('cart-id').value+'/items',document.getElementById('cart-item-body').value,this,'res-/api/cart/:id/items')">Add Item</button>
+      </div>
+      <pre class="response" id="res-/api/cart/:id/items"></pre>
+
+      <div class="row" style="margin-top:10px"><span class="method">POST</span><code>/api/cart/:id/checkout</code></div>
+      <textarea id="checkout-body">{
+  "order_type": "PICKUP",
+  "is_held": false,
+  "items": [
+    {
+      "menu_item_id": 1,
+      "quantity": 1,
+      "price": 18.99,
+      "custom_instructions": "",
+      "modifiers": []
+    }
+  ],
+  "notes": "Checkout from API tester",
+  "ordered_by_user_id": 1,
+  "idempotency_key": "checkout-test-456"
+}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button onclick="fetchApi('POST','/api/cart/'+document.getElementById('cart-id').value+'/checkout',document.getElementById('checkout-body').value,this,'res-/api/cart/:id/checkout')">Checkout</button>
+      </div>
+      <pre class="response" id="res-/api/cart/:id/checkout"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Order Actions</h2>
+      <div class="row"><span class="method">PATCH</span><code>/api/orders/:id/status</code></div>
+      <div class="row">
+        <input id="status-order-id" type="number" value="1" placeholder="order_id" />
+        <input id="status-value" value="IN_PREPARATION" placeholder="status" />
+        <button class="secondary" onclick="fetchApi('PATCH','/api/orders/'+document.getElementById('status-order-id').value+'/status',{status:document.getElementById('status-value').value},this,'res-/api/orders/:id/status')">Update Status</button>
+      </div>
+      <pre class="response" id="res-/api/orders/:id/status"></pre>
+
+      <div class="row" style="margin-top:10px"><span class="method">POST</span><code>/api/orders/:id/release-hold</code></div>
+      <div class="row">
+        <button class="secondary" onclick="fetchApi('POST','/api/orders/'+document.getElementById('status-order-id').value+'/release-hold',{},this,'res-/api/orders/:id/release-hold')">Release Hold</button>
+      </div>
+      <pre class="response" id="res-/api/orders/:id/release-hold"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Payment</h2>
+      <div class="row"><span class="method">POST</span><code>/api/payments/create-intent</code></div>
+      <textarea id="payment-body">{
+  "order_mode": "pickup",
+  "amount": 18.99,
+  "order_id": 1
+}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button onclick="fetchApi('POST','/api/payments/create-intent',document.getElementById('payment-body').value,this,'res-/api/payments/create-intent')">Create Intent</button>
+      </div>
+      <pre class="response" id="res-/api/payments/create-intent"></pre>
+
+      <div class="row" style="margin-top:10px"><span class="method">POST</span><code>/api/payments/split-bill/calculate</code></div>
+      <div class="row">
+        <button class="secondary" onclick="fetchApi('POST','/api/payments/split-bill/calculate',{mode:'even',total:37.98,splits:2,tax:3.2,tip:4},this,'res-/api/payments/split-bill/calculate')">Even Split</button>
+      </div>
+      <pre class="response" id="res-/api/payments/split-bill/calculate"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Usual Order</h2>
+      <div class="row"><span class="method">GET</span><code>/api/customer/usual</code></div>
+      <button onclick="fetchApi('GET','/api/customer/usual',null,this)">Get Usual</button>
+      <pre class="response" id="res-/api/customer/usual"></pre>
+
+      <div class="row" style="margin-top:10px"><span class="method">POST</span><code>/api/customer/usual</code></div>
+      <div class="row">
+        <button class="secondary" onclick="fetchApi('POST','/api/customer/usual',{items:[{menu_item_id:1,quantity:1,price:18.99,name:'Classic Burger'}]},this,'res-/api/customer/usual-post')">Save Usual</button>
+      </div>
+      <pre class="response" id="res-/api/customer/usual-post"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Reservations</h2>
+      <div class="row"><span class="method">POST</span><code>/api/reservations</code></div>
+      <textarea id="reservation-body">{
+  "date": "2026-07-31",
+  "time": "19:00",
+  "party_size": 2,
+  "name": "Test User",
+  "phone": "555-0199",
+  "special_requests": "Window seat please"
+}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button onclick="fetchApi('POST','/api/reservations',document.getElementById('reservation-body').value,this,'res-/api/reservations')">Create Reservation</button>
+      </div>
+      <pre class="response" id="res-/api/reservations"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Service Requests</h2>
+      <div class="row"><span class="method">POST</span><code>/api/service-requests</code></div>
+      <textarea id="service-body">{
+  "type": "water",
+  "notes": "Still water please"
+}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button onclick="fetchApi('POST','/api/service-requests',document.getElementById('service-body').value,this,'res-/api/service-requests')">Send Request</button>
+      </div>
+      <pre class="response" id="res-/api/service-requests"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Waitlist</h2>
+      <div class="row"><span class="method">POST</span><code>/api/waitlist/join</code></div>
+      <textarea id="waitlist-body">{
+  "party_size": 2,
+  "name": "Test User",
+  "phone": "555-0199",
+  "table_id": 1
+}</textarea>
+      <div class="row" style="margin-top:8px">
+        <button onclick="fetchApi('POST','/api/waitlist/join',document.getElementById('waitlist-body').value,this,'res-/api/waitlist/join')">Join Waitlist</button>
+      </div>
+      <pre class="response" id="res-/api/waitlist/join"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Notifications</h2>
+      <div class="row"><span class="method">GET</span><code>/api/notifications/preferences</code></div>
+      <button onclick="fetchApi('GET','/api/notifications/preferences',null,this)">Get Preferences</button>
+      <pre class="response" id="res-/api/notifications/preferences"></pre>
+    </div>
+  </div>
+
+  <div class="footer">
+    Make sure the backend is running at <span class="url">http://localhost:8001</span>. Some endpoints require auth headers; add them manually in this tester if needed.
+  </div>
+
+  <script>
+    async function fetchApi(method, path, body, btn, outId) {
+      const id = outId || 'res-' + path;
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('ok','err');
+      el.textContent = 'Loading...';
+      try {
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (body && typeof body === 'string' && body.trim()) opts.body = body;
+        else if (body && typeof body === 'object') opts.body = JSON.stringify(body);
+        const res = await fetch('http://localhost:8001' + path, opts);
+        const data = await res.json();
+        el.classList.add(res.ok ? 'ok' : 'err');
+        el.textContent = JSON.stringify({ status: res.status, ok: res.ok, data }, null, 2);
+      } catch (e) {
+        el.classList.add('err');
+        el.textContent = 'Network error: ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>
