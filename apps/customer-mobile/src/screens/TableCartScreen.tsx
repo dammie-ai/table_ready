@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native'
-import { getSocket, listenForCartUpdates, type CartUpdatePayload } from '@table-ready/shared'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native'
+import { listenForCartUpdates, broadcastCartUpdate, type CartUpdatePayload } from '@table-ready/shared'
 import { useCartStore, type CartItem } from '@table-ready/shared'
 
 export default function TableCartScreen({ navigation }: any) {
@@ -20,10 +20,7 @@ export default function TableCartScreen({ navigation }: any) {
   useEffect(() => {
     if (!joined || !room) return
 
-    const socket = getSocket()
-    socket.emit('join_cart_room', room)
-
-    const unsubscribe = listenForCartUpdates(socket, room, (payload: CartUpdatePayload) => {
+    const unsubscribe = listenForCartUpdates(room, (payload: CartUpdatePayload) => {
       if (payload.type === 'add' && payload.item) {
         setRemoteItems((prev) => {
           const exists = prev.find((i) => i?.menu_item_id === payload.item?.menu_item_id)
@@ -47,13 +44,17 @@ export default function TableCartScreen({ navigation }: any) {
 
     return () => {
       unsubscribe()
-      socket.emit('leave_cart_room', room)
     }
   }, [joined, room])
 
   const broadcastChange = (type: CartUpdatePayload['type'], item?: CartUpdatePayload['item'], menu_item_id?: number, quantity?: number) => {
-    const socket = getSocket()
-    socket.emit('cart_update', { room, type, item, menu_item_id, quantity, timestamp: Date.now() })
+    broadcastCartUpdate(room, {
+      type,
+      item,
+      menu_item_id,
+      quantity,
+      timestamp: Date.now(),
+    })
   }
 
   const handleAddItem = (item: { menu_item_id: number; name: string; base_price: number }) => {

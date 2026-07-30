@@ -1,1 +1,1 @@
-fix: align Expo dependencies with SDK 52 expected versions
+chore: prepare for frontend-backend restructure

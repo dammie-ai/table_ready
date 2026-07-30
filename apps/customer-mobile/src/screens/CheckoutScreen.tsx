@@ -1,15 +1,25 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native'
+import { useCartStore } from '@table-ready/shared'
 
 export default function CheckoutScreen({ navigation }: any) {
   const [orderType, setOrderType] = useState('PICKUP')
   const [tableNumber, setTableNumber] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [specialInstructions, setSpecialInstructions] = useState('')
+  const [processing, setProcessing] = useState(false)
 
-  const handlePay = () => {
-    // Integrate with Stripe or native payment
-    navigation.replace('OrderTracking', { id: '1' })
+  const handlePay = async () => {
+    setProcessing(true)
+    try {
+      // TODO: integrate real payment
+      const orderId = '1'
+      useCartStore.getState().clearCart()
+      navigation.replace('OrderTracking', { id: orderId })
+    } catch (err) {
+      Alert.alert('Payment failed', 'Please try again.')
+      setProcessing(false)
+    }
   }
 
   return (
@@ -72,8 +82,8 @@ export default function CheckoutScreen({ navigation }: any) {
         />
       </View>
 
-      <TouchableOpacity style={styles.payButton} onPress={handlePay}>
-        <Text style={styles.payButtonText}>Pay Now</Text>
+      <TouchableOpacity style={styles.payButton} onPress={handlePay} disabled={processing}>
+        <Text style={styles.payButtonText}>{processing ? 'Processing...' : 'Pay Now'}</Text>
       </TouchableOpacity>
     </View>
   )

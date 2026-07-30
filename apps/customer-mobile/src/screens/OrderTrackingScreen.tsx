@@ -1,11 +1,29 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 import { getSocket } from '@table-ready/shared'
+import * as Location from 'expo-location'
+import { getGeofenceConfig, type GeofenceConfig } from '@table-ready/shared'
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3
+  const phi1 = lat1 * Math.PI / 180
+  const phi2 = lat2 * Math.PI / 180
+  const deltaPhi = (lat2 - lat1) * Math.PI / 180
+  const deltaLambda = (lon2 - lon1) * Math.PI / 180
+
+  const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+            Math.cos(phi1) * Math.cos(phi2) *
+            Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+  return R * c
+}
 
 export default function OrderTrackingScreen({ route }: any) {
   const { id } = route.params || { id: '1' }
   const [status, setStatus] = useState('RECEIVED')
   const [showReleasePopup, setShowReleasePopup] = useState(false)
+  const [geoConfig, setGeoConfig] = useState<GeofenceConfig | null>(null)
 
   useEffect(() => {
     const socket = getSocket()
@@ -17,8 +35,69 @@ export default function OrderTrackingScreen({ route }: any) {
     return () => socket.off('order_updated', handleUpdate)
   }, [id])
 
+  useEffect(() => {
+    if (status !== 'ON_HOLD') return
+    let watchId: number | null = null
+
+    const startTracking = async () => {
+      try {
+        const config = await getGeofenceConfig()
+        setGeoConfig(config)
+
+        if (!config.restaurant_latitude || !config.restaurant_longitude) return
+
+        const { status } = await Location.requestForegroundPermissionsAsync()
+        if (status !== 'granted') return
+
+        watchId = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 5000,
+            distanceInterval: 10,
+          },
+          (location) => {
+            const { latitude, longitude } = location.coords
+            const distance = calculateDistance(
+              latitude,
+              longitude,
+              config.restaurant_latitude!,
+              config.restaurant_longitude!
+            )
+
+            if (distance <= config.radius_meters) {
+              setShowReleasePopup(true)
+              if (watchId !== null) {
+                Location.clearWatch(watchId)
+              }
+            }
+          }
+        )
+      } catch (err) {
+        console.error('Geofence tracking error:', err)
+      }
+    }
+
+    startTracking()
+
+    return () => {
+      if (watchId !== null) {
+        Location.clearWatch(watchId)
+      }
+    }
+  }, [status])
+
   const statusSteps = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'READY_FOR_PICKUP', 'PICKED_UP']
   const currentStep = statusSteps.indexOf(status)
+
+  const handleRelease = async () => {
+    try {
+      // TODO: call backend release endpoint
+      setShowReleasePopup(false)
+      Alert.alert('Success', 'Order released to kitchen')
+    } catch (err) {
+      Alert.alert('Error', 'Failed to release order')
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -40,12 +119,14 @@ export default function OrderTrackingScreen({ route }: any) {
         ))}
       </View>
 
-      <TouchableOpacity
-        style={styles.releaseButton}
-        onPress={() => setShowReleasePopup(true)}
-      >
-        <Text style={styles.releaseButtonText}>Release to Kitchen</Text>
-      </TouchableOpacity>
+      {status === 'ON_HOLD' && (
+        <TouchableOpacity
+          style={styles.releaseButton}
+          onPress={() => setShowReleasePopup(true)}
+        >
+          <Text style={styles.releaseButtonText}>Release to Kitchen</Text>
+        </TouchableOpacity>
+      )}
 
       {showReleasePopup && (
         <View style={styles.overlay}>
@@ -56,13 +137,7 @@ export default function OrderTrackingScreen({ route }: any) {
               <TouchableOpacity style={styles.popupCancel} onPress={() => setShowReleasePopup(false)}>
                 <Text style={styles.popupCancelText}>Not yet</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.popupConfirm}
-                onPress={() => {
-                  setShowReleasePopup(false)
-                  Alert.alert('Success', 'Order released to kitchen')
-                }}
-              >
+              <TouchableOpacity style={styles.popupConfirm} onPress={handleRelease}>
                 <Text style={styles.popupConfirmText}>Start Cooking</Text>
               </TouchableOpacity>
             </View>

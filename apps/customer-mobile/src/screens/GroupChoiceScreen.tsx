@@ -13,7 +13,7 @@ export default function GroupChoiceScreen({ navigation }: any) {
     try {
       if (mode === 'group') {
         const groupCode = generateGroupCode()
-        // Store group code in secure storage
+        // TODO: store groupCode in secure storage
         navigation.replace('Welcome')
       } else {
         navigation.replace('Welcome')

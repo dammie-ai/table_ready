@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native'
 import { getComboMeals, getComboMealDetail, getMenuItems, type ComboMeal, type MenuItem } from '@table-ready/shared'
+import { useCartStore } from '@table-ready/shared'
 
 type Step = 'select-combo' | 'pick-main' | 'pick-sides' | 'review'
 
@@ -13,6 +14,8 @@ export default function ComboBuilderScreen({ navigation }: any) {
   const [selectedMain, setSelectedMain] = useState<MenuItem | null>(null)
   const [selectedSides, setSelectedSides] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  const addCombo = useCartStore((s) => s.addCombo)
 
   useEffect(() => {
     loadCombos()
@@ -151,7 +154,29 @@ export default function ComboBuilderScreen({ navigation }: any) {
             <TouchableOpacity style={styles.backButton} onPress={() => setStep('pick-sides')}>
               <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.continueButton} onPress={() => navigation.navigate('Cart')}>
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={() => {
+                if (!selectedCombo || !selectedMain) return
+                addCombo({
+                  combo_id: selectedCombo.combo_id,
+                  name: selectedCombo.name,
+                  base_price: selectedCombo.base_price,
+                  combo_main: {
+                    menu_item_id: selectedMain.item_id,
+                    name: selectedMain.name,
+                    base_price: selectedMain.base_price,
+                  },
+                  combo_sides: selectedSides.map((s) => ({
+                    menu_item_id: s.item_id,
+                    name: s.name,
+                    base_price: s.base_price,
+                  })),
+                })
+                Alert.alert('Success', 'Combo added to cart')
+                navigation.navigate('Cart')
+              }}
+            >
               <Text style={styles.continueButtonText}>Add to Cart</Text>
             </TouchableOpacity>
           </View>

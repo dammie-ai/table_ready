@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, TextInput } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native'
 import { getMenuItems, type MenuItem } from '@table-ready/shared'
+import { useCartStore } from '@table-ready/shared'
 
 export default function MenuScreen({ route, navigation }: any) {
   const [items, setItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const mode = route.params?.mode
+  const addItem = useCartStore((s) => s.addItem)
 
   useEffect(() => {
     loadMenu()
@@ -18,6 +21,7 @@ export default function MenuScreen({ route, navigation }: any) {
       setItems(res.items)
     } catch (err) {
       console.error('Failed to load menu:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load menu')
     } finally {
       setLoading(false)
     }
@@ -26,6 +30,25 @@ export default function MenuScreen({ route, navigation }: any) {
   const categories = ['All', ...Array.from(new Set(items.map((i) => i.category_type)))]
   const filtered = selectedCategory === 'All' ? items : items.filter((i) => i.category_type === selectedCategory)
   const isOutOfStock = (item: MenuItem) => !item.is_active || item.out_of_stock_flag || item.stock_quantity <= 0
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <Text>Loading menu...</Text>
+      </View>
+    )
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity onPress={loadMenu}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
   const renderItem = ({ item }: { item: MenuItem }) => {
     const outOfStock = isOutOfStock(item)
@@ -47,7 +70,15 @@ export default function MenuScreen({ route, navigation }: any) {
             <TouchableOpacity
               style={[styles.addButton, outOfStock && styles.addButtonDisabled]}
               disabled={outOfStock}
-              onPress={() => {/* add to cart */}}
+              onPress={() => {
+                if (!outOfStock) {
+                  addItem({
+                    menu_item_id: item.item_id,
+                    name: item.name,
+                    base_price: item.base_price,
+                  })
+                }
+              }}
             >
               <Text style={styles.addButtonText}>{outOfStock ? 'Unavailable' : 'Add'}</Text>
             </TouchableOpacity>
@@ -196,5 +227,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 32,
     color: '#6b7280',
+  },
+  errorText: {
+    color: '#dc2626',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryText: {
+    color: '#2563eb',
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

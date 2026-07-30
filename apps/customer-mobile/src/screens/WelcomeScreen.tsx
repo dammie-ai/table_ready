@@ -1,6 +1,24 @@
+import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import * as SecureStore from 'expo-secure-store'
+
+const GEO_KEY = 'tableready_within_geofence'
 
 export default function WelcomeScreen({ navigation }: any) {
+  const [withinGeofence, setWithinGeofence] = useState(true)
+
+  useEffect(() => {
+    const checkGeofence = async () => {
+      try {
+        const value = await SecureStore.getItemAsync(GEO_KEY)
+        setWithinGeofence(value !== 'false')
+      } catch {
+        setWithinGeofence(true)
+      }
+    }
+    checkGeofence()
+  }, [])
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>TableReady</Text>
@@ -10,9 +28,11 @@ export default function WelcomeScreen({ navigation }: any) {
         <Text style={styles.primaryButtonText}>Combo Deals</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Menu', { mode: 'dine-in' })}>
-        <Text style={styles.secondaryButtonText}>Dine In</Text>
-      </TouchableOpacity>
+      {withinGeofence && (
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Menu', { mode: 'dine-in' })}>
+          <Text style={styles.secondaryButtonText}>Dine In</Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Menu', { mode: 'pickup' })}>
         <Text style={styles.secondaryButtonText}>Pickup</Text>

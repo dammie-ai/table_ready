@@ -1,4 +1,8 @@
-const API_BASE = '/api'
+import { Platform } from 'react-native'
+
+const API_BASE = Platform.OS === 'web' 
+  ? 'http://localhost:8001/api' 
+  : '/api'
 
 export async function apiClient<T>(
   path: string,
