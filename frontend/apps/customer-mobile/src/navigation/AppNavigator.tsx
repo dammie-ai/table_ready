@@ -17,12 +17,14 @@ import ReservationsScreen from '../screens/ReservationsScreen'
 import WaitlistScreen from '../screens/WaitlistScreen'
 import ServiceRequestsScreen from '../screens/ServiceRequestsScreen'
 import SettingsScreen from '../screens/SettingsScreen'
+import TabNavigator from './TabNavigator'
 
 export type RootStackParamList = {
   LocationCheck: undefined
   GroupChoice: undefined
   Login: undefined
   Welcome: undefined
+  Main: undefined
   Menu: { mode?: string }
   ItemDetail: { item: any }
   Modifier: { item: any; modifiers: any[] }
@@ -48,6 +50,7 @@ export default function Navigation() {
         <Stack.Screen name="GroupChoice" component={GroupChoiceScreen} options={{ title: 'Ordering Style' }} />
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ title: 'TableReady' }} />
+        <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
         <Stack.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
         <Stack.Screen name="ItemDetail" component={ItemDetailScreen} options={{ title: 'Item Detail' }} />
         <Stack.Screen name="Modifier" component={ModifierScreen} options={{ title: 'Customize' }} />

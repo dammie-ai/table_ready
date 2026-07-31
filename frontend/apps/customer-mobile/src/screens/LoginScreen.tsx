@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import Button from '../components/Button'
+import Input from '../components/Input'
+import { colors, spacing, typography } from '../../theme'
 import { login as apiLogin, register as apiRegister } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
 
@@ -9,22 +12,20 @@ export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const setAuth = useAuthStore((s) => s.setAuth)
 
   const handleSubmit = async () => {
     setLoading(true)
+    setError('')
     try {
-      if (isLogin) {
-        const res = await apiLogin({ email, password })
-        setAuth(res.token, res.user)
-        navigation.replace('Welcome')
-      } else {
-        const res = await apiRegister({ username, email, password })
-        setAuth(res.token, res.user)
-        navigation.replace('Welcome')
-      }
+      const res = isLogin
+        ? await apiLogin({ email, password })
+        : await apiRegister({ username, email, password })
+      setAuth(res.token, res.user)
+      navigation.replace('Main')
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Authentication failed')
+      setError(err instanceof Error ? err.message : 'Authentication failed')
     } finally {
       setLoading(false)
     }
@@ -32,39 +33,47 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{isLogin ? 'Welcome Back' : 'Create Account'}</Text>
+      <Text style={typography.h1}>{isLogin ? 'Welcome Back' : 'Create Account'}</Text>
       <Text style={styles.subtitle}>TableReady</Text>
 
       {!isLogin && (
-        <TextInput
-          style={styles.input}
+        <Input
+          label="Username"
           value={username}
           onChangeText={setUsername}
-          placeholder="Username"
+          placeholder="Enter username"
           autoCapitalize="none"
         />
       )}
-      <TextInput
-        style={styles.input}
+
+      <Input
+        label="Email"
         value={email}
         onChangeText={setEmail}
-        placeholder="Email"
+        placeholder="Enter email"
         keyboardType="email-address"
         autoCapitalize="none"
       />
-      <TextInput
-        style={styles.input}
+
+      <Input
+        label="Password"
         value={password}
         onChangeText={setPassword}
-        placeholder="Password"
+        placeholder="Enter password"
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? 'Please wait...' : isLogin ? 'Log In' : 'Sign Up'}</Text>
-      </TouchableOpacity>
+      {error && <Text style={styles.error}>{error}</Text>}
 
-      <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+      <View style={styles.buttonRow}>
+        <Button
+          title={loading ? 'Please wait...' : isLogin ? 'Log In' : 'Sign Up'}
+          onPress={handleSubmit}
+          disabled={loading}
+        />
+      </View>
+
+      <TouchableOpacity onPress={() => { setError(''); setIsLogin(!isLogin) }}>
         <Text style={styles.toggleText}>
           {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Log In'}
         </Text>
@@ -78,49 +87,28 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#f9fafb',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-    color: '#111827',
+    padding: spacing.xxl,
+    backgroundColor: colors.background,
   },
   subtitle: {
-    fontSize: 18,
+    ...typography.body,
+    color: colors.primary,
+    marginBottom: 40,
     fontWeight: '600',
-    color: '#2563eb',
-    marginBottom: 32,
   },
-  input: {
+  buttonRow: {
     width: '100%',
     maxWidth: 360,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    backgroundColor: '#ffffff',
-    marginBottom: 12,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
-  button: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 360,
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  error: {
+    color: colors.error,
+    marginBottom: spacing.md,
+    textAlign: 'center',
   },
   toggleText: {
-    color: '#2563eb',
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '500',
   },

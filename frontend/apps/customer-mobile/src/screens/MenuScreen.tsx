@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native'
+import { View, Text, StyleSheet, FlatList, Image } from 'react-native'
 import { getMenuItems, type MenuItem } from '@table-ready/shared'
 import { useCartStore } from '@table-ready/shared'
+import Button from '../components/Button'
+import { colors, spacing, borderRadius, typography } from '../../theme'
 
 export default function MenuScreen({ route, navigation }: any) {
   const [items, setItems] = useState<MenuItem[]>([])
@@ -43,9 +45,7 @@ export default function MenuScreen({ route, navigation }: any) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity onPress={loadMenu}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
+        <Button title="Retry" onPress={loadMenu} variant="secondary" />
       </View>
     )
   }
@@ -71,9 +71,8 @@ export default function MenuScreen({ route, navigation }: any) {
           </Text>
           <View style={styles.cardFooter}>
             <Text style={styles.price}>${item.base_price.toFixed(2)}</Text>
-            <TouchableOpacity
-              style={[styles.addButton, outOfStock && styles.addButtonDisabled]}
-              disabled={outOfStock}
+            <Button
+              title={outOfStock ? 'Unavailable' : 'Add'}
               onPress={() => {
                 if (!outOfStock) {
                   addItem({
@@ -83,20 +82,13 @@ export default function MenuScreen({ route, navigation }: any) {
                   })
                 }
               }}
-            >
-              <Text style={styles.addButtonText}>{outOfStock ? 'Unavailable' : 'Add'}</Text>
-            </TouchableOpacity>
+              variant={outOfStock ? 'tertiary' : 'primary'}
+              disabled={outOfStock}
+              style={styles.addButton}
+            />
           </View>
         </View>
       </TouchableOpacity>
-    )
-  }
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <Text>Loading menu...</Text>
-      </View>
     )
   }
 
@@ -130,7 +122,7 @@ export default function MenuScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
   },
   center: {
     flex: 1,
@@ -139,34 +131,34 @@ const styles = StyleSheet.create({
   },
   categoryRow: {
     flexDirection: 'row',
-    gap: 8,
-    padding: 16,
+    gap: spacing.sm,
+    padding: spacing.lg,
     flexWrap: 'wrap',
   },
   categoryPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#e5e7eb',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.border,
   },
   categoryPillActive: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
   },
   categoryText: {
-    color: '#374151',
+    color: colors.text,
     fontSize: 14,
   },
   categoryTextActive: {
     color: '#ffffff',
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   cardDisabled: {
     opacity: 0.6,
@@ -177,32 +169,32 @@ const styles = StyleSheet.create({
     height: 180,
   },
   cardContent: {
-    padding: 16,
+    padding: spacing.lg,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   name: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     flex: 1,
   },
   trending: {
-    backgroundColor: '#f97316',
+    backgroundColor: colors.secondary,
     color: '#ffffff',
     fontSize: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: 4,
   },
   description: {
     fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 12,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -212,34 +204,19 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2563eb',
+    color: colors.primary,
   },
   addButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addButtonDisabled: {
-    backgroundColor: '#9ca3af',
-  },
-  addButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
+    minWidth: 80,
   },
   empty: {
     textAlign: 'center',
     padding: 32,
-    color: '#6b7280',
+    color: colors.textSecondary,
   },
   errorText: {
-    color: '#dc2626',
-    marginBottom: 16,
+    color: colors.error,
+    marginBottom: spacing.lg,
     textAlign: 'center',
-  },
-  retryText: {
-    color: '#2563eb',
-    fontSize: 16,
-    fontWeight: '600',
   },
 })

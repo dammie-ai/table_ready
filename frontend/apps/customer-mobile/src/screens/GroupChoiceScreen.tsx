@@ -1,59 +1,51 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import Button from '../components/Button'
+import Card from '../components/Card'
+import { colors, spacing, typography } from '../../theme'
 
 export default function GroupChoiceScreen({ navigation }: any) {
-  const [loading, setLoading] = useState(false)
-
-  const generateGroupCode = () => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase()
-  }
-
-  const handleSelect = async (mode: 'individual' | 'group') => {
-    setLoading(true)
-    try {
-      if (mode === 'group') {
-        const groupCode = generateGroupCode()
-        // TODO: store groupCode in secure storage
-        navigation.replace('Welcome')
-      } else {
-        navigation.replace('Welcome')
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Failed to set order mode')
-      setLoading(false)
-    }
-  }
+  const [selected, setSelected] = useState<'solo' | 'group' | null>(null)
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>How are you ordering?</Text>
+      <Text style={typography.h2}>How are you ordering?</Text>
       <Text style={styles.subtitle}>Choose your dining style to get started</Text>
 
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => handleSelect('individual')}
-        disabled={loading}
-      >
-        <Text style={styles.emoji}>👤</Text>
-        <View>
-          <Text style={styles.cardTitle}>Just Me</Text>
-          <Text style={styles.cardSubtitle}>Ordering alone, paying alone</Text>
-        </View>
-      </TouchableOpacity>
+      <View style={styles.cards}>
+        <TouchableOpacity
+          onPress={() => setSelected('solo')}
+          activeOpacity={0.9}
+        >
+          <Card
+            title="Just Me"
+            subtitle="Ordering alone, paying alone"
+            icon="👤"
+            selected={selected === 'solo'}
+          />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => handleSelect('group')}
-        disabled={loading}
-      >
-        <Text style={styles.emoji}>👥</Text>
-        <View>
-          <Text style={styles.cardTitle}>Group Order</Text>
-          <Text style={styles.cardSubtitle}>Dining together, split the bill</Text>
-        </View>
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setSelected('group')}
+          activeOpacity={0.9}
+        >
+          <Card
+            title="Group Order"
+            subtitle="Dining together, split the bill"
+            icon="👥"
+            selected={selected === 'group'}
+          />
+        </TouchableOpacity>
+      </View>
 
-      {loading && <Text style={styles.loading}>Loading...</Text>}
+      <View style={styles.footer}>
+        <Button
+          title="Continue"
+          onPress={() => navigation.replace('Welcome')}
+          disabled={!selected}
+          variant={selected ? 'primary' : 'tertiary'}
+        />
+      </View>
     </View>
   )
 }
@@ -61,50 +53,25 @@ export default function GroupChoiceScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+    padding: spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#f9fafb',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#111827',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+    ...typography.body,
+    color: colors.textSecondary,
     marginBottom: 32,
     textAlign: 'center',
   },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+  cards: {
     width: '100%',
-    gap: 16,
+    maxWidth: 360,
+    gap: spacing.md,
+    marginBottom: 32,
   },
-  emoji: {
-    fontSize: 32,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  cardSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginTop: 4,
-  },
-  loading: {
-    marginTop: 24,
-    color: '#6b7280',
+  footer: {
+    width: '100%',
+    maxWidth: 360,
   },
 })

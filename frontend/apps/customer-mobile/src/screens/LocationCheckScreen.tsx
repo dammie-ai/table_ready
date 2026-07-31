@@ -1,97 +1,124 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ActivityIndicator, Button } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import * as Location from 'expo-location'
+import Button from '../components/Button'
+import Input from '../components/Input'
+import { colors, spacing, typography } from '../../theme'
+import { checkLocation } from '@table-ready/shared'
 import * as SecureStore from 'expo-secure-store'
-import { getGeofenceConfig, type GeofenceConfig } from '@table-ready/shared'
-
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371e3
-  const phi1 = lat1 * Math.PI / 180
-  const phi2 = lat2 * Math.PI / 180
-  const deltaPhi = (lat2 - lat1) * Math.PI / 180
-  const deltaLambda = (lon2 - lon1) * Math.PI / 180
-
-  const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-            Math.cos(phi1) * Math.cos(phi2) *
-            Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-
-  return R * c
-}
 
 const GEO_KEY = 'tableready_within_geofence'
 
 export default function LocationCheckScreen({ navigation }: any) {
-  const [checking, setChecking] = useState(true)
-  const [error, setError] = useState('')
-  const [config, setConfig] = useState<GeofenceConfig | null>(null)
+  const [status, setStatus] = useState<'loading' | 'error' | 'success' | 'manual'>('loading')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [manualAddress, setManualAddress] = useState('')
+  const [withinGeofence, setWithinGeofence] = useState(true)
 
   useEffect(() => {
-    checkLocation()
+    checkGeofence()
   }, [])
 
-  const checkLocation = async () => {
+  const checkGeofence = async () => {
     try {
-      const geoConfig = await getGeofenceConfig()
-      setConfig(geoConfig)
+      const stored = await SecureStore.getItemAsync(GEO_KEY)
+      if (stored !== null) {
+        setWithinGeofence(stored !== 'false')
+        setStatus('success')
+        return
+      }
+    } catch {
+      // ignore
+    }
+    requestLocation()
+  }
 
+  const requestLocation = async () => {
+    try {
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
-        setError('Location permission denied. You can continue, but Dine In may be limited.')
-        setChecking(false)
+        setStatus('error')
+        setErrorMsg('Location permission denied.')
         return
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+      const res = await checkLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       })
 
-      const { latitude, longitude } = location.coords
-
-      let withinGeofence = true
-      if (geoConfig.restaurant_latitude && geoConfig.restaurant_longitude) {
-        const distance = calculateDistance(
-          latitude,
-          longitude,
-          geoConfig.restaurant_latitude,
-          geoConfig.restaurant_longitude
-        )
-        withinGeofence = distance <= geoConfig.radius_meters
+      if (res.is_within_geofence) {
+        setWithinGeofence(true)
+        setStatus('success')
+        await SecureStore.setItemAsync(GEO_KEY, 'true')
+        setTimeout(() => navigation.replace('GroupChoice'), 1500)
+      } else {
+        setWithinGeofence(false)
+        setStatus('error')
+        setErrorMsg('You are outside the restaurant geofence.')
+        await SecureStore.setItemAsync(GEO_KEY, 'false')
       }
-
-      await SecureStore.setItemAsync(GEO_KEY, withinGeofence ? 'true' : 'false')
-      navigation.replace('GroupChoice')
     } catch (err) {
-      setError('Failed to check location. You can continue anyway.')
-      setChecking(false)
+      setStatus('error')
+      setErrorMsg(err instanceof Error ? err.message : 'Location error')
     }
   }
 
-  const continueAnyway = async () => {
-    try {
-      await SecureStore.setItemAsync(GEO_KEY, 'true')
-    } catch {
-      // ignore secure store errors
-    }
+  const handleContinueAnyway = async () => {
+    await SecureStore.setItemAsync(GEO_KEY, 'false')
+    setWithinGeofence(false)
+    setStatus('manual')
+  }
+
+  const handleManualContinue = () => {
     navigation.replace('GroupChoice')
   }
 
-  if (checking) {
+  if (status === 'loading') {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>TableReady</Text>
-        <Text style={styles.subtitle}>Checking your location...</Text>
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.message}>Checking your location...</Text>
+      </View>
+    )
+  }
+
+  if (status === 'success') {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.successTitle}>You're in range!</Text>
+        <Text style={styles.message}>Taking you to the ordering flow...</Text>
       </View>
     )
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>TableReady</Text>
-      <Text style={styles.subtitle}>We need your location to show available restaurants.</Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button title="Continue Anyway" onPress={continueAnyway} />
+      <Text style={typography.h2}>Location Check</Text>
+      <Text style={styles.message}>{errorMsg || 'We need your location to show available restaurants.'}</Text>
+
+      <Button title="Retry Location" onPress={requestLocation} variant="secondary" style={styles.button} />
+
+      <Button
+        title="Continue Anyway"
+        onPress={handleContinueAnyway}
+        variant="tertiary"
+        style={styles.button}
+      />
+
+      {status === 'manual' && (
+        <View style={styles.manualSection}>
+          <Input
+            label="Address or Note"
+            value={manualAddress}
+            onChangeText={setManualAddress}
+            placeholder="Optional address or note for staff"
+            multiline
+          />
+          <Button title="Continue" onPress={handleManualContinue} variant="primary" style={styles.button} />
+        </View>
+      )}
     </View>
   )
 }
@@ -99,26 +126,37 @@ export default function LocationCheckScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+    padding: spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#f9fafb',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#111827',
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+    backgroundColor: colors.background,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+  successTitle: {
+    ...typography.h2,
+    color: colors.success,
+    marginBottom: spacing.sm,
+  },
+  message: {
+    ...typography.body,
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
-  error: {
-    color: '#dc2626',
-    marginBottom: 16,
-    textAlign: 'center',
+  button: {
+    width: '100%',
+    maxWidth: 320,
+    marginBottom: spacing.md,
+  },
+  manualSection: {
+    width: '100%',
+    maxWidth: 320,
+    marginTop: spacing.lg,
   },
 })

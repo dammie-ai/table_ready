@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
+import Button from '../components/Button'
+import Card from '../components/Card'
+import { colors, spacing, borderRadius, typography } from '../../theme'
 
 const GEO_KEY = 'tableready_within_geofence'
 
@@ -19,52 +22,51 @@ export default function WelcomeScreen({ navigation }: any) {
     checkGeofence()
   }, [])
 
+  const goToMain = () => navigation.replace('Main')
+  const goToMenu = (mode: string) => navigation.navigate('Menu', { mode })
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>TableReady</Text>
+      <Text style={typography.h1}>TableReady</Text>
       <Text style={styles.subtitle}>Order from your table or on the go</Text>
 
-      <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Combos')}>
-        <Text style={styles.primaryButtonText}>Combo Deals</Text>
-      </TouchableOpacity>
+      <View style={styles.section}>
+        <Button title="Combo Deals" onPress={goToMenu} variant="primary" />
+      </View>
 
       {withinGeofence && (
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Menu', { mode: 'dine-in' })}>
-          <Text style={styles.secondaryButtonText}>Dine In</Text>
-        </TouchableOpacity>
+        <View style={styles.section}>
+          <Button title="Dine In" onPress={() => goToMenu('dine-in')} variant="secondary" />
+        </View>
       )}
 
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Menu', { mode: 'pickup' })}>
-        <Text style={styles.secondaryButtonText}>Pickup</Text>
-      </TouchableOpacity>
+      <View style={styles.section}>
+        <Button title="Pickup" onPress={() => goToMenu('pickup')} variant="secondary" />
+      </View>
 
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Menu', { mode: 'delivery' })}>
-        <Text style={styles.secondaryButtonText}>Delivery</Text>
-      </TouchableOpacity>
+      <View style={styles.section}>
+        <Button title="Delivery" onPress={() => goToMenu('delivery')} variant="secondary" />
+      </View>
 
       <View style={styles.divider} />
 
       <Text style={styles.sectionTitle}>More</Text>
 
-      <TouchableOpacity style={styles.tertiaryButton} onPress={() => navigation.navigate('TableCart')}>
-        <Text style={styles.tertiaryButtonText}>Group Order / Table Cart</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tertiaryButton} onPress={() => navigation.navigate('Reservations')}>
-        <Text style={styles.tertiaryButtonText}>Reservations</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tertiaryButton} onPress={() => navigation.navigate('Waitlist')}>
-        <Text style={styles.tertiaryButtonText}>Join Waitlist</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tertiaryButton} onPress={() => navigation.navigate('OrderHistory')}>
-        <Text style={styles.tertiaryButtonText}>Order History</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tertiaryButton} onPress={() => navigation.navigate('Settings')}>
-        <Text style={styles.tertiaryButtonText}>Settings</Text>
-      </TouchableOpacity>
+      <View style={styles.section}>
+        <Button title="Group Order / Table Cart" onPress={goToMain} variant="tertiary" />
+      </View>
+      <View style={styles.section}>
+        <Button title="Reservations" onPress={() => navigation.navigate('Reservations')} variant="tertiary" />
+      </View>
+      <View style={styles.section}>
+        <Button title="Join Waitlist" onPress={() => navigation.navigate('Waitlist')} variant="tertiary" />
+      </View>
+      <View style={styles.section}>
+        <Button title="Order History" onPress={() => navigation.navigate('OrderHistory')} variant="tertiary" />
+      </View>
+      <View style={styles.section}>
+        <Button title="Settings" onPress={() => navigation.navigate('Settings')} variant="tertiary" />
+      </View>
     </ScrollView>
   )
 }
@@ -72,84 +74,36 @@ export default function WelcomeScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1e40af',
+    backgroundColor: colors.primary,
   },
   content: {
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xxl,
     paddingTop: 80,
   },
-  title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 12,
-  },
   subtitle: {
-    fontSize: 18,
+    ...typography.body,
     color: '#dbeafe',
     marginBottom: 40,
     textAlign: 'center',
   },
-  primaryButton: {
-    backgroundColor: '#f97316',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+  section: {
     width: '100%',
     maxWidth: 320,
-    marginBottom: 12,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  secondaryButton: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: 320,
-    marginBottom: 12,
-  },
-  secondaryButtonText: {
-    color: '#1e40af',
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  tertiaryButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: 320,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  tertiaryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   divider: {
     width: '100%',
     maxWidth: 320,
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    marginVertical: 24,
+    marginVertical: spacing.xl,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#93c5fd',
-    marginBottom: 12,
+    marginBottom: spacing.md,
     textTransform: 'uppercase',
     letterSpacing: 1,
     width: '100%',
