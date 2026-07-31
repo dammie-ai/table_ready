@@ -25,14 +25,14 @@ export type RootStackParamList = {
   Login: undefined
   Welcome: undefined
   Main: undefined
-  Menu: { mode?: string }
+  Menu: { mode?: string; groupType?: string }
   ItemDetail: { item: any }
   Modifier: { item: any; modifiers: any[] }
   Combos: undefined
-  Cart: undefined
+  Cart: { groupType?: string; newCombo?: any }
   TableCart: undefined
   Checkout: undefined
-  OrderTracking: { id: string }
+  OrderTracking: { id: string; orderType?: string }
   OrderHistory: undefined
   Reservations: undefined
   Waitlist: undefined
@@ -45,12 +45,12 @@ const Stack = createNativeStackNavigator<RootStackParamList>()
 export default function Navigation() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LocationCheck">
-        <Stack.Screen name="LocationCheck" component={LocationCheckScreen} options={{ headerShown: false }} />
+      <Stack.Navigator initialRouteName="LocationCheck" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="LocationCheck" component={LocationCheckScreen} />
         <Stack.Screen name="GroupChoice" component={GroupChoiceScreen} options={{ title: 'Ordering Style' }} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ title: 'TableReady' }} />
-        <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
+        <Stack.Screen name="Main" component={TabNavigator} />
         <Stack.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
         <Stack.Screen name="ItemDetail" component={ItemDetailScreen} options={{ title: 'Item Detail' }} />
         <Stack.Screen name="Modifier" component={ModifierScreen} options={{ title: 'Customize' }} />

@@ -1,250 +1,368 @@
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native'
-import { useCartStore, type CartItem } from '@table-ready/shared'
+import { useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { useCartStore } from '@table-ready/shared';
+import Button from '../../components/Button';
+import { colors, spacing, borderRadius, typography } from '../../theme';
 
-export default function CartScreen({ navigation }: any) {
-  const items = useCartStore((s) => s.items)
-  const removeItem = useCartStore((s) => s.removeItem)
-  const updateQuantity = useCartStore((s) => s.updateQuantity)
-  const clearCart = useCartStore((s) => s.clearCart)
-  const total = useCartStore((s) => s.total())
+export default function CartScreen({ navigation, route }: any) {
+  const cart = useCartStore((s) => s.items);
+  const addItem = useCartStore((s) => s.addItem);
+  const addCombo = useCartStore((s) => s.addCombo);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const clearCart = useCartStore((s) => s.clearCart);
+  const groupType = route.params?.groupType || 'solo';
+  const newCombo = route.params?.newCombo;
 
-  const renderItem = ({ item }: { item: CartItem }) => {
-    if (item.combo_id) {
-      return (
-        <View style={styles.card}>
-          <Text style={styles.comboName}>{item.name}</Text>
-          <Text style={styles.comboLabel}>Combo Deal</Text>
-          {item.combo_main && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Main</Text>
-              <Text style={styles.value}>{item.combo_main.name}</Text>
-            </View>
-          )}
-          {item.combo_sides && item.combo_sides.length > 0 && (
-            <View style={styles.sidesContainer}>
-              <Text style={styles.label}>Sides</Text>
-              {item.combo_sides.map((side, idx) => (
-                <Text key={idx} style={styles.sideItem}>
-                  {side.name}
-                </Text>
-              ))}
-            </View>
-          )}
-          <View style={styles.footer}>
-            <View style={styles.quantityRow}>
-              <TouchableOpacity onPress={() => item.combo_main && updateQuantity(item.combo_main.menu_item_id, item.quantity - 1)}>
-                <Text style={styles.qtyButton}>-</Text>
-              </TouchableOpacity>
-              <Text style={styles.qtyText}>{item.quantity}</Text>
-              <TouchableOpacity onPress={() => item.combo_main && updateQuantity(item.combo_main.menu_item_id, item.quantity + 1)}>
-                <Text style={styles.qtyButton}>+</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.total}>${(item.base_price * item.quantity).toFixed(2)}</Text>
-          </View>
-        </View>
-      )
-    }
+  if (newCombo && cart.length === 0) {
+    addCombo({
+      cartId: `combo-${Date.now()}`,
+      type: 'combo',
+      name: newCombo.name,
+      base_price: newCombo.price,
+      quantity: 1,
+      image: newCombo.main?.image,
+      combo_id: newCombo.comboId,
+      combo_main: { menu_item_id: newCombo.main?.id, name: newCombo.main?.name, base_price: newCombo.main?.price },
+      combo_sides: newCombo.sides?.map((s: any) => ({ menu_item_id: s.id, name: s.name, base_price: s.price })),
+    });
+  }
 
+  const subtotal = cart.reduce((sum, item) => sum + item.base_price * item.quantity, 0);
+  const tax = subtotal * 0.08;
+  const total = subtotal + tax;
+  const isEmpty = cart.length === 0;
+
+  const handleCheckout = () => {
+    navigation.navigate('Checkout');
+  };
+
+  const renderItem = ({ item }: any) => {
+    const isCombo = item.type === 'combo';
     return (
-      <View style={styles.card}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.price}>${item.base_price.toFixed(2)}</Text>
-        <View style={styles.footer}>
-          <View style={styles.quantityRow}>
-            <TouchableOpacity onPress={() => updateQuantity(item.menu_item_id!, item.quantity - 1)}>
-              <Text style={styles.qtyButton}>-</Text>
-            </TouchableOpacity>
-            <Text style={styles.qtyText}>{item.quantity}</Text>
-            <TouchableOpacity onPress={() => updateQuantity(item.menu_item_id!, item.quantity + 1)}>
-              <Text style={styles.qtyButton}>+</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity onPress={() => removeItem(item.menu_item_id!)}>
-            <Text style={styles.removeButton}>Remove</Text>
+      <View style={[styles.itemCard, isCombo && styles.comboCard]}>
+        {item.image && (
+          <Image source={{ uri: item.image }} style={styles.itemImage} resizeMode="cover" />
+        )}
+        <View style={styles.itemContent}>
+          <Text style={styles.itemName}>{item.name}</Text>
+          {isCombo && item.combo_main && (
+            <Text style={styles.comboDetail}>Main: {item.combo_main.name}</Text>
+          )}
+          {isCombo && item.combo_sides && item.combo_sides.length > 0 && (
+            <Text style={styles.comboDetail}>
+              Sides: {item.combo_sides.map((s: any) => s.name).join(', ')}
+            </Text>
+          )}
+          <Text style={styles.itemPrice}>${(item.base_price * item.quantity).toFixed(2)}</Text>
+        </View>
+        <View style={styles.qtyRow}>
+          <TouchableOpacity
+            style={styles.qtyButton}
+            onPress={() => updateQuantity(item.menu_item_id, item.quantity - 1)}
+          >
+            <Text style={styles.qtyButtonText}>−</Text>
+          </TouchableOpacity>
+          <Text style={styles.qtyText}>{item.quantity}</Text>
+          <TouchableOpacity
+            style={[styles.qtyButton, styles.qtyButtonAdd]}
+            onPress={() => updateQuantity(item.menu_item_id, item.quantity + 1)}
+          >
+            <Text style={styles.qtyButtonTextAdd}>+</Text>
           </TouchableOpacity>
         </View>
       </View>
-    )
-  }
+    );
+  };
 
-  if (items.length === 0) {
+  if (isEmpty) {
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyText}>Your cart is empty</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Menu')}>
-          <Text style={styles.link}>Browse Menu</Text>
-        </TouchableOpacity>
+        <View style={styles.emptyIcon}>
+          <Text style={styles.emptyEmoji}>🛒</Text>
+        </View>
+        <Text style={styles.emptyTitle}>Your cart is empty</Text>
+        <Text style={styles.emptySubtitle}>Add items from the menu to get started</Text>
+        <Button title="Browse Menu" onPress={() => navigation.navigate('Menu')} variant="secondary" style={styles.emptyButton} />
       </View>
-    )
+    );
   }
 
   return (
     <View style={styles.container}>
-      <FlatList data={items} renderItem={renderItem} keyExtractor={(item, index) => index.toString()} />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
+        <Text style={typography.h2}>Your Cart</Text>
+      </View>
+
+      <FlatList
+        data={cart}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.cartId}
+        contentContainerStyle={styles.listContent}
+      />
+
+      {groupType === 'group' && (
+        <TouchableOpacity
+          style={styles.tableCartLink}
+          onPress={() => navigation.navigate('TableCart')}
+        >
+          <View style={styles.tableCartIcon}>
+            <Text style={styles.tableCartEmoji}>👥</Text>
+          </View>
+          <View style={styles.tableCartContent}>
+            <Text style={styles.tableCartTitle}>View Table Cart</Text>
+            <Text style={styles.tableCartSubtitle}>See what your group has ordered</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
       <View style={styles.summary}>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>${total().toFixed(2)}</Text>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Subtotal</Text>
+          <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
         </View>
-        <TouchableOpacity style={styles.checkoutButton} onPress={() => navigation.navigate('Checkout')}>
-          <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.clearButton} onPress={clearCart}>
-          <Text style={styles.clearButtonText}>Clear</Text>
-        </TouchableOpacity>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Tax (8%)</Text>
+          <Text style={styles.summaryValue}>${tax.toFixed(2)}</Text>
+        </View>
+        <View style={[styles.summaryRow, styles.summaryTotal]}>
+          <Text style={styles.summaryTotalLabel}>Total</Text>
+          <Text style={styles.summaryTotalValue}>${total.toFixed(2)}</Text>
+        </View>
+
+        <View style={styles.summaryButtons}>
+          <Button title="Clear" onPress={clearCart} variant="secondary" style={styles.clearButton} />
+          <Button title="Proceed to Checkout" onPress={handleCheckout} variant="primary" style={styles.checkoutButton} />
+        </View>
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    padding: spacing.xxl,
+    gap: spacing.lg,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#6b7280',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  link: {
-    color: '#2563eb',
-    fontSize: 16,
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  comboName: {
+  backIcon: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
-  comboLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    marginBottom: 8,
+  listContent: {
+    padding: spacing.lg,
+    paddingBottom: 180,
   },
-  price: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2563eb',
-    marginTop: 4,
-  },
-  row: {
+  itemCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
+    alignItems: 'center',
+    gap: spacing.md,
   },
-  label: {
+  comboCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.secondary,
+  },
+  comboDetail: {
     fontSize: 12,
-    color: '#6b7280',
-    textTransform: 'uppercase',
+    color: colors.textSecondary,
+    marginTop: 2,
   },
-  value: {
+  itemImage: {
+    width: 64,
+    height: 64,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#e5e7eb',
+  },
+  itemContent: {
+    flex: 1,
+  },
+  itemName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  itemPrice: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.primary,
+    marginTop: 2,
   },
-  sidesContainer: {
-    marginTop: 8,
-  },
-  sideItem: {
-    fontSize: 14,
-    color: '#374151',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  quantityRow: {
+  qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.sm,
   },
   qtyButton: {
-    fontSize: 20,
-    color: '#2563eb',
-    fontWeight: '600',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyButtonAdd: {
+    backgroundColor: colors.primary,
+  },
+  qtyButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  qtyButtonTextAdd: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   qtyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  total: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#2563eb',
+    color: colors.text,
+    minWidth: 24,
+    textAlign: 'center',
   },
-  removeButton: {
-    color: '#dc2626',
+  tableCartLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: '#eff6ff',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#93c5fd',
+    borderStyle: 'dashed',
+  },
+  tableCartIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tableCartEmoji: {
+    fontSize: 20,
+  },
+  tableCartContent: {
+    flex: 1,
+  },
+  tableCartTitle: {
     fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  tableCartSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   summary: {
-    backgroundColor: '#ffffff',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    padding: 16,
+    borderTopColor: colors.border,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
-  totalRow: {
+  summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: spacing.sm,
   },
-  totalLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+  summaryLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
   },
-  totalValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2563eb',
-  },
-  checkoutButton: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  checkoutButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+  summaryValue: {
+    fontSize: 13,
+    color: colors.text,
     fontWeight: '600',
+  },
+  summaryTotal: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  summaryTotalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  summaryTotalValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  summaryButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
   },
   clearButton: {
-    backgroundColor: '#e5e7eb',
-    paddingVertical: 12,
-    borderRadius: 10,
+    flex: 1,
+  },
+  checkoutButton: {
+    flex: 2,
+  },
+  emptyIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  clearButtonText: {
-    color: '#374151',
-    fontSize: 14,
-    fontWeight: '600',
+  emptyEmoji: {
+    fontSize: 48,
   },
-})
+  emptyTitle: {
+    ...typography.h3,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    ...typography.caption,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    width: 160,
+  },
+});

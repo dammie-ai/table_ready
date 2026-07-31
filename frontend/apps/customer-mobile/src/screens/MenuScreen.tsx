@@ -1,44 +1,51 @@
-import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, FlatList, Image } from 'react-native'
-import { getMenuItems, type MenuItem } from '@table-ready/shared'
-import { useCartStore } from '@table-ready/shared'
-import Button from '../components/Button'
-import { colors, spacing, borderRadius, typography } from '../../theme'
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { getMenuItems, getComboMeals, getDishOfWeek } from '@table-ready/shared';
+import { useCartStore } from '@table-ready/shared';
+import Button from '../../components/Button';
+import Badge from '../../components/Badge';
+import { colors, spacing, borderRadius, typography } from '../../theme';
+import type { MenuItem } from '@table-ready/shared';
 
 export default function MenuScreen({ route, navigation }: any) {
-  const [items, setItems] = useState<MenuItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('All')
-  const mode = route.params?.mode
-  const addItem = useCartStore((s) => s.addItem)
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showDowBanner, setShowDowBanner] = useState(true);
+  const [dishOfWeek, setDishOfWeek] = useState<any>(null);
+  const mode = route.params?.mode;
+  const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
-    loadMenu()
-  }, [])
+    loadMenu();
+  }, []);
 
   const loadMenu = async () => {
     try {
-      const res = await getMenuItems()
-      setItems(res.items)
+      const [menuRes, dowRes] = await Promise.all([
+        getMenuItems(),
+        getDishOfWeek().catch(() => ({ success: false })),
+      ]);
+      setItems(menuRes.items);
+      if (dowRes.success) setDishOfWeek(dowRes.dish);
     } catch (err) {
-      console.error('Failed to load menu:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load menu')
+      setError(err instanceof Error ? err.message : 'Failed to load menu');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const categories = ['All', ...Array.from(new Set(items.map((i) => i.category_type)))]
-  const filtered = selectedCategory === 'All' ? items : items.filter((i) => i.category_type === selectedCategory)
-  const isOutOfStock = (item: MenuItem) => !item.is_active || item.out_of_stock_flag || item.stock_quantity <= 0
+  const categories = ['All', ...Array.from(new Set(items.map((i) => i.category_type)))];
+  const filtered = selectedCategory === 'All' ? items : items.filter((i) => i.category_type === selectedCategory);
+  const isOutOfStock = (item: MenuItem) => !item.is_active || item.out_of_stock_flag || item.stock_quantity <= 0;
 
   if (loading) {
     return (
       <View style={styles.center}>
         <Text>Loading menu...</Text>
       </View>
-    )
+    );
   }
 
   if (error) {
@@ -47,11 +54,17 @@ export default function MenuScreen({ route, navigation }: any) {
         <Text style={styles.errorText}>{error}</Text>
         <Button title="Retry" onPress={loadMenu} variant="secondary" />
       </View>
-    )
+    );
   }
 
+  const dowItem = dishOfWeek ? items.find((m) => m.item_id === dishOfWeek.itemId) : null;
+  const discountedPrice = dowItem ? dowItem.base_price * (1 - (dishOfWeek?.discountPercent || 0) / 100) : 0;
+
   const renderItem = ({ item }: { item: MenuItem }) => {
-    const outOfStock = isOutOfStock(item)
+    const outOfStock = isOutOfStock(item);
+    const isDow = dowItem && item.item_id === dowItem.item_id;
+    const displayPrice = isDow ? discountedPrice : item.base_price;
+
     return (
       <TouchableOpacity
         style={[styles.card, outOfStock && styles.cardDisabled]}
@@ -61,62 +74,127 @@ export default function MenuScreen({ route, navigation }: any) {
         {item.image_url && (
           <Image source={{ uri: item.image_url }} style={styles.image} resizeMode="cover" />
         )}
+        {outOfStock && (
+          <View style={styles.outOfStockOverlay}>
+            <Text style={styles.outOfStockText}>Out of Stock</Text>
+          </View>
+        )}
+        {item.is_trending && !outOfStock && (
+          <View style={styles.trendingBadge}>
+            <Text style={styles.trendingText}>🔥 Trending</Text>
+          </View>
+        )}
+        {isDow && !outOfStock && (
+          <View style={styles.dowBadge}>
+            <Text style={styles.dowText}>🌟 {dishOfWeek.discountPercent}% OFF</Text>
+          </View>
+        )}
         <View style={styles.cardContent}>
           <View style={styles.cardHeader}>
             <Text style={styles.name}>{item.name}</Text>
-            {item.is_trending && <Text style={styles.trending}>Trending</Text>}
           </View>
           <Text style={styles.description} numberOfLines={2}>
             {item.description || 'No description'}
           </Text>
+          <View style={styles.prepRow}>
+            <Text style={styles.prepText}>⏱️ {item.prep_time_minutes} min prep</Text>
+          </View>
           <View style={styles.cardFooter}>
-            <Text style={styles.price}>${item.base_price.toFixed(2)}</Text>
-            <Button
-              title={outOfStock ? 'Unavailable' : 'Add'}
-              onPress={() => {
-                if (!outOfStock) {
+            <View>
+              <Text style={styles.price}>${displayPrice.toFixed(2)}</Text>
+              {isDow && (
+                <Text style={styles.originalPrice}>${item.base_price.toFixed(2)}</Text>
+              )}
+            </View>
+            {outOfStock ? (
+              <View style={styles.unavailableButton}>
+                <Text style={styles.unavailableText}>Unavailable</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() =>
                   addItem({
                     menu_item_id: item.item_id,
                     name: item.name,
-                    base_price: item.base_price,
+                    base_price: displayPrice,
                   })
                 }
-              }}
-              variant={outOfStock ? 'tertiary' : 'primary'}
-              disabled={outOfStock}
-              style={styles.addButton}
-            />
+              >
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </TouchableOpacity>
-    )
-  }
+    );
+  };
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={typography.h2}>Menu</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Combos')} style={styles.comboButton}>
+            <Text style={styles.comboButtonText}>🍽️ Combo Deals</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
+          {categories.map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              onPress={() => setSelectedCategory(cat)}
+              style={[
+                styles.categoryPill,
+                selectedCategory === cat && styles.categoryPillActive,
+              ]}
+            >
+              <Text style={[
+                styles.categoryText,
+                selectedCategory === cat && styles.categoryTextActive,
+              ]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <FlatList
         data={filtered}
         renderItem={renderItem}
         keyExtractor={(item) => item.item_id.toString()}
         ListEmptyComponent={<Text style={styles.empty}>No items found in this category.</Text>}
-        ListHeaderComponent={
-          <View style={styles.categoryRow}>
-            {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                onPress={() => setSelectedCategory(cat)}
-                style={[styles.categoryPill, selectedCategory === cat && styles.categoryPillActive]}
-              >
-                <Text style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        }
+        contentContainerStyle={styles.listContent}
       />
+
+      {showDowBanner && dowItem && (
+        <TouchableOpacity
+          style={styles.dowBanner}
+          onPress={() => setShowDowBanner(false)}
+          activeOpacity={0.9}
+        >
+          <Image source={{ uri: dowItem.image_url }} style={styles.dowImage} resizeMode="cover" />
+          <View style={styles.dowContent}>
+            <Text style={styles.dowLabel}>🌟 Dish of the Week</Text>
+            <Text style={styles.dowName}>{dowItem.name}</Text>
+            <View style={styles.dowPriceRow}>
+              <Text style={styles.dowDiscount}>{dishOfWeek.discountPercent}% OFF</Text>
+              <Text style={styles.dowPrice}>${discountedPrice.toFixed(2)}</Text>
+              <Text style={styles.dowOriginal}>${dowItem.base_price.toFixed(2)}</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={() => setShowDowBanner(false)}>
+            <Text style={styles.dowClose}>✕</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      )}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -129,11 +207,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  header: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  comboButton: {
+    marginLeft: 'auto',
+    backgroundColor: colors.secondary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  comboButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   categoryRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    padding: spacing.lg,
-    flexWrap: 'wrap',
   },
   categoryPill: {
     paddingHorizontal: spacing.md,
@@ -145,16 +260,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   categoryText: {
+    fontSize: 13,
+    fontWeight: '600',
     color: colors.text,
-    fontSize: 14,
   },
   categoryTextActive: {
     color: '#ffffff',
   },
+  listContent: {
+    padding: spacing.lg,
+    paddingBottom: 100,
+  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    marginHorizontal: spacing.lg,
     marginBottom: spacing.lg,
     overflow: 'hidden',
     borderWidth: 1,
@@ -162,11 +281,61 @@ const styles = StyleSheet.create({
   },
   cardDisabled: {
     opacity: 0.6,
-    backgroundColor: '#f3f4f6',
   },
   image: {
     width: '100%',
     height: 180,
+    backgroundColor: '#e5e7eb',
+  },
+  outOfStockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 180,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  outOfStockText: {
+    backgroundColor: '#374151',
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+  },
+  trendingBadge: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    backgroundColor: colors.secondary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendingText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  dowBadge: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    backgroundColor: colors.secondary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+  },
+  dowText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   cardContent: {
     padding: spacing.lg,
@@ -174,27 +343,30 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: spacing.sm,
   },
   name: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: colors.text,
     flex: 1,
   },
-  trending: {
-    backgroundColor: colors.secondary,
-    color: '#ffffff',
-    fontSize: 12,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
   description: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: spacing.sm,
+  },
+  prepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     marginBottom: spacing.md,
+  },
+  prepText: {
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -206,12 +378,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
   },
+  originalPrice: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textDecorationLine: 'line-through',
+  },
   addButton: {
-    minWidth: 80,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  unavailableButton: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  unavailableText: {
+    color: '#9ca3af',
+    fontSize: 13,
+    fontWeight: '600',
   },
   empty: {
     textAlign: 'center',
-    padding: 32,
+    padding: spacing.xxl,
     color: colors.textSecondary,
   },
   errorText: {
@@ -219,4 +415,69 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     textAlign: 'center',
   },
-})
+  dowBanner: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    left: spacing.lg,
+    right: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1.5,
+    borderColor: '#fed7aa',
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  dowImage: {
+    width: 96,
+    height: 96,
+    backgroundColor: '#fef3c7',
+  },
+  dowContent: {
+    flex: 1,
+    padding: spacing.md,
+    justifyContent: 'center',
+  },
+  dowLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dowName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 2,
+  },
+  dowPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  dowDiscount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.secondary,
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  dowPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.secondary,
+  },
+  dowOriginal: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textDecorationLine: 'line-through',
+  },
+  dowClose: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    padding: spacing.md,
+  },
+});

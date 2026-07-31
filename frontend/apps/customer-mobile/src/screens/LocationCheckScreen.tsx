@@ -1,113 +1,119 @@
-import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
-import * as Location from 'expo-location'
-import Button from '../components/Button'
-import Input from '../components/Input'
-import { colors, spacing, typography } from '../../theme'
-import { checkLocation } from '@table-ready/shared'
-import * as SecureStore from 'expo-secure-store'
-
-const GEO_KEY = 'tableready_within_geofence'
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Modal, ScrollView } from 'react-native';
+import { colors, spacing, borderRadius, typography } from '../../theme';
+import Button from '../../components/Button';
+import Input from '../../components/Input';
+import * as SecureStore from 'expo-secure-store';
+import * as Location from 'expo-location';
+import { checkLocation, getConfig } from '@table-ready/shared';
 
 export default function LocationCheckScreen({ navigation }: any) {
-  const [status, setStatus] = useState<'loading' | 'error' | 'success' | 'manual'>('loading')
-  const [errorMsg, setErrorMsg] = useState('')
-  const [manualAddress, setManualAddress] = useState('')
-  const [withinGeofence, setWithinGeofence] = useState(true)
+  const [phase, setPhase] = useState<'loading' | 'success' | 'error' | 'manual'>('loading');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [manualAddress, setManualAddress] = useState('');
+  const [withinGeofence, setWithinGeofence] = useState(true);
 
   useEffect(() => {
-    checkGeofence()
-  }, [])
+    checkGeofence();
+  }, []);
 
   const checkGeofence = async () => {
     try {
-      const stored = await SecureStore.getItemAsync(GEO_KEY)
+      const stored = await SecureStore.getItemAsync('tableready_within_geofence');
       if (stored !== null) {
-        setWithinGeofence(stored !== 'false')
-        setStatus('success')
-        return
+        setWithinGeofence(stored !== 'false');
+        setPhase('success');
+        return;
       }
     } catch {
       // ignore
     }
-    requestLocation()
-  }
+    requestLocation();
+  };
 
   const requestLocation = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync()
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setStatus('error')
-        setErrorMsg('Location permission denied.')
-        return
+        setPhase('error');
+        setErrorMsg('Location permission denied.');
+        return;
       }
 
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const res = await checkLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-      })
+      });
 
       if (res.is_within_geofence) {
-        setWithinGeofence(true)
-        setStatus('success')
-        await SecureStore.setItemAsync(GEO_KEY, 'true')
-        setTimeout(() => navigation.replace('GroupChoice'), 1500)
+        setWithinGeofence(true);
+        setPhase('success');
+        await SecureStore.setItemAsync('tableready_within_geofence', 'true');
+        setTimeout(() => navigation.replace('GroupChoice'), 1500);
       } else {
-        setWithinGeofence(false)
-        setStatus('error')
-        setErrorMsg('You are outside the restaurant geofence.')
-        await SecureStore.setItemAsync(GEO_KEY, 'false')
+        setWithinGeofence(false);
+        setPhase('error');
+        setErrorMsg('You are outside the restaurant geofence.');
+        await SecureStore.setItemAsync('tableready_within_geofence', 'false');
       }
     } catch (err) {
-      setStatus('error')
-      setErrorMsg(err instanceof Error ? err.message : 'Location error')
+      setPhase('error');
+      setErrorMsg(err instanceof Error ? err.message : 'Location error');
     }
-  }
+  };
 
   const handleContinueAnyway = async () => {
-    await SecureStore.setItemAsync(GEO_KEY, 'false')
-    setWithinGeofence(false)
-    setStatus('manual')
-  }
+    await SecureStore.setItemAsync('tableready_within_geofence', 'false');
+    setWithinGeofence(false);
+    setPhase('manual');
+  };
 
   const handleManualContinue = () => {
-    navigation.replace('GroupChoice')
-  }
+    navigation.replace('GroupChoice');
+  };
 
-  if (status === 'loading') {
+  if (phase === 'loading') {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.message}>Checking your location...</Text>
       </View>
-    )
+    );
   }
 
-  if (status === 'success') {
+  if (phase === 'success') {
     return (
       <View style={styles.center}>
         <Text style={styles.successTitle}>You're in range!</Text>
         <Text style={styles.message}>Taking you to the ordering flow...</Text>
       </View>
-    )
+    );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={typography.h2}>Location Check</Text>
-      <Text style={styles.message}>{errorMsg || 'We need your location to show available restaurants.'}</Text>
+      <View style={styles.logoContainer}>
+        <View style={styles.logoBox}>
+          <Text style={styles.logoIcon}>🍽️</Text>
+        </View>
+        <Text style={typography.h2}>TableReady</Text>
+        <Text style={styles.logoSub}>Order from anywhere</Text>
+      </View>
 
-      <Button title="Retry Location" onPress={requestLocation} variant="secondary" style={styles.button} />
+      <View style={styles.statusArea}>
+        <View style={styles.iconCircle}>
+          <Text style={styles.mapIcon}>📍</Text>
+        </View>
+        <Text style={styles.message}>{errorMsg || 'We need your location to show available restaurants near you.'}</Text>
+      </View>
 
-      <Button
-        title="Continue Anyway"
-        onPress={handleContinueAnyway}
-        variant="tertiary"
-        style={styles.button}
-      />
+      <View style={styles.buttonContainer}>
+        <Button title="Retry Location" onPress={requestLocation} variant="secondary" style={styles.button} />
+        <Button title="Continue Anyway" onPress={handleContinueAnyway} variant="tertiary" style={styles.button} />
+      </View>
 
-      {status === 'manual' && (
+      {phase === 'manual' && (
         <View style={styles.manualSection}>
           <Input
             label="Address or Note"
@@ -119,8 +125,12 @@ export default function LocationCheckScreen({ navigation }: any) {
           <Button title="Continue" onPress={handleManualContinue} variant="primary" style={styles.button} />
         </View>
       )}
+
+      <TouchableOpacity onPress={() => setPhase('error')} style={styles.simulateButton}>
+        <Text style={styles.simulateText}>Simulate error</Text>
+      </TouchableOpacity>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -138,25 +148,78 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
     backgroundColor: colors.background,
   },
-  successTitle: {
-    ...typography.h2,
-    color: colors.success,
-    marginBottom: spacing.sm,
+  logoContainer: {
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.xxl,
+  },
+  logoBox: {
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  logoIcon: {
+    fontSize: 48,
+  },
+  logoSub: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  statusArea: {
+    alignItems: 'center',
+    gap: spacing.lg,
+    marginBottom: spacing.xxl,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapIcon: {
+    fontSize: 32,
   },
   message: {
     ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    maxWidth: 260,
+  },
+  successTitle: {
+    ...typography.h2,
+    color: colors.success,
+    marginBottom: spacing.sm,
+  },
+  buttonContainer: {
+    width: '100%',
+    maxWidth: 320,
+    gap: spacing.md,
   },
   button: {
     width: '100%',
-    maxWidth: 320,
-    marginBottom: spacing.md,
   },
   manualSection: {
     width: '100%',
     maxWidth: 320,
     marginTop: spacing.lg,
+    gap: spacing.md,
   },
-})
+  simulateButton: {
+    marginTop: spacing.lg,
+  },
+  simulateText: {
+    fontSize: 12,
+    color: '#d1d5db',
+  },
+});
