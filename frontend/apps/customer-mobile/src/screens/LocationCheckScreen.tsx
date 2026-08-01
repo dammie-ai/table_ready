@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Modal, ScrollView } from 'react-native';
-import { colors, spacing, borderRadius, typography } from '../../theme';
-import Button from '../../components/Button';
-import Input from '../../components/Input';
+import { colors, spacing, borderRadius, typography } from '../theme';
+import Button from '../components/Button';
+import Input from '../components/Input';
 import * as SecureStore from 'expo-secure-store';
 import * as Location from 'expo-location';
 import { checkLocation, getConfig } from '@table-ready/shared';

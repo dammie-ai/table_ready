@@ -3,26 +3,60 @@ import { useAuthStore } from './stores/authStore'
 import Login from './pages/Login'
 import StaffDashboard from './pages/StaffDashboard'
 import KitchenDisplay from './pages/KitchenDisplay'
+import WaiterDashboard from './pages/WaiterDashboard'
+import DeliveryPortal from './pages/DeliveryPortal'
+import ManagerPanel from './pages/ManagerPanel'
 import MenuManagement from './pages/MenuManagement'
+import Menu from './pages/Menu'
+import Cart from './pages/Cart'
+import Checkout from './pages/Checkout'
+import OrderTracking from './pages/OrderTracking'
+import OrderSuccess from './pages/OrderSuccess'
+import Welcome from './pages/Welcome'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
   const token = useAuthStore((s) => s.token)
-  const role = useAuthStore((s) => s.user?.role)
+  const primaryRole = useAuthStore((s) => s.primaryRole)
 
   return (
     <Routes>
       <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
       
+      {/* Customer-facing routes */}
+      <Route path="/welcome" element={<Welcome />} />
+      <Route path="/menu" element={<Menu />} />
+      <Route path="/cart" element={<Cart />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/order-tracking/:id" element={<OrderTracking />} />
+      <Route path="/order-success" element={<OrderSuccess />} />
+      
+      {/* Staff routes */}
       <Route path="/" element={
         <ProtectedRoute>
-          {role === 'kitchen' ? <KitchenDisplay /> : <StaffDashboard />}
+          {primaryRole === 'kitchen' && <KitchenDisplay />}
+          {primaryRole === 'waiter' && <WaiterDashboard />}
+          {primaryRole === 'delivery' && <DeliveryPortal />}
+          {(primaryRole === 'manager' || primaryRole === 'admin' || primaryRole === 'assistant_manager') && <ManagerPanel />}
+          {primaryRole === 'other' && <StaffDashboard />}
         </ProtectedRoute>
       } />
       
       <Route path="/kitchen" element={
-        <ProtectedRoute allowedRoles={['kitchen', 'manager', 'assistant_manager']}>
+        <ProtectedRoute allowedRoles={['kitchen', 'manager', 'assistant_manager', 'waiter']}>
           <KitchenDisplay />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/waiter" element={
+        <ProtectedRoute allowedRoles={['waiter']}>
+          <WaiterDashboard />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/delivery" element={
+        <ProtectedRoute allowedRoles={['delivery']}>
+          <DeliveryPortal />
         </ProtectedRoute>
       } />
       
@@ -32,7 +66,7 @@ export default function App() {
         </ProtectedRoute>
       } />
       
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/welcome" replace />} />
     </Routes>
   )
 }

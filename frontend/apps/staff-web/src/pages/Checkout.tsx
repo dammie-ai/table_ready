@@ -4,7 +4,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
 import { apiClient } from '../lib/api'
 import { useCartStore } from '../stores/cartStore'
-import { useAuthStore } from '../stores/authStore'
+import { useTheme } from '../hooks/useTheme'
 import CheckoutForm from '../components/CheckoutForm'
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '')
@@ -16,11 +16,12 @@ export default function Checkout() {
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [specialInstructions, setSpecialInstructions] = useState('')
   const [error, setError] = useState('')
+  const [orderId, setOrderId] = useState<number | null>(null)
   const items = useCartStore((s) => s.items)
   const total = useCartStore((s) => s.total())
   const clearCart = useCartStore((s) => s.clearCart)
-  const token = useAuthStore((s) => s.token)
   const navigate = useNavigate()
+  const { theme } = useTheme()
 
   useEffect(() => {
     if (items.length === 0) {
@@ -32,12 +33,9 @@ export default function Checkout() {
     setError('')
 
     try {
-      const res = await apiClient<{ clientSecret: string }>('/payments/create-intent', {
-        method: 'POST',
-        body: JSON.stringify({
-          amount: Math.round(total * 100),
-          currency: 'usd',
-        }),
+      const res = await apiClient.post<{ clientSecret: string }>('/payments/create-intent', {
+        amount: Math.round(total * 100),
+        currency: 'usd',
       })
       setClientSecret(res.clientSecret)
     } catch (err) {
@@ -45,19 +43,23 @@ export default function Checkout() {
     }
   }
 
-  const handleSuccess = () => {
+  const handleSuccess = (createdOrderId?: number) => {
     clearCart()
-    navigate('/order/success')
+    if (createdOrderId) {
+      navigate(`/order-tracking/${createdOrderId}`)
+    } else {
+      navigate('/order-success')
+    }
   }
 
   if (!clientSecret) {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-6">Checkout</h1>
+        <h1 className="text-3xl font-bold mb-6" style={{ color: theme?.text_color }}>Checkout</h1>
 
         <div className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold mb-3">Order Type</h2>
+            <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Order Type</h2>
             <div className="grid grid-cols-2 gap-3">
               {(['PICKUP', 'DELIVERY', 'IN_HOUSE', 'DINE_IN'] as const).map((type) => (
                 <button
@@ -65,11 +67,12 @@ export default function Checkout() {
                   onClick={() => setOrderType(type)}
                   className={`p-4 rounded-lg border-2 ${
                     orderType === type
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-2'
+                      : 'border border-gray-200 hover:border-gray-300'
                   }`}
+                  style={orderType === type ? { borderColor: theme?.primary_color, backgroundColor: theme?.primary_color + '15' } : undefined}
                 >
-                  {type.replace('_', ' ')}
+                  <span style={{ color: orderType === type ? theme?.primary_color : theme?.text_color }}>{type.replace('_', ' ')}</span>
                 </button>
               ))}
             </div>
@@ -77,7 +80,7 @@ export default function Checkout() {
 
           {(orderType === 'IN_HOUSE' || orderType === 'DINE_IN') && (
             <div>
-              <h2 className="text-xl font-semibold mb-3">Table Number</h2>
+              <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Table Number</h2>
               <input
                 type="number"
                 value={tableNumber}
@@ -91,7 +94,7 @@ export default function Checkout() {
 
           {orderType === 'DELIVERY' && (
             <div>
-              <h2 className="text-xl font-semibold mb-3">Delivery Address</h2>
+              <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Delivery Address</h2>
               <textarea
                 value={deliveryAddress}
                 onChange={(e) => setDeliveryAddress(e.target.value)}
@@ -104,7 +107,7 @@ export default function Checkout() {
           )}
 
           <div>
-            <h2 className="text-xl font-semibold mb-3">Special Instructions</h2>
+            <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Special Instructions</h2>
             <textarea
               value={specialInstructions}
               onChange={(e) => setSpecialInstructions(e.target.value)}
@@ -114,15 +117,16 @@ export default function Checkout() {
             />
           </div>
 
-          <div className="border-t pt-4">
+          <div className="border-t pt-4" style={{ borderColor: theme?.primary_color + '20' }}>
             <div className="flex justify-between items-center mb-4">
-              <span className="text-xl font-bold">Total:</span>
-              <span className="text-2xl font-bold text-blue-600">${total.toFixed(2)}</span>
+              <span className="text-xl font-bold" style={{ color: theme?.text_color }}>Total:</span>
+              <span className="text-2xl font-bold" style={{ color: theme?.primary_color }}>${total.toFixed(2)}</span>
             </div>
 
             <button
               onClick={handleCreateIntent}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+              className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90"
+              style={{ backgroundColor: theme?.primary_color }}
             >
               Continue to Payment
             </button>
@@ -139,7 +143,7 @@ export default function Checkout() {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Payment</h1>
+      <h1 className="text-3xl font-bold mb-6" style={{ color: theme?.text_color }}>Payment</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       {clientSecret && (
         <Elements options={options} stripe={stripePromise}>
@@ -148,7 +152,7 @@ export default function Checkout() {
             tableNumber={tableNumber}
             deliveryAddress={deliveryAddress}
             specialInstructions={specialInstructions}
-            onSuccess={handleSuccess}
+            onSuccess={() => handleSuccess(orderId || undefined)}
           />
         </Elements>
       )}

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import { useCartStore } from '@table-ready/shared';
-import Button from '../../components/Button';
-import { colors, spacing, borderRadius, typography } from '../../theme';
+import Button from '../components/Button';
+import { colors, spacing, borderRadius, typography } from '../theme';
 
 export default function CartScreen({ navigation, route }: any) {
   const cart = useCartStore((s) => s.items);

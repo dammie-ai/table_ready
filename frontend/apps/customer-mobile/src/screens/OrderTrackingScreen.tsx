@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import Button from '../../components/Button';
-import { colors, spacing, borderRadius, typography } from '../../theme';
+import Button from '../components/Button';
+import { colors, spacing, borderRadius, typography } from '../theme';
 
 const STEPS = [
   { id: 'RECEIVED', label: 'Order Received', sublabel: 'We got your order!' },

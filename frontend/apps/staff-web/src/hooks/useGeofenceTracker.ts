@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getGeofenceConfig, type GeofenceConfig } from '@table-ready/shared'
-import { apiClient } from '@table-ready/shared'
+import { apiClient } from '../lib/api'
+
+interface GeofenceConfig {
+  success: boolean
+  radius_meters: number
+  unit: string
+  restaurant_latitude: number | null
+  restaurant_longitude: number | null
+}
 
 interface Order {
   master_order_id: number
@@ -36,7 +43,7 @@ export function useGeofenceTracker(order: Order | null, onRelease: () => void) {
 
     const startTracking = async () => {
       try {
-        const geofenceConfig = await getGeofenceConfig()
+        const geofenceConfig = await apiClient.get<GeofenceConfig>('/config/geofence')
         setConfig(geofenceConfig)
 
         if (!geofenceConfig.restaurant_latitude || !geofenceConfig.restaurant_longitude) {
@@ -89,9 +96,7 @@ export function useGeofenceTracker(order: Order | null, onRelease: () => void) {
     if (!order) return
 
     try {
-      await apiClient(`/orders/${order.master_order_id}/release-hold`, {
-        method: 'POST',
-      })
+      await apiClient.post(`/orders/${order.master_order_id}/release-hold`, {})
       setShowReleasePopup(false)
       onRelease()
     } catch (err) {

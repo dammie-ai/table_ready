@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { useCartStore } from '@table-ready/shared';
-import Button from '../../components/Button';
-import { colors, spacing, borderRadius, typography } from '../../theme';
+import Button from '../components/Button';
+import { colors, spacing, borderRadius, typography } from '../theme';
 
 export default function TableCartScreen({ navigation }: any) {
   const [roomCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());

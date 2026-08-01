@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useCartStore } from '@table-ready/shared';
-import Button from '../../components/Button';
-import { colors, spacing, borderRadius, typography } from '../../theme';
+import Button from '../components/Button';
+import { colors, spacing, borderRadius, typography } from '../theme';
 
 const TIP_PRESETS = [0, 15, 18, 20];
 

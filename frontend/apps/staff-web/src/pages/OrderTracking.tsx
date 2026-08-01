@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { apiClient } from '../lib/api'
 import { getSocket } from '../lib/socket'
-import { useAuthStore } from '../stores/authStore'
 import { useGeofenceTracker } from '../hooks/useGeofenceTracker'
+import { useTheme } from '../hooks/useTheme'
 
 interface OrderItem {
   order_item_id: number
@@ -30,7 +30,7 @@ export default function OrderTracking() {
   const { id } = useParams<{ id: string }>()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
-  const token = useAuthStore((s) => s.token)
+  const { theme } = useTheme()
 
   const handleRelease = () => {
     setOrder(prev => prev ? { ...prev, status: 'RECEIVED' } : null)
@@ -43,7 +43,7 @@ export default function OrderTracking() {
 
     const loadOrder = async () => {
       try {
-        const res = await apiClient<{ success: boolean; order: Order }>(`/orders/${id}`)
+        const res = await apiClient.get<{ success: boolean; order: Order }>(`/orders/${id}`)
         setOrder(res.order)
       } catch (err) {
         console.error('Failed to load order:', err)
@@ -66,7 +66,7 @@ export default function OrderTracking() {
     return () => {
       socket.off('order_updated', handleUpdate)
     }
-  }, [id, token])
+  }, [id])
 
   if (loading) {
     return (
@@ -90,13 +90,18 @@ export default function OrderTracking() {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-2">Order #{order.master_order_id}</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-bold" style={{ color: theme?.text_color }}>Order #{order.master_order_id}</h1>
+        <Link to="/menu" className="text-sm hover:underline" style={{ color: theme?.primary_color }}>
+          Back to Menu
+        </Link>
+      </div>
       <p className="text-gray-600 mb-6">{order.order_type.replace('_', ' ')}</p>
 
       {isOnHold && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <p className="text-yellow-800 font-medium">Your order is on hold</p>
-          <p className="text-sm text-yellow-700 mt-1">
+        <div className="border rounded-lg p-4 mb-6" style={{ borderColor: '#f59e0b', backgroundColor: '#fef3c7' }}>
+          <p className="font-medium" style={{ color: '#b45309' }}>Your order is on hold</p>
+          <p className="text-sm mt-1" style={{ color: '#92400e' }}>
             {tracking ? 'Checking your location...' : 'We\'ll notify you when you\'re near the restaurant to start cooking.'}
           </p>
         </div>
@@ -109,13 +114,15 @@ export default function OrderTracking() {
               <div
                 key={step}
                 className={`flex-1 text-center text-xs ${
-                  idx <= currentStep ? 'text-blue-600 font-medium' : 'text-gray-400'
+                  idx <= currentStep ? 'font-medium' : 'text-gray-400'
                 }`}
+                style={{ color: idx <= currentStep ? theme?.primary_color : undefined }}
               >
                 <div
                   className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
-                    idx <= currentStep ? 'bg-blue-600 text-white' : 'bg-gray-200'
+                    idx <= currentStep ? 'text-white' : 'bg-gray-200'
                   }`}
+                  style={idx <= currentStep ? { backgroundColor: theme?.primary_color } : undefined}
                 >
                   {idx + 1}
                 </div>
@@ -125,31 +132,31 @@ export default function OrderTracking() {
           </div>
           <div className="h-2 bg-gray-200 rounded">
             <div
-              className="h-2 bg-blue-600 rounded transition-all"
-              style={{ width: `${((currentStep + 1) / statusSteps.length) * 100}%` }}
+              className="h-2 rounded transition-all"
+              style={{ width: `${((currentStep + 1) / statusSteps.length) * 100}%`, backgroundColor: theme?.primary_color }}
             />
           </div>
         </div>
       )}
 
-      <div className="border rounded-lg p-4 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Items</h2>
+      <div className="border rounded-lg p-4 mb-6" style={{ borderColor: theme?.primary_color + '40' }}>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: theme?.text_color }}>Items</h2>
         <div className="space-y-3">
           {order.items?.map((item) => (
             <div key={item.order_item_id} className="flex justify-between">
               <div>
-                <p className="font-medium">{item.name}</p>
+                <p className="font-medium" style={{ color: theme?.text_color }}>{item.name}</p>
                 <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
               </div>
-              <p className="font-medium">
+              <p className="font-medium" style={{ color: theme?.text_color }}>
                 ${(item.base_price * item.quantity).toFixed(2)}
               </p>
             </div>
           ))}
         </div>
-        <div className="border-t mt-4 pt-4 flex justify-between">
-          <span className="text-xl font-bold">Total</span>
-          <span className="text-xl font-bold text-blue-600">
+        <div className="border-t mt-4 pt-4 flex justify-between" style={{ borderColor: theme?.primary_color + '20' }}>
+          <span className="text-xl font-bold" style={{ color: theme?.text_color }}>Total</span>
+          <span className="text-xl font-bold" style={{ color: theme?.primary_color }}>
             ${order.total_amount.toFixed(2)}
           </span>
         </div>

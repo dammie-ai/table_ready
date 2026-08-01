@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { getMenuItems, getComboMeals, getDishOfWeek } from '@table-ready/shared';
 import { useCartStore } from '@table-ready/shared';
-import Button from '../../components/Button';
-import Badge from '../../components/Badge';
-import { colors, spacing, borderRadius, typography } from '../../theme';
+import Button from '../components/Button';
+import Badge from '../components/Badge';
+import { colors, spacing, borderRadius, typography } from '../theme';
 import type { MenuItem } from '@table-ready/shared';
 
 export default function MenuScreen({ route, navigation }: any) {

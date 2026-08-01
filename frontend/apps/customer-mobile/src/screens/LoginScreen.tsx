@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import Button from '../../components/Button';
-import Input from '../../components/Input';
-import { colors, spacing, borderRadius, typography } from '../../theme';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import { colors, spacing, borderRadius, typography } from '../theme';
 import { login as apiLogin, register as apiRegister } from '@table-ready/shared';
 import { useAuthStore } from '@table-ready/shared';
 

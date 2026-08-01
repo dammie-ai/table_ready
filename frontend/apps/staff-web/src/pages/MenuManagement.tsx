@@ -21,7 +21,7 @@ export default function MenuManagement() {
 
   const loadItems = async () => {
     try {
-      const res = await apiClient<{ success: boolean; items: MenuItem[] }>('/menu')
+      const res = await apiClient.get<{ success: boolean; items: MenuItem[] }>('/menu')
       setItems(res.items)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load menu')
@@ -76,15 +76,9 @@ export default function MenuManagement() {
       }
 
       if (editingItem) {
-        await apiClient(`/menu/${editingItem.item_id}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        })
+        await apiClient.put(`/menu/${editingItem.item_id}`, payload)
       } else {
-        await apiClient('/menu', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        })
+        await apiClient.post('/menu', payload)
       }
 
       await loadItems()
@@ -98,7 +92,7 @@ export default function MenuManagement() {
 
   const handleToggle = async (itemId: number) => {
     try {
-      await apiClient(`/menu/${itemId}/toggle`, { method: 'PATCH' })
+      await apiClient.patch(`/menu/${itemId}/toggle`, {})
       await loadItems()
     } catch (err) {
       console.error('Failed to toggle item:', err)

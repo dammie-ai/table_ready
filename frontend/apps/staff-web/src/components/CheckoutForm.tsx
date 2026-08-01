@@ -8,7 +8,7 @@ interface CheckoutFormProps {
   tableNumber: string
   deliveryAddress: string
   specialInstructions: string
-  onSuccess: () => void
+  onSuccess: (orderId?: number) => void
 }
 
 export default function CheckoutForm({
@@ -78,27 +78,21 @@ export default function CheckoutForm({
           ]
         })
 
-        const orderRes = await apiClient<{ master_order_id: number }>('/orders', {
-          method: 'POST',
-          body: JSON.stringify({
-            order_type: orderType,
-            table_number: tableNumber ? Number(tableNumber) : undefined,
-            items: orderItems,
-            notes: specialInstructions || undefined,
-            idempotency_key: `checkout-${Date.now()}`,
-          }),
+        const orderRes = await apiClient.post<{ master_order_id: number }>('/orders', {
+          order_type: orderType,
+          table_number: tableNumber ? Number(tableNumber) : undefined,
+          items: orderItems,
+          notes: specialInstructions || undefined,
+          idempotency_key: `checkout-${Date.now()}`,
         })
 
-        await apiClient('/payments/confirm', {
-          method: 'POST',
-          body: JSON.stringify({
-            paymentIntentId: paymentIntent.id,
-            orderId: orderRes.master_order_id,
-          }),
+        await apiClient.post('/payments/confirm', {
+          paymentIntentId: paymentIntent.id,
+          orderId: orderRes.master_order_id,
         })
 
         useCartStore.getState().clearCart()
-        onSuccess()
+        onSuccess(orderRes.master_order_id)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Checkout failed')

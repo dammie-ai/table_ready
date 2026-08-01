@@ -22,7 +22,7 @@ export default function StaffDashboard() {
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const res = await apiClient<{ success: boolean; orders: Order[] }>('/orders/kitchen-orders')
+        const res = await apiClient.get<{ success: boolean; orders: Order[] }>('/orders/kitchen-orders')
         setOrders(res.orders || [])
       } catch (err) {
         console.error('Failed to load orders:', err)
@@ -64,9 +64,8 @@ export default function StaffDashboard() {
     if (!nextStatus) return
 
     try {
-      await apiClient(`/orders/${orderId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: nextStatus }),
+      await apiClient.patch(`/orders/${orderId}/status`, {
+        status: nextStatus,
       })
     } catch (err) {
       console.error('Failed to advance status:', err)

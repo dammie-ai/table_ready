@@ -1,0 +1,243 @@
+import { useState, useEffect } from 'react'
+import { apiClient } from '../lib/api'
+import { getSocket } from '../lib/socket'
+
+interface Table {
+  table_id: number
+  table_number: number
+  status_state: string
+  capacity: number
+  updated_at: string
+}
+
+interface ServiceRequest {
+  request_id: number
+  table_number: number
+  type: string
+  notes?: string
+  status: string
+  created_at: string
+}
+
+interface Session {
+  session_id: number
+  table_number: number
+  status: string
+  started_at: string
+}
+
+export default function WaiterDashboard() {
+  const [tables, setTables] = useState<Table[]>([])
+  const [requests, setRequests] = useState<ServiceRequest[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'floor' | 'alerts'>('floor')
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [tablesRes, requestsRes, sessionsRes] = await Promise.all([
+          apiClient.get<any>('/tables/floor-layout'),
+          apiClient.get<any>('/service-requests'),
+          apiClient.get<any>('/sessions'),
+        ])
+        setTables(tablesRes.tables || [])
+        setRequests(requestsRes.requests || [])
+        setSessions(sessionsRes.sessions || [])
+      } catch (err) {
+        console.error('Failed to load waiter data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+
+    const socket = getSocket()
+    socket.on('service_request_created', (req: ServiceRequest) => {
+      setRequests((prev) => [req, ...prev])
+    })
+    socket.on('table_status_updated', ({ table_id, status_state }: { table_id: number; status_state: string }) => {
+      setTables((prev) => prev.map((t) => t.table_id === table_id ? { ...t, status_state } : t))
+    })
+
+    return () => {
+      socket.off('service_request_created')
+      socket.off('table_status_updated')
+    }
+  }, [])
+
+  const updateTableStatus = async (tableId: number, status: string) => {
+    try {
+      await apiClient.patch(`/tables/${tableId}/status`, {
+        status_state: status,
+      })
+      setTables((prev) => prev.map((t) => t.table_id === tableId ? { ...t, status_state: status } : t))
+    } catch (err) {
+      console.error('Failed to update table:', err)
+    }
+  }
+
+  const acknowledgeRequest = async (requestId: number) => {
+    try {
+      await apiClient.patch(`/service-requests/${requestId}/acknowledge`, {})
+      setRequests((prev) => prev.filter((r) => r.request_id !== requestId))
+    } catch (err) {
+      console.error('Failed to acknowledge request:', err)
+    }
+  }
+
+  const statusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'available': return 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+      case 'occupied': return 'bg-orange-500/15 border-orange-500/40 text-orange-400'
+      case 'needs cleaning':
+      case 'dirty':
+      case 'cleaning': return 'bg-red-500/15 border-red-500/40 text-red-400'
+      case 'reserved': return 'bg-blue-500/15 border-blue-500/40 text-blue-400'
+      default: return 'bg-gray-500/15 border-gray-500/40 text-gray-400'
+    }
+  }
+
+  const requestIcon = (type: string) => {
+    switch (type) {
+      case 'refill': return '💧'
+      case 'help': return '🆘'
+      case 'check': return '💳'
+      default: return '📋'
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#09090f]">
+        <p className="text-gray-400 text-xl">Loading floor...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-[#09090f] text-[#f1f5f9]">
+      <div className="sticky top-0 z-40 flex items-center justify-between px-4 md:px-6 h-14 bg-[#09090f]/95 backdrop-blur border-b border-white/8">
+        <div className="flex items-center gap-3">
+          <span className="font-display font-bold text-sm tracking-widest uppercase text-[#f97316]">TableReady</span>
+          <span className="text-white/10">·</span>
+          <span className="text-sm font-medium text-[#f1f5f9]">Waiter Dashboard</span>
+        </div>
+        <div className="flex gap-1">
+          {(['floor', 'alerts'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`relative px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-colors ${
+                view === v ? 'bg-[#f97316] text-white' : 'text-[#6b7280] hover:text-[#f1f5f9]'
+              }`}
+            >
+              {v === 'alerts' && requests.filter((r) => r.status === 'pending').length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
+                  {requests.filter((r) => r.status === 'pending').length}
+                </span>
+              )}
+              {v === 'floor' ? 'Floor Map' : 'Alerts'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === 'floor' ? (
+        <div className="p-4 md:p-6">
+          <div className="flex gap-2 mb-5 flex-wrap">
+            {(['available', 'occupied', 'cleaning', 'reserved'] as const).map((s) => (
+              <div key={s} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs capitalize font-medium ${statusColor(s)}`}>
+                <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                {s}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+            {tables.map((table) => (
+            <button
+              key={table.table_id}
+              onClick={() => {
+                if (table.status_state.toLowerCase() === 'occupied') {
+                  updateTableStatus(table.table_id, 'Needs Cleaning')
+                }
+              }}
+              className={`rounded-xl border p-4 text-left transition-all ${statusColor(table.status_state)} ${
+                table.status_state.toLowerCase() === 'occupied' ? 'hover:scale-[1.03] cursor-pointer' : 'cursor-default'
+              }`}
+            >
+                <div className="font-display font-bold text-xl">T{table.table_number}</div>
+                <div className="text-xs capitalize mt-0.5 opacity-80">{table.status_state}</div>
+                {table.capacity && <div className="text-xs opacity-60">👥 {table.capacity}</div>}
+              </button>
+            ))}
+          </div>
+
+          {sessions.length > 0 && (
+            <div className="mt-8">
+              <h2 className="font-display font-bold text-xl mb-4">Active Sessions</h2>
+              <div className="bg-[#111118] border border-white/8 rounded-2xl overflow-hidden">
+                {sessions.map((session) => (
+                  <div key={session.session_id} className="px-4 py-3 border-b border-white/5 last:border-0 flex justify-between items-center">
+                    <div>
+                      <div className="font-medium text-sm">Table {session.table_number}</div>
+                      <div className="text-xs text-[#6b7280]">Session #{session.session_id}</div>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      session.status === 'active' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-gray-500/15 text-gray-400'
+                    }`}>
+                      {session.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="p-4 md:p-6 max-w-lg">
+          <h2 className="font-display font-bold text-xl mb-4">Active Alerts</h2>
+          {requests.length === 0 ? (
+            <div className="text-center text-[#6b7280] py-16">
+              <div className="text-4xl mb-3">✅</div>
+              <p className="font-medium">All clear</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {requests
+                .filter((r) => r.status === 'pending')
+                .map((req) => (
+                <div
+                  key={req.request_id}
+                  className={`flex items-start justify-between gap-3 p-4 rounded-xl border ${
+                    req.type === 'help' ? 'border-red-500/40 bg-red-500/5' : req.type === 'refill' ? 'border-orange-500/40 bg-orange-500/5' : 'border-white/8 bg-[#111118]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl flex-shrink-0">{requestIcon(req.type)}</div>
+                    <div>
+                      <div className="font-semibold text-sm">Table {req.table_number}</div>
+                      <div className="text-sm text-[#6b7280]">{req.type.toUpperCase()}</div>
+                      {req.notes && <div className="text-xs text-[#6b7280]/60 mt-1">{req.notes}</div>}
+                      <div className="text-[10px] text-[#6b7280]/40 mt-1 font-mono">
+                        {new Date(req.created_at).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => acknowledgeRequest(req.request_id)}
+                    className="text-xs bg-[#f97316] text-white px-3 py-1.5 rounded-lg hover:bg-[#f97316]/80 transition-colors font-medium flex-shrink-0"
+                  >
+                    Ack
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
-import Button from '../../components/Button';
-import { colors, spacing, borderRadius, typography } from '../../theme';
+import Button from '../components/Button';
+import { colors, spacing, borderRadius, typography } from '../theme';
 import { getComboMeals, type ComboMeal } from '@table-ready/shared';
 
 type Step = 1 | 2 | 3 | 4;
