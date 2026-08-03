@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
-import { useTheme } from '../hooks/useTheme'
 import { LayoutDashboard, UtensilsCrossed, Users, Calendar, ClipboardList, Settings, BarChart3, Tag, LogOut, Menu, X } from 'lucide-react'
 
 interface StaffLayoutProps {
@@ -14,7 +13,6 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
   const primaryRole = useAuthStore((s) => s.primaryRole)
-  const { theme } = useTheme()
 
   const handleLogout = () => {
     logout()
