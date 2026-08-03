@@ -23,7 +23,7 @@ export default function Login() {
         password,
       })
       setAuth(res.token, res.user)
-      navigate('/')
+      navigate('/staff')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {

@@ -14,7 +14,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
 
 export default function Checkout() {
   const [clientSecret, setClientSecret] = useState('')
-  const [orderType, setOrderType] = useState<'PICKUP' | 'DELIVERY' | 'IN_HOUSE' | 'DINE_IN'>('PICKUP')
+  const [orderType, setOrderType] = useState<'PICKUP' | 'DELIVERY' | 'DINE_IN'>('PICKUP')
   const [tableNumber, setTableNumber] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [specialInstructions, setSpecialInstructions] = useState('')
@@ -33,7 +33,7 @@ export default function Checkout() {
     }
   }, [items, navigate])
 
-  const needsLocationCheck = orderType === 'DELIVERY' || orderType === 'IN_HOUSE' || orderType === 'DINE_IN'
+  const needsLocationCheck = orderType === 'DELIVERY' || orderType === 'DINE_IN'
 
   const handleCreateIntent = async () => {
     setError('')
@@ -88,7 +88,7 @@ export default function Checkout() {
           <div>
             <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Order Type</h2>
             <div className="grid grid-cols-2 gap-3">
-              {(['PICKUP', 'DELIVERY', 'IN_HOUSE', 'DINE_IN'] as const).map((type) => (
+              {(['PICKUP', 'DELIVERY', 'DINE_IN'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => setOrderType(type)}
@@ -105,7 +105,7 @@ export default function Checkout() {
             </div>
           </div>
 
-          {(orderType === 'IN_HOUSE' || orderType === 'DINE_IN') && (
+          {orderType === 'DINE_IN' && (
             <div>
               <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Table Number</h2>
               <input

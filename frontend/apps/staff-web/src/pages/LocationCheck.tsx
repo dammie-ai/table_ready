@@ -50,7 +50,7 @@ export default function LocationCheck({
   const { theme } = useTheme()
 
   useEffect(() => {
-    if (orderType !== 'DELIVERY' && orderType !== 'IN_HOUSE' && orderType !== 'DINE_IN') {
+    if (orderType !== 'DELIVERY' && orderType !== 'DINE_IN') {
       onLocationVerified(true)
       return
     }

@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '../stores/cartStore'
 import { useTheme } from '../hooks/useTheme'
+import BillSplitter from '../components/BillSplitter'
 
 export default function Cart() {
   const [instructions, setInstructions] = useState<Record<number, string>>({})
+  const [showSplitter, setShowSplitter] = useState(false)
   const items = useCartStore((s) => s.items)
   const removeItem = useCartStore((s) => s.removeItem)
   const updateQuantity = useCartStore((s) => s.updateQuantity)
@@ -16,6 +18,15 @@ export default function Cart() {
   const handleCheckout = () => {
     if (items.length === 0) return
     navigate('/checkout')
+  }
+
+  const handleSplitConfirm = (splits: { name: string; items: number[] }[]) => {
+    setShowSplitter(false)
+    navigate('/checkout')
+  }
+
+  if (showSplitter) {
+    return <BillSplitter onConfirm={handleSplitConfirm} onCancel={() => setShowSplitter(false)} />
   }
 
   return (
@@ -176,6 +187,12 @@ export default function Cart() {
               style={{ backgroundColor: theme?.primary_color }}
             >
               Proceed to Checkout
+            </button>
+            <button
+              onClick={() => setShowSplitter(true)}
+              className="px-4 py-3 border border-white/8 rounded-lg hover:bg-white/5 text-sm font-medium"
+            >
+              Split Bill
             </button>
             <button
               onClick={clearCart}

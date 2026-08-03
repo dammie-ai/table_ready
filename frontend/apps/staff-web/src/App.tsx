@@ -13,6 +13,11 @@ import Checkout from './pages/Checkout'
 import OrderTracking from './pages/OrderTracking'
 import OrderSuccess from './pages/OrderSuccess'
 import Welcome from './pages/Welcome'
+import GroupChoice from './pages/GroupChoice'
+import TablePin from './pages/TablePin'
+import SharedCart from './pages/SharedCart'
+import ComboBuilder from './pages/ComboBuilder'
+import LocationCheck from './pages/LocationCheck'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
@@ -21,18 +26,24 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
-      
       {/* Customer-facing routes */}
+      <Route path="/" element={<Welcome />} />
       <Route path="/welcome" element={<Welcome />} />
+      <Route path="/group-choice" element={<GroupChoice />} />
+      <Route path="/table-pin" element={<TablePin />} />
       <Route path="/menu" element={<Menu />} />
+      <Route path="/combos" element={<ComboBuilder />} />
       <Route path="/cart" element={<Cart />} />
+      <Route path="/shared-cart" element={<SharedCart />} />
+      <Route path="/location-check" element={<LocationCheck />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-tracking/:id" element={<OrderTracking />} />
       <Route path="/order-success" element={<OrderSuccess />} />
       
       {/* Staff routes */}
-      <Route path="/" element={
+      <Route path="/login" element={token ? <Navigate to="/staff" replace /> : <Login />} />
+      
+      <Route path="/staff" element={
         <ProtectedRoute>
           {primaryRole === 'kitchen' && <KitchenDisplay />}
           {primaryRole === 'waiter' && <WaiterDashboard />}

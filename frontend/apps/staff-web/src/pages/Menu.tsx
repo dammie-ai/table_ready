@@ -13,6 +13,7 @@ export default function Menu() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const addItem = useCartStore((s) => s.addItem)
+  const cartItems = useCartStore((s) => s.items)
   const { theme, loading: themeLoading } = useTheme()
 
   const loadMenu = async () => {
@@ -54,6 +55,7 @@ export default function Menu() {
   }
 
   const [addedItem, setAddedItem] = useState<number | null>(null)
+  const groupCode = localStorage.getItem('tableready_group_code')
 
   const handleAddToCart = (item: MenuItem) => {
     if (isOutOfStock(item)) return
@@ -89,15 +91,24 @@ export default function Menu() {
           {theme?.restaurant_name || 'Menu'}
         </h1>
         <div className="flex items-center gap-3">
+          {groupCode && (
+            <button
+              onClick={() => navigate('/shared-cart')}
+              className="relative text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+              style={{ backgroundColor: theme?.primary_color }}
+            >
+              Group Cart
+            </button>
+          )}
           <button
             onClick={() => navigate('/cart')}
             className="relative text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
             style={{ backgroundColor: theme?.primary_color }}
           >
             Cart
-            {items.length > 0 && (
+            {cartItems.length > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-xs rounded-full flex items-center justify-center font-bold" style={{ color: theme?.primary_color }}>
-                {items.reduce((sum, i) => sum + i.quantity, 0)}
+                {cartItems.reduce((sum, i) => sum + i.quantity, 0)}
               </span>
             )}
           </button>
@@ -153,10 +164,10 @@ export default function Menu() {
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-lg">{item.name}</h3>
                  {item.is_trending && (
-                     <span className="text-xs text-white px-2 py-1 rounded" style={{ backgroundColor: theme?.primary_color }}>
-                       Trending
-                     </span>
-                   )}
+                      <span className="text-xs text-white px-2 py-1 rounded" style={{ backgroundColor: theme?.primary_color }}>
+                        Trending
+                      </span>
+                    )}
                 </div>
                 
                 <p className="text-sm text-gray-600 mb-2 line-clamp-2">
@@ -167,17 +178,17 @@ export default function Menu() {
                    <span className="text-xl font-bold" style={{ color: theme?.primary_color }}>
                      ${item.base_price.toFixed(2)}
                    </span>
-                    <button
-                      onClick={() => handleAddToCart(item)}
-                      disabled={outOfStock}
-                      className="text-white px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      style={{ 
-                        backgroundColor: addedItem === item.item_id ? '#10b981' : theme?.primary_color 
-                      }}
-                    >
-                      {outOfStock ? 'Unavailable' : addedItem === item.item_id ? 'Added!' : 'Add'}
-                    </button>
-                 </div>
+                   <button
+                     onClick={() => handleAddToCart(item)}
+                     disabled={outOfStock}
+                     className="text-white px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                     style={{ 
+                       backgroundColor: addedItem === item.item_id ? '#10b981' : theme?.primary_color 
+                     }}
+                   >
+                     {outOfStock ? 'Unavailable' : addedItem === item.item_id ? 'Added!' : 'Add'}
+                   </button>
+                </div>
               </div>
             </div>
           )
