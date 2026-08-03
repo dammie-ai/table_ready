@@ -160,6 +160,20 @@ export default function Welcome() {
               </div>
             )}
 
+            {!error && distance !== null && distance > geofenceRadius && (
+              <div className="mb-4">
+                <button
+                  onClick={() => {
+                    localStorage.setItem('tableready_within_geofence', 'true')
+                    setStep('mode')
+                  }}
+                  className="text-sm text-white underline"
+                >
+                  Continue anyway
+                </button>
+              </div>
+            )}
+
             {distance !== null && !error && (
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">

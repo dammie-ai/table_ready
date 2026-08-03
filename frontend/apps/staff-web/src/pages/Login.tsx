@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../lib/api'
 import { useAuthStore } from '../stores/authStore'
@@ -10,7 +10,12 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
+  const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    logout()
+  }, [logout])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

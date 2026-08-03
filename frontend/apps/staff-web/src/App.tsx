@@ -21,7 +21,6 @@ import ComboBuilder from './pages/ComboBuilder'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
-  const token = useAuthStore((s) => s.token)
   const primaryRole = useAuthStore((s) => s.primaryRole)
 
   return (
@@ -41,7 +40,7 @@ export default function App() {
       <Route path="/order-history" element={<OrderHistory />} />
       
       {/* Staff routes */}
-      <Route path="/login" element={token ? <Navigate to="/staff" replace /> : <Login />} />
+      <Route path="/login" element={<Login />} />
       
       <Route path="/staff" element={
         <ProtectedRoute>
