@@ -10,7 +10,7 @@ import LocationCheck from '../pages/LocationCheck'
 
 type CheckoutStep = 'details' | 'location' | 'payment'
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '')
+const stripePromise = loadStripe((import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || '')
 
 export default function Checkout() {
   const [clientSecret, setClientSecret] = useState('')
@@ -18,14 +18,18 @@ export default function Checkout() {
   const [tableNumber, setTableNumber] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [specialInstructions, setSpecialInstructions] = useState('')
+  const [tip, setTip] = useState(0)
   const [error, setError] = useState('')
-  const [orderId, setOrderId] = useState<number | null>(null)
   const [step, setStep] = useState<CheckoutStep>('details')
   const items = useCartStore((s) => s.items)
   const total = useCartStore((s) => s.total())
   const clearCart = useCartStore((s) => s.clearCart)
   const navigate = useNavigate()
   const { theme } = useTheme()
+
+  const subtotal = total
+  const tax = subtotal * 0.08
+  const finalTotal = subtotal + tax + tip
 
   useEffect(() => {
     if (items.length === 0) {
@@ -40,7 +44,7 @@ export default function Checkout() {
 
     try {
       const res = await apiClient.post<{ clientSecret: string }>('/payments/create-intent', {
-        amount: Math.round(total * 100),
+        amount: Math.round(finalTotal * 100),
         currency: 'usd',
       })
       setClientSecret(res.clientSecret)
@@ -70,9 +74,6 @@ export default function Checkout() {
     return (
       <LocationCheck
         orderType={orderType}
-        tableNumber={tableNumber}
-        deliveryAddress={deliveryAddress}
-        specialInstructions={specialInstructions}
         onLocationVerified={handleLocationVerified}
         onBack={() => setStep('details')}
       />
@@ -144,10 +145,43 @@ export default function Checkout() {
             />
           </div>
 
+          <div>
+            <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Tip</h2>
+            <div className="flex gap-2">
+              {[0, 5, 10, 15, 20].map((pct) => (
+                <button
+                  key={pct}
+                  onClick={() => setTip(pct === 0 ? 0 : subtotal * (pct / 100))}
+                  className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                    tip === (pct === 0 ? 0 : subtotal * (pct / 100))
+                      ? 'border-[#f97316] bg-[#f97316]/15 text-[#f97316]'
+                      : 'border-white/8 text-[#6b7280]'
+                  }`}
+                >
+                  {pct === 0 ? 'None' : `${pct}%`}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="border-t pt-4" style={{ borderColor: theme?.primary_color + '20' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-[#6b7280]">Subtotal</span>
+              <span className="text-sm" style={{ color: theme?.text_color }}>${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-[#6b7280]">Tax</span>
+              <span className="text-sm" style={{ color: theme?.text_color }}>${tax.toFixed(2)}</span>
+            </div>
+            {tip > 0 && (
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-[#6b7280]">Tip</span>
+                <span className="text-sm" style={{ color: theme?.text_color }}>${tip.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center mb-4">
               <span className="text-xl font-bold" style={{ color: theme?.text_color }}>Total:</span>
-              <span className="text-2xl font-bold" style={{ color: theme?.primary_color }}>${total.toFixed(2)}</span>
+              <span className="text-2xl font-bold" style={{ color: theme?.primary_color }}>${finalTotal.toFixed(2)}</span>
             </div>
 
             <button
@@ -165,7 +199,7 @@ export default function Checkout() {
 
   const options = {
     clientSecret,
-    appearance: { theme: 'stripe' },
+    appearance: { theme: 'stripe' as const },
   }
 
   return (
@@ -179,6 +213,7 @@ export default function Checkout() {
             tableNumber={tableNumber}
             deliveryAddress={deliveryAddress}
             specialInstructions={specialInstructions}
+            tip={tip}
             onSuccess={handleSuccess}
           />
         </Elements>

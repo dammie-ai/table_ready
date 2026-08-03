@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../lib/api'
-import { useTheme } from '../hooks/useTheme'
 
 export default function TablePin() {
   const [pin, setPin] = useState('')
@@ -9,8 +8,6 @@ export default function TablePin() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const { theme } = useTheme()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

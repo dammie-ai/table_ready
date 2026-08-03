@@ -9,7 +9,6 @@ interface Props {
 export default function ProtectedRoute({ children, allowedRoles }: Props) {
   const token = useAuthStore((s) => s.token)
   const primaryRole = useAuthStore((s) => s.primaryRole)
-  const user = useAuthStore((s) => s.user)
 
   if (!token) {
     return <Navigate to="/login" replace />

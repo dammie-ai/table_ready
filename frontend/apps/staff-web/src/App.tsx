@@ -12,12 +12,12 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderTracking from './pages/OrderTracking'
 import OrderSuccess from './pages/OrderSuccess'
+import OrderHistory from './pages/OrderHistory'
 import Welcome from './pages/Welcome'
 import GroupChoice from './pages/GroupChoice'
 import TablePin from './pages/TablePin'
 import SharedCart from './pages/SharedCart'
 import ComboBuilder from './pages/ComboBuilder'
-import LocationCheck from './pages/LocationCheck'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
@@ -35,10 +35,10 @@ export default function App() {
       <Route path="/combos" element={<ComboBuilder />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/shared-cart" element={<SharedCart />} />
-      <Route path="/location-check" element={<LocationCheck />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/order-tracking/:id" element={<OrderTracking />} />
       <Route path="/order-success" element={<OrderSuccess />} />
+      <Route path="/order-history" element={<OrderHistory />} />
       
       {/* Staff routes */}
       <Route path="/login" element={token ? <Navigate to="/staff" replace /> : <Login />} />

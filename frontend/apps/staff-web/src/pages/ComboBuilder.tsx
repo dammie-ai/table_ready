@@ -8,8 +8,7 @@ type Step = 'select-combo' | 'pick-main' | 'pick-sides' | 'review'
 export default function ComboBuilder() {
   const [step, setStep] = useState<Step>('select-combo')
   const [combos, setCombos] = useState<ComboMeal[]>([])
-  const [selectedCombo, setSelectedCombo] = useState<ComboMeal | null>(null)
-  const [comboSides, setComboSides] = useState<ComboMealSide[]>([])
+  const [selectedCombo, setSelectedCombo] = useState<(ComboMeal & { sides: ComboMealSide[] }) | null>(null)
   const [mainItems, setMainItems] = useState<MenuItem[]>([])
   const [sideItems, setSideItems] = useState<MenuItem[]>([])
   const [selectedMain, setSelectedMain] = useState<MenuItem | null>(null)
@@ -38,7 +37,6 @@ export default function ComboBuilder() {
     try {
       const detail = await getComboMealDetail(combo.combo_id)
       setSelectedCombo(detail.combo)
-      setComboSides(detail.sides)
 
       const menuRes = await getMenuItems()
       setMainItems(menuRes.items.filter(i => i.category_type === detail.combo.required_main_category && i.is_active && !i.out_of_stock_flag))

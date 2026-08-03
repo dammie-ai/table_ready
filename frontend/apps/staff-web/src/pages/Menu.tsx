@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { getSocket } from '../lib/socket'
 import { useCartStore } from '../stores/cartStore'
-import { getMenuItems, getComboMeals, type MenuItem } from '../lib/menuApi'
+import { getMenuItems, type MenuItem } from '../lib/menuApi'
 import { useTheme } from '../hooks/useTheme'
 
 export default function Menu() {
@@ -11,7 +11,6 @@ export default function Menu() {
   const [error, setError] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
   const addItem = useCartStore((s) => s.addItem)
   const cartItems = useCartStore((s) => s.items)
   const { theme, loading: themeLoading } = useTheme()

@@ -3,10 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { getSocket, listenForCartUpdates, type CartUpdatePayload } from '../lib/sharedCart'
 import { useCartStore } from '../stores/cartStore'
 
+interface RemoteCartItem {
+  menu_item_id: number
+  name: string
+  base_price: number
+  quantity: number
+  combo_id?: number
+  combo_main?: { menu_item_id: number; name: string; base_price: number }
+  combo_sides?: { menu_item_id: number; name: string; base_price: number }[]
+}
+
 export default function SharedCart() {
   const [room, setRoom] = useState('')
   const [joined, setJoined] = useState(false)
-  const [remoteItems, setRemoteItems] = useState<CartUpdatePayload['item'][]>([])
+  const [remoteItems, setRemoteItems] = useState<RemoteCartItem[]>([])
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const navigate = useNavigate()
   const localItems = useCartStore((s) => s.items)
@@ -45,23 +55,33 @@ export default function SharedCart() {
       }
 
       if (payload.type === 'add' && payload.item) {
+        const newItem: RemoteCartItem = {
+          menu_item_id: payload.item.menu_item_id ?? 0,
+          name: payload.item.name,
+          base_price: payload.item.base_price,
+          quantity: payload.item.quantity,
+          combo_id: payload.item.combo_id,
+          combo_main: payload.item.combo_main,
+          combo_sides: payload.item.combo_sides,
+        }
         setRemoteItems((prev) => {
-          const exists = prev.find((i) => i?.menu_item_id === payload.item?.menu_item_id)
+          const exists = prev.find((i) => i.menu_item_id === newItem.menu_item_id)
           if (exists) {
             return prev.map((i) =>
-              i?.menu_item_id === payload.item?.menu_item_id
-                ? { ...payload.item!, quantity: (i.quantity || 0) + (payload.item.quantity || 1) }
+              i.menu_item_id === newItem.menu_item_id
+                ? { ...newItem, quantity: i.quantity + newItem.quantity }
                 : i
             )
           }
-          return [...prev, payload.item!]
+          return [...prev, newItem]
         })
       } else if (payload.type === 'remove' && payload.menu_item_id) {
-        setRemoteItems((prev) => prev.filter((i) => i?.menu_item_id !== payload.menu_item_id))
+        setRemoteItems((prev) => prev.filter((i) => i.menu_item_id !== payload.menu_item_id))
       } else if (payload.type === 'update' && payload.menu_item_id && payload.quantity !== undefined) {
+        const qty = payload.quantity
         setRemoteItems((prev) =>
           prev.map((i) =>
-            i?.menu_item_id === payload.menu_item_id ? { ...i!, quantity: payload.quantity! } : i
+            i.menu_item_id === payload.menu_item_id ? { ...i, quantity: qty } : i
           )
         )
       }
@@ -83,11 +103,6 @@ export default function SharedCart() {
       timestamp: Date.now(),
     }
     socket.emit('cart_update', { room, ...payload })
-  }
-
-  const handleAddItem = (item: { menu_item_id: number; name: string; base_price: number }) => {
-    useCartStore.getState().addItem(item)
-    broadcastChange('add', { ...item, quantity: 1 })
   }
 
   const handleRemoveItem = (menu_item_id: number) => {

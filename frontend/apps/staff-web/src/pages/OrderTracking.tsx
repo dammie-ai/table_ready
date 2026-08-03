@@ -32,11 +32,9 @@ export default function OrderTracking() {
   const [loading, setLoading] = useState(true)
   const { theme } = useTheme()
 
-  const handleRelease = () => {
+  const { showReleasePopup, tracking, handleRelease, handleDismiss, radius } = useGeofenceTracker(order, () => {
     setOrder(prev => prev ? { ...prev, status: 'RECEIVED' } : null)
-  }
-
-  const { showReleasePopup, tracking, handleRelease: releaseOrder, handleDismiss, radius } = useGeofenceTracker(order, handleRelease)
+  })
 
   useEffect(() => {
     if (!id) return
@@ -181,7 +179,7 @@ export default function OrderTracking() {
                 Not yet
               </button>
               <button
-                onClick={releaseOrder}
+                onClick={handleRelease}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium"
               >
                 Start Cooking

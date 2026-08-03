@@ -39,7 +39,6 @@ export function useGeofenceTracker(order: Order | null, onRelease: () => void) {
     if (!order || order.status !== 'ON_HOLD') return
 
     let watchId: number
-    let hasPrompted = false
 
     const startTracking = async () => {
       try {
@@ -55,16 +54,13 @@ export function useGeofenceTracker(order: Order | null, onRelease: () => void) {
         watchId = navigator.geolocation.watchPosition(
           (position) => {
             const { latitude, longitude } = position.coords
-            const distance = calculateDistance(
+            const dist = calculateDistance(
               latitude, longitude,
-              geofenceConfig.restaurant_latitude,
-              geofenceConfig.restaurant_longitude
+              geofenceConfig.restaurant_latitude!,
+              geofenceConfig.restaurant_longitude!
             )
 
-            console.log(`Geofence distance: ${distance.toFixed(1)}m / ${geofenceConfig.radius_meters}m`)
-
-            if (distance <= geofenceConfig.radius_meters && !hasPrompted) {
-              hasPrompted = true
+            if (dist <= geofenceConfig.radius_meters) {
               setShowReleasePopup(true)
             }
           },
@@ -73,9 +69,8 @@ export function useGeofenceTracker(order: Order | null, onRelease: () => void) {
           },
           {
             enableHighAccuracy: true,
-            distanceFilter: 5,
-            timeout: 10000
-          }
+            timeout: 30000,
+          } as PositionOptions
         )
       } catch (err) {
         console.error('Failed to start geofence tracking:', err)

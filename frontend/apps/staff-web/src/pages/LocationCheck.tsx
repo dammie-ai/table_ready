@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
 
@@ -26,27 +25,19 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 interface LocationCheckProps {
   orderType: string
-  tableNumber: string
-  deliveryAddress: string
-  specialInstructions: string
   onLocationVerified: (locationValid: boolean) => void
   onBack: () => void
 }
 
 export default function LocationCheck({
   orderType,
-  tableNumber,
-  deliveryAddress,
-  specialInstructions,
   onLocationVerified,
   onBack,
 }: LocationCheckProps) {
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
   const [distance, setDistance] = useState<number | null>(null)
   const [config, setConfig] = useState<GeofenceConfig | null>(null)
-  const navigate = useNavigate()
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -65,7 +56,6 @@ export default function LocationCheck({
 
         if (!geofenceConfig.restaurant_latitude || !geofenceConfig.restaurant_longitude) {
           setError('Restaurant location not configured. Please contact support.')
-          setLoading(false)
           return
         }
 
@@ -73,7 +63,6 @@ export default function LocationCheck({
 
         if (!navigator.geolocation) {
           setError('Geolocation is not supported by your browser')
-          setLoading(false)
           return
         }
 
@@ -82,14 +71,13 @@ export default function LocationCheck({
             const { latitude, longitude } = position.coords
             const dist = calculateDistance(
               latitude, longitude,
-              geofenceConfig.restaurant_latitude,
-              geofenceConfig.restaurant_longitude
+              geofenceConfig.restaurant_latitude!,
+              geofenceConfig.restaurant_longitude!
             )
             setDistance(dist)
 
             if (dist <= geofenceConfig.radius_meters) {
               setStatus(`You're within ${Math.round(dist)}m of the restaurant`)
-              setLoading(false)
               onLocationVerified(true)
             } else {
               setStatus(`You're ${Math.round(dist)}m away. Please get closer to the restaurant.`)
@@ -98,24 +86,21 @@ export default function LocationCheck({
           (err) => {
             console.error('Geolocation error:', err)
             setError('Unable to get your location. Please enable location services.')
-            setLoading(false)
           },
           {
             enableHighAccuracy: true,
-            distanceFilter: 5,
             timeout: 30000,
-          }
+          } as PositionOptions
         )
       } catch (err) {
         setError('Failed to load location settings')
-        setLoading(false)
       }
     }
 
     checkLocation()
 
     return () => {
-      if (watchId !== null) {
+      if (watchId !== null && watchId !== undefined) {
         navigator.geolocation.clearWatch(watchId)
       }
     }

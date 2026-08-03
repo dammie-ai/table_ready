@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../lib/api'
-import { useTheme } from '../hooks/useTheme'
 
 interface GeofenceConfig {
   success: boolean
@@ -32,8 +31,8 @@ export default function Welcome() {
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
   const [orderMode, setOrderMode] = useState<'individual' | 'group' | null>(null)
+  const [geofenceRadius, setGeofenceRadius] = useState(200)
   const navigate = useNavigate()
-  const { theme } = useTheme()
 
   useEffect(() => {
     const withinGeofence = localStorage.getItem('tableready_within_geofence') === 'true'
@@ -51,6 +50,7 @@ export default function Welcome() {
       try {
         setStatus('Loading restaurant location...')
         const geofenceConfig = await apiClient.get<GeofenceConfig>('/config/geofence')
+        setGeofenceRadius(geofenceConfig.radius_meters || 200)
         
         if (!geofenceConfig.restaurant_latitude || !geofenceConfig.restaurant_longitude) {
           setError('Restaurant location not configured.')
@@ -71,8 +71,8 @@ export default function Welcome() {
             const { latitude, longitude } = position.coords
             const dist = calculateDistance(
               latitude, longitude,
-              geofenceConfig.restaurant_latitude,
-              geofenceConfig.restaurant_longitude
+              geofenceConfig.restaurant_latitude!,
+              geofenceConfig.restaurant_longitude!
             )
             setDistance(dist)
 
@@ -91,9 +91,8 @@ export default function Welcome() {
           },
           {
             enableHighAccuracy: true,
-            distanceFilter: 5,
             timeout: 30000,
-          }
+          } as PositionOptions
         )
       } catch (err) {
         setError('Failed to load location settings')
@@ -104,7 +103,7 @@ export default function Welcome() {
     checkLocation()
 
     return () => {
-      if (watchId !== null) {
+      if (watchId !== null && watchId !== undefined) {
         navigator.geolocation.clearWatch(watchId)
       }
     }
@@ -170,7 +169,7 @@ export default function Welcome() {
                 <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-white rounded-full transition-all"
-                    style={{ width: `${Math.min((distance / 200) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((distance / geofenceRadius) * 100, 100)}%` }}
                   />
                 </div>
               </div>

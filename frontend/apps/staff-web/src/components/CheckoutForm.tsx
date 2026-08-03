@@ -8,6 +8,7 @@ interface CheckoutFormProps {
   tableNumber: string
   deliveryAddress: string
   specialInstructions: string
+  tip: number
   onSuccess: (orderId?: number) => void
 }
 
@@ -16,6 +17,7 @@ export default function CheckoutForm({
   tableNumber,
   deliveryAddress,
   specialInstructions,
+  tip,
   onSuccess,
 }: CheckoutFormProps) {
   const stripe = useStripe()
@@ -82,7 +84,8 @@ export default function CheckoutForm({
           order_type: orderType,
           table_number: tableNumber ? Number(tableNumber) : undefined,
           items: orderItems,
-          notes: specialInstructions || undefined,
+          notes: [specialInstructions, deliveryAddress ? `Delivery: ${deliveryAddress}` : null].filter(Boolean).join('\n') || undefined,
+          tip_value: tip || undefined,
           idempotency_key: `checkout-${Date.now()}`,
         })
 
