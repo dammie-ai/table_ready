@@ -25,6 +25,7 @@ import TablePin from './pages/TablePin'
 import SharedCart from './pages/SharedCart'
 import ComboBuilder from './pages/ComboBuilder'
 import ProtectedRoute from './components/ProtectedRoute'
+import StaffLayout from './components/StaffLayout'
 
 export default function App() {
   const primaryRole = useAuthStore((s) => s.primaryRole)
@@ -50,71 +51,73 @@ export default function App() {
       
       <Route path="/staff" element={
         <ProtectedRoute>
-          {primaryRole === 'kitchen' && <KitchenDisplay />}
-          {primaryRole === 'waiter' && <WaiterDashboard />}
-          {primaryRole === 'delivery' && <DeliveryPortal />}
-          {(primaryRole === 'manager' || primaryRole === 'admin' || primaryRole === 'assistant_manager') && <ManagerPanel />}
-          {primaryRole === 'other' && <StaffDashboard />}
+          <StaffLayout>
+            {primaryRole === 'kitchen' && <KitchenDisplay />}
+            {primaryRole === 'waiter' && <WaiterDashboard />}
+            {primaryRole === 'delivery' && <DeliveryPortal />}
+            {(primaryRole === 'manager' || primaryRole === 'admin' || primaryRole === 'assistant_manager') && <ManagerPanel />}
+            {primaryRole === 'other' && <StaffDashboard />}
+          </StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/kitchen" element={
         <ProtectedRoute allowedRoles={['kitchen', 'manager', 'assistant_manager', 'waiter']}>
-          <KitchenDisplay />
+          <StaffLayout><KitchenDisplay /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/waiter" element={
         <ProtectedRoute allowedRoles={['waiter']}>
-          <WaiterDashboard />
+          <StaffLayout><WaiterDashboard /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/delivery" element={
         <ProtectedRoute allowedRoles={['delivery']}>
-          <DeliveryPortal />
+          <StaffLayout><DeliveryPortal /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/menu-management" element={
         <ProtectedRoute allowedRoles={['manager', 'assistant_manager']}>
-          <MenuManagement />
+          <StaffLayout><MenuManagement /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/reservations" element={
         <ProtectedRoute allowedRoles={['manager', 'assistant_manager', 'waiter']}>
-          <Reservations />
+          <StaffLayout><Reservations /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/waitlist" element={
         <ProtectedRoute allowedRoles={['manager', 'assistant_manager', 'waiter']}>
-          <Waitlist />
+          <StaffLayout><Waitlist /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/staff-management" element={
         <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
-          <StaffManagement />
+          <StaffLayout><StaffManagement /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/settings" element={
         <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
-          <Settings />
+          <StaffLayout><Settings /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/reports" element={
         <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
-          <Reports />
+          <StaffLayout><Reports /></StaffLayout>
         </ProtectedRoute>
       } />
       
       <Route path="/promotions" element={
         <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
-          <Promotions />
+          <StaffLayout><Promotions /></StaffLayout>
         </ProtectedRoute>
       } />
       
