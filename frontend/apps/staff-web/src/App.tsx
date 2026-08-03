@@ -11,6 +11,8 @@ import Reservations from './pages/Reservations'
 import Waitlist from './pages/Waitlist'
 import StaffManagement from './pages/StaffManagement'
 import Settings from './pages/Settings'
+import Reports from './pages/Reports'
+import Promotions from './pages/Promotions'
 import Menu from './pages/Menu'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
@@ -101,6 +103,18 @@ export default function App() {
       <Route path="/settings" element={
         <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
           <Settings />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/reports" element={
+        <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
+          <Reports />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/promotions" element={
+        <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
+          <Promotions />
         </ProtectedRoute>
       } />
       
