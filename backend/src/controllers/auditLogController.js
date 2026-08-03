@@ -3,36 +3,16 @@ const pool = db.pool || db;
 
 /**
  * POST /api/admin/audit-logs
- * Internal helper endpoint to log sensitive actions.
- * Accepts: { actor_id, actor_username, action, entity_type, entity_id, old_value, new_value, ip_address, user_agent }
+ * Create audit log
  */
 exports.createLog = async (req, res) => {
-  const {
-    actor_id,
-    actor_username,
-    action,
-    entity_type,
-    entity_id,
-    old_value,
-    new_value,
-    ip_address,
-    user_agent
-  } = req.body;
-
-  if (!action || !entity_type) {
-    return res.status(400).json({ success: false, error: 'action and entity_type are required.' });
-  }
-
   try {
+    const { action, entity_type, entity_id, details, user_id } = req.body;
     const result = await pool.query(
-      `INSERT INTO audit_logs 
-       (actor_id, actor_username, action, entity_type, entity_id, old_value, new_value, ip_address, user_agent)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
-      [actor_id || null, actor_username || null, action, entity_type, entity_id || null, old_value || null, new_value || null, ip_address || null, user_agent || null]
+      'INSERT INTO audit_logs (action, entity_type, entity_id, details, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING log_id',
+      [action, entity_type, entity_id, JSON.stringify(details || {}), user_id || null]
     );
-
-    return res.status(201).json({ success: true, log: result.rows[0] });
+    return res.status(201).json({ success: true, log_id: result.rows[0].log_id });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -40,44 +20,12 @@ exports.createLog = async (req, res) => {
 
 /**
  * GET /api/admin/audit-logs
- * Fetch audit logs with optional filters: ?actor_id=1&entity_type=order&limit=50&offset=0
+ * Get audit logs
  */
 exports.getLogs = async (req, res) => {
-  const { actor_id, entity_type, entity_id, limit = 50, offset = 0 } = req.query;
-
   try {
-    let query = `SELECT * FROM audit_logs WHERE 1=1`;
-    const params = [];
-    let paramCount = 0;
-
-    if (actor_id) {
-      paramCount++;
-      query += ` AND actor_id = $${paramCount}`;
-      params.push(actor_id);
-    }
-
-    if (entity_type) {
-      paramCount++;
-      query += ` AND entity_type = $${paramCount}`;
-      params.push(entity_type);
-    }
-
-    if (entity_id) {
-      paramCount++;
-      query += ` AND entity_id = $${paramCount}`;
-      params.push(entity_id);
-    }
-
-    query += ` ORDER BY created_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
-    params.push(limit, offset);
-
-    const result = await pool.query(query, params);
-
-    return res.status(200).json({
-      success: true,
-      count: result.rows.length,
-      logs: result.rows
-    });
+    const result = await pool.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100');
+    return res.status(200).json({ success: true, logs: result.rows });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

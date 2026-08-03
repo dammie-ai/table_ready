@@ -1,137 +1,95 @@
 const db = require('../config/db');
 const pool = db.pool || db;
-const { startCooking, releaseHeldItems, markItemReady, syncOrderItemStatuses } = require('../utils/kitchenStagger');
-const { logAudit } = require('../utils/auditLogger');
 
+/**
+ * POST /api/kitchen/orders/:orderId/cook/start/:itemId
+ * Start cooking an item
+ */
 exports.startCooking = async (req, res) => {
-  const { orderId, itemId } = req.params;
-
   try {
-    const result = await startCooking(parseInt(orderId), parseInt(itemId));
-
-    if (!result.success) {
-      return res.status(400).json({ success: false, error: result.message, hold_until: result.hold_until });
-    }
-
-    await logAudit({
-      actor_id: req.user?.id || null,
-      actor_username: req.user?.username || null,
-      action: 'KITCHEN_START_COOKING',
-      entity_type: 'order_item',
-      entity_id: parseInt(itemId),
-      ip_address: req.ip || req.connection.remoteAddress,
-    });
-
-    return res.status(200).json({ success: true, message: result.message, tracking_id: result.tracking_id });
+    await pool.query(
+      'UPDATE order_items SET item_status = $1 WHERE order_item_id = $2 AND master_order_id = $3',
+      ['COOKING', req.params.itemId, req.params.orderId]
+    );
+    return res.status(200).json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
 
+/**
+ * POST /api/kitchen/orders/:orderId/cook/release-held
+ * Release held items
+ */
 exports.releaseHeldItems = async (req, res) => {
-  const { orderId } = req.params;
-
   try {
-    const result = await releaseHeldItems(parseInt(orderId));
-
-    await logAudit({
-      actor_id: req.user?.id || null,
-      actor_username: req.user?.username || null,
-      action: 'KITCHEN_RELEASE_HELD',
-      entity_type: 'order',
-      entity_id: parseInt(orderId),
-      new_value: JSON.stringify({ released_count: result.released_count }),
-      ip_address: req.ip || req.connection.remoteAddress,
-    });
-
-    return res.status(200).json({ success: true, message: `Released ${result.released_count} held items.`, ...result });
+    await pool.query(
+      'UPDATE order_items SET item_status = $1 WHERE master_order_id = $2 AND item_status = $3',
+      ['RECEIVED', req.params.orderId, 'ON_HOLD']
+    );
+    return res.status(200).json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
 
+/**
+ * POST /api/kitchen/orders/:orderId/cook/ready/:itemId
+ * Mark item as ready
+ */
 exports.markItemReady = async (req, res) => {
-  const { orderId, itemId } = req.params;
-
   try {
-    const result = await markItemReady(parseInt(orderId), parseInt(itemId));
-
-    await logAudit({
-      actor_id: req.user?.id || null,
-      actor_username: req.user?.username || null,
-      action: 'KITCHEN_ITEM_READY',
-      entity_type: 'order_item',
-      entity_id: parseInt(itemId),
-      ip_address: req.ip || req.connection.remoteAddress,
-    });
-
-    return res.status(200).json({ success: true, message: result.message });
+    await pool.query(
+      'UPDATE order_items SET item_status = $1 WHERE order_item_id = $2 AND master_order_id = $3',
+      ['READY', req.params.itemId, req.params.orderId]
+    );
+    return res.status(200).json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
 
+/**
+ * POST /api/kitchen/orders/:orderId/cook/sync-status
+ * Sync order status
+ */
 exports.syncOrderStatus = async (req, res) => {
-  const { orderId } = req.params;
-
   try {
-    await syncOrderItemStatuses(parseInt(orderId));
-    return res.status(200).json({ success: true, message: 'Order status synced.' });
+    const { status } = req.body;
+    await pool.query(
+      'UPDATE orders SET status = $1 WHERE master_order_id = $2',
+      [status, req.params.orderId]
+    );
+    return res.status(200).json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
 
+/**
+ * GET /api/kitchen/orders/:orderId/cook-tracking
+ * Get order tracking
+ */
 exports.getOrderTracking = async (req, res) => {
-  const { orderId } = req.params;
-
   try {
-    const result = await pool.query(
-      `SELECT ct.*, mi.name as item_name
-       FROM order_cook_tracking ct
-       JOIN order_items oi ON ct.order_item_id = oi.order_item_id
-       JOIN menu_items mi ON oi.item_id = mi.item_id
-       WHERE ct.master_order_id = $1
-       ORDER BY ct.created_at ASC`,
-      [orderId]
-    );
-
-    return res.status(200).json({
-      success: true,
-      order_id: parseInt(orderId),
-      tracking: result.rows,
-    });
+    const result = await pool.query('SELECT * FROM orders WHERE master_order_id = $1', [req.params.orderId]);
+    return res.status(200).json({ success: true, order: result.rows[0] });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
 
+/**
+ * POST /api/kitchen/orders/:orderId/cook/acknowledge-overdue/:itemId
+ * Acknowledge overdue item
+ */
 exports.acknowledgeOverdue = async (req, res) => {
-  const { orderId, itemId } = req.params;
-
   try {
-    const result = await pool.query(
-      `UPDATE order_cook_tracking
-       SET overdue_notified = false, updated_at = NOW()
-       WHERE master_order_id = $1 AND order_item_id = $2 AND status = 'overdue'
-       RETURNING tracking_id`,
-      [orderId, itemId]
+    await pool.query(
+      'UPDATE order_items SET item_status = $1 WHERE order_item_id = $2 AND master_order_id = $3',
+      ['OVERDUE_ACK', req.params.itemId, req.params.orderId]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Overdue tracking item not found.' });
-    }
-
-    await logAudit({
-      actor_id: req.user?.id || null,
-      actor_username: req.user?.username || null,
-      action: 'OVERDUE_ACKNOWLEDGED',
-      entity_type: 'order_cook_tracking',
-      entity_id: result.rows[0].tracking_id,
-      ip_address: req.ip || req.connection.remoteAddress,
-    });
-
-    return res.status(200).json({ success: true, message: 'Overdue item acknowledged.' });
+    return res.status(200).json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

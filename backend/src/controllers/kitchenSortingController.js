@@ -1,70 +1,76 @@
 const db = require('../config/db');
 const pool = db.pool || db;
-const { getOrdersByType, getAllOrderTypesSummary, getOrderTypeLabel, getOrderTypeColor } = require('../utils/orderSorting');
 
-exports.getOrdersByType = async (req, res) => {
-  const { order_type } = req.params;
-  const { status, limit = 50, offset = 0 } = req.query;
-
+/**
+ * GET /api/kitchen/sorting/types
+ * Get order types
+ */
+exports.getOrderTypes = async (req, res) => {
   try {
-    const result = await getOrdersByType(order_type, { status, limit, offset });
-
-    return res.status(200).json({
-      success: true,
-      order_type: order_type,
-      label: getOrderTypeLabel(order_type),
-      color: getOrderTypeColor(order_type),
-      ...result,
-    });
+    const result = await pool.query(`
+      SELECT DISTINCT order_type FROM orders 
+      WHERE status NOT IN ('PICKED_UP', 'COMPLETED', 'CANCELLED')
+      ORDER BY order_type ASC
+    `);
+    return res.status(200).json({ success: true, types: result.rows.map(r => r.order_type) });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
 
+/**
+ * GET /api/kitchen/sorting/:order_type
+ * Get orders by type
+ */
+exports.getOrdersByType = async (req, res) => {
+  try {
+    const { order_type } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM orders WHERE order_type = $1 AND status NOT IN ($2, $3) ORDER BY created_at ASC',
+      [order_type, 'PICKED_UP', 'COMPLETED', 'CANCELLED']
+    );
+    return res.status(200).json({ success: true, orders: result.rows });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * GET /api/kitchen/sorting/summary
+ * Get all order types summary
+ */
 exports.getAllOrderTypesSummary = async (req, res) => {
   try {
-    const result = await getAllOrderTypesSummary();
-
-    const summary = result.map((row) => ({
-      order_type: row.order_type,
-      label: getOrderTypeLabel(row.order_type),
-      color: getOrderTypeColor(row.order_type),
-      total_orders: parseInt(row.total_orders),
-      active_orders: parseInt(row.active_orders),
-      total_revenue: parseFloat(row.total_revenue),
-    }));
-
-    return res.status(200).json({
-      success: true,
-      summary,
-    });
+    const result = await pool.query(`
+      SELECT order_type, COUNT(*) as count, 
+             SUM(CASE WHEN status = 'RECEIVED' THEN 1 ELSE 0 END) as received,
+             SUM(CASE WHEN status = 'IN_PREPARATION' THEN 1 ELSE 0 END) as in_preparation,
+             SUM(CASE WHEN status = 'COOKING' THEN 1 ELSE 0 END) as cooking,
+             SUM(CASE WHEN status = 'READY' THEN 1 ELSE 0 END) as ready
+      FROM orders
+      WHERE status NOT IN ('PICKED_UP', 'COMPLETED', 'CANCELLED')
+      GROUP BY order_type
+      ORDER BY order_type ASC
+    `);
+    return res.status(200).json({ success: true, summary: result.rows });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
 
-exports.getOrderTypes = async (req, res) => {
-  const orderTypes = [
-    { type: 'IN_HOUSE', label: 'Dine-In', color: '#34a853' },
-    { type: 'DRIVE_THRU', label: 'Drive-Thru', color: '#ea4335' },
-    { type: 'DELIVERY', label: 'Delivery', color: '#fbbc04' },
-    { type: 'ORDER_FROM_HOME', label: 'Order from Home', color: '#4285f4' },
-    { type: 'PICKUP', label: 'Pickup', color: '#ff6d01' },
-  ];
-
-  return res.status(200).json({
-    success: true,
-    order_types: orderTypes,
-  });
-};
-
+/**
+ * GET /api/kitchen/sorting/:order_type/details
+ * Get kitchen channel details
+ */
 exports.getKitchenChannel = async (req, res) => {
-  const { order_type } = req.params;
-  const channel = require('../utils/orderSorting').getChannelForOrderType(order_type);
-
-  return res.status(200).json({
-    success: true,
-    order_type,
-    channel,
-  });
+  try {
+    const { order_type } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM orders WHERE order_type = $1 AND status NOT IN ($2, $3, $4) ORDER BY created_at ASC',
+      [order_type, 'PICKED_UP', 'COMPLETED', 'CANCELLED']
+    );
+    return res.status(200).json({ success: true, orders: result.rows });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 };

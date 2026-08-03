@@ -18,8 +18,8 @@ exports.verifyTableCode = async (req, res) => {
   try {
     const tableRes = await pool.query(
       `SELECT table_id, status_state, active_pin, pin_expires_at
-       FROM restaurant_tables
-       WHERE table_number = $1`,
+        FROM restaurant_tables
+        WHERE table_number = $1`,
       [table_number]
     );
 
@@ -29,8 +29,8 @@ exports.verifyTableCode = async (req, res) => {
 
     const table = tableRes.rows[0];
 
-    if (table.status_state !== 'Reserved') {
-      return res.status(400).json({ success: false, error: 'Table is not reserved.' });
+    if (!table.active_pin) {
+      return res.status(400).json({ success: false, error: 'No active PIN set for this table.' });
     }
 
     if (table.active_pin !== code) {
