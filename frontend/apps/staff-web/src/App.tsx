@@ -7,6 +7,10 @@ import WaiterDashboard from './pages/WaiterDashboard'
 import DeliveryPortal from './pages/DeliveryPortal'
 import ManagerPanel from './pages/ManagerPanel'
 import MenuManagement from './pages/MenuManagement'
+import Reservations from './pages/Reservations'
+import Waitlist from './pages/Waitlist'
+import StaffManagement from './pages/StaffManagement'
+import Settings from './pages/Settings'
 import Menu from './pages/Menu'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
@@ -73,6 +77,30 @@ export default function App() {
       <Route path="/menu-management" element={
         <ProtectedRoute allowedRoles={['manager', 'assistant_manager']}>
           <MenuManagement />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/reservations" element={
+        <ProtectedRoute allowedRoles={['manager', 'assistant_manager', 'waiter']}>
+          <Reservations />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/waitlist" element={
+        <ProtectedRoute allowedRoles={['manager', 'assistant_manager', 'waiter']}>
+          <Waitlist />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/staff-management" element={
+        <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
+          <StaffManagement />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/settings" element={
+        <ProtectedRoute allowedRoles={['manager', 'admin', 'assistant_manager']}>
+          <Settings />
         </ProtectedRoute>
       } />
       

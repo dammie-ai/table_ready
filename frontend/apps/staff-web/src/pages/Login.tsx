@@ -28,7 +28,47 @@ export default function Login() {
         password,
       })
       setAuth(res.token, res.user)
-      navigate('/staff')
+      
+      // Navigate based on role
+      const roles = res.user.roles
+      if (roles.includes('kitchen')) {
+        navigate('/kitchen')
+      } else if (roles.includes('waiter')) {
+        navigate('/waiter')
+      } else if (roles.includes('delivery')) {
+        navigate('/delivery')
+      } else if (roles.includes('manager') || roles.includes('admin') || roles.includes('assistant_manager')) {
+        navigate('/staff')
+      } else {
+        navigate('/staff')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const quickLogin = async (user: string, pass: string) => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await apiClient.post<{ token: string; user: { id: number; username: string; roles: string[] } }>('/auth/login', {
+        username: user,
+        password: pass,
+      })
+      setAuth(res.token, res.user)
+      
+      const roles = res.user.roles
+      if (roles.includes('kitchen')) {
+        navigate('/kitchen')
+      } else if (roles.includes('waiter')) {
+        navigate('/waiter')
+      } else if (roles.includes('delivery')) {
+        navigate('/delivery')
+      } else {
+        navigate('/staff')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -76,9 +116,44 @@ export default function Login() {
         >
           {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Signing in...</> : 'Sign In'}
         </button>
-        <p className="text-[10px] text-[#6b7280]/50 mt-6 text-center font-mono">
-          Demo: manager_test / waiter_test / kitchen_test / delivery_test
-        </p>
+        
+        <div className="mt-6 pt-6 border-t border-white/8">
+          <p className="text-xs text-[#6b7280] mb-3 text-center">Quick Login</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => quickLogin('manager_test', 'password123')}
+              disabled={loading}
+              className="px-3 py-2 bg-[#1c1c27] border border-white/8 rounded-lg text-xs text-[#f1f5f9] hover:border-[#f97316]/50 transition-colors disabled:opacity-40"
+            >
+              Manager
+            </button>
+            <button
+              type="button"
+              onClick={() => quickLogin('kitchen_test', 'password123')}
+              disabled={loading}
+              className="px-3 py-2 bg-[#1c1c27] border border-white/8 rounded-lg text-xs text-[#f1f5f9] hover:border-[#f97316]/50 transition-colors disabled:opacity-40"
+            >
+              Kitchen
+            </button>
+            <button
+              type="button"
+              onClick={() => quickLogin('waiter_test', 'password123')}
+              disabled={loading}
+              className="px-3 py-2 bg-[#1c1c27] border border-white/8 rounded-lg text-xs text-[#f1f5f9] hover:border-[#f97316]/50 transition-colors disabled:opacity-40"
+            >
+              Waiter
+            </button>
+            <button
+              type="button"
+              onClick={() => quickLogin('delivery_test', 'password123')}
+              disabled={loading}
+              className="px-3 py-2 bg-[#1c1c27] border border-white/8 rounded-lg text-xs text-[#f1f5f9] hover:border-[#f97316]/50 transition-colors disabled:opacity-40"
+            >
+              Delivery
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   )

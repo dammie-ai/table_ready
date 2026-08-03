@@ -106,12 +106,6 @@ export default function LocationCheck({
     }
   }, [orderType, onLocationVerified])
 
-  const handleContinue = () => {
-    if (distance !== null && distance <= (config?.radius_meters || 100)) {
-      onLocationVerified(true)
-    }
-  }
-
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6" style={{ color: theme?.text_color }}>Location Check</h1>
@@ -174,12 +168,11 @@ export default function LocationCheck({
           Back
         </button>
         <button
-          onClick={handleContinue}
-          disabled={distance === null || distance > (config?.radius_meters || 100)}
-          className="flex-1 text-white py-3 rounded-xl font-medium hover:opacity-90 disabled:opacity-40 transition-colors"
+          onClick={() => onLocationVerified(true)}
+          className="flex-1 text-white py-3 rounded-xl font-medium hover:opacity-90 transition-colors"
           style={{ backgroundColor: theme?.primary_color }}
         >
-          Continue to Payment
+          Continue Anyway
         </button>
       </div>
     </div>

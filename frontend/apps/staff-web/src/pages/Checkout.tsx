@@ -185,11 +185,17 @@ export default function Checkout() {
             </div>
 
             <button
-              onClick={() => setStep('location')}
+              onClick={() => {
+                if (needsLocationCheck) {
+                  setStep('location')
+                } else {
+                  handleCreateIntent()
+                }
+              }}
               className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90"
               style={{ backgroundColor: theme?.primary_color }}
             >
-              Continue to Location Check
+              {needsLocationCheck ? 'Continue to Location Check' : 'Continue to Payment'}
             </button>
           </div>
         </div>
