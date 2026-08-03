@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useStripe, useElements } from '@stripe/react-stripe-js'
+import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js'
 import { apiClient } from '../lib/api'
 import { useCartStore } from '../stores/cartStore'
 
@@ -106,16 +106,20 @@ export default function CheckoutForm({
       <div>
         <label className="block text-sm font-medium mb-2">Card Details</label>
         <div className="border rounded-lg p-4">
-          <div className="mb-4">
-            <input
-              placeholder="Card number"
-              className="w-full border rounded px-3 py-2 mb-2"
-              disabled
-            />
-            <p className="text-sm text-gray-500">
-              Test card: 4242 4242 4242 4242 • Any future expiry • Any CVC
-            </p>
-          </div>
+          <CardElement
+            options={{
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#f1f5f9',
+                  '::placeholder': { color: '#6b7280' },
+                },
+              },
+            }}
+          />
+          <p className="text-sm text-gray-500 mt-2">
+            Test card: 4242 4242 4242 4242 • Any future expiry • Any CVC
+          </p>
         </div>
       </div>
 

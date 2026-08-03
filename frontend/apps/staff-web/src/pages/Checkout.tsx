@@ -6,6 +6,9 @@ import { apiClient } from '../lib/api'
 import { useCartStore } from '../stores/cartStore'
 import { useTheme } from '../hooks/useTheme'
 import CheckoutForm from '../components/CheckoutForm'
+import LocationCheck from '../pages/LocationCheck'
+
+type CheckoutStep = 'details' | 'location' | 'payment'
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '')
 
@@ -17,6 +20,7 @@ export default function Checkout() {
   const [specialInstructions, setSpecialInstructions] = useState('')
   const [error, setError] = useState('')
   const [orderId, setOrderId] = useState<number | null>(null)
+  const [step, setStep] = useState<CheckoutStep>('details')
   const items = useCartStore((s) => s.items)
   const total = useCartStore((s) => s.total())
   const clearCart = useCartStore((s) => s.clearCart)
@@ -29,6 +33,8 @@ export default function Checkout() {
     }
   }, [items, navigate])
 
+  const needsLocationCheck = orderType === 'DELIVERY' || orderType === 'IN_HOUSE' || orderType === 'DINE_IN'
+
   const handleCreateIntent = async () => {
     setError('')
 
@@ -38,6 +44,7 @@ export default function Checkout() {
         currency: 'usd',
       })
       setClientSecret(res.clientSecret)
+      setStep('payment')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to initialize payment')
     }
@@ -52,7 +59,27 @@ export default function Checkout() {
     }
   }
 
-  if (!clientSecret) {
+  const handleLocationVerified = (locationValid: boolean) => {
+    if (locationValid) {
+      setStep('payment')
+      handleCreateIntent()
+    }
+  }
+
+  if (step === 'location' && needsLocationCheck) {
+    return (
+      <LocationCheck
+        orderType={orderType}
+        tableNumber={tableNumber}
+        deliveryAddress={deliveryAddress}
+        specialInstructions={specialInstructions}
+        onLocationVerified={handleLocationVerified}
+        onBack={() => setStep('details')}
+      />
+    )
+  }
+
+  if (!clientSecret || step !== 'payment') {
     return (
       <div className="max-w-2xl mx-auto p-4">
         <h1 className="text-3xl font-bold mb-6" style={{ color: theme?.text_color }}>Checkout</h1>
@@ -65,7 +92,7 @@ export default function Checkout() {
                 <button
                   key={type}
                   onClick={() => setOrderType(type)}
-                  className={`p-4 rounded-lg border-2 ${
+                  className={`p-4 rounded-lg border-2 transition-all ${
                     orderType === type
                       ? 'border-2'
                       : 'border border-gray-200 hover:border-gray-300'
@@ -124,11 +151,11 @@ export default function Checkout() {
             </div>
 
             <button
-              onClick={handleCreateIntent}
+              onClick={() => setStep('location')}
               className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90"
               style={{ backgroundColor: theme?.primary_color }}
             >
-              Continue to Payment
+              Continue to Location Check
             </button>
           </div>
         </div>
@@ -152,7 +179,7 @@ export default function Checkout() {
             tableNumber={tableNumber}
             deliveryAddress={deliveryAddress}
             specialInstructions={specialInstructions}
-            onSuccess={() => handleSuccess(orderId || undefined)}
+            onSuccess={handleSuccess}
           />
         </Elements>
       )}

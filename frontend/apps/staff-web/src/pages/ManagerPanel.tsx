@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface SalesData {
   day: string
   revenue: number
   orders: number
+}
+
+interface CategoryData {
+  category_type: string
+  total_sales: number
+  order_count: number
 }
 
 interface InventoryItem {
@@ -22,7 +28,15 @@ interface ThemeConfig {
   text_color: string
   font_family: string
   logo_url: string | null
+  restaurant_name: string
+  border_radius: string
+  button_style: 'rounded' | 'pill' | 'square'
 }
+
+const FONT_OPTIONS = ['Inter', 'Roboto', 'Open Sans', 'Montserrat', 'Poppins', 'Nunito', 'Raleway']
+const RADIUS_OPTIONS = ['0px', '4px', '8px', '12px', '16px', '24px', '9999px']
+
+const COLORS = ['#f97316', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 function ThemeCustomizer() {
   const [theme, setTheme] = useState<ThemeConfig>({
@@ -32,6 +46,9 @@ function ThemeCustomizer() {
     text_color: '#111827',
     font_family: 'Inter',
     logo_url: null,
+    restaurant_name: 'TableReady',
+    border_radius: '12px',
+    button_style: 'rounded',
   })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -47,6 +64,9 @@ function ThemeCustomizer() {
           text_color: branding.text_color || '#111827',
           font_family: branding.font_family || 'Inter',
           logo_url: branding.logo_url || null,
+          restaurant_name: branding.restaurant_name || 'TableReady',
+          border_radius: branding.border_radius || '12px',
+          button_style: branding.button_style || 'rounded',
         })
       })
       .catch(() => {})
@@ -65,6 +85,8 @@ function ThemeCustomizer() {
           font_family: theme.font_family,
           logo_url: theme.logo_url,
           restaurant_name: theme.restaurant_name,
+          border_radius: theme.border_radius,
+          button_style: theme.button_style,
         }
       })
       setMessage('Theme saved! Customer app will update on next load.')
@@ -90,44 +112,46 @@ function ThemeCustomizer() {
         />
       </div>
 
-      <div>
-        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Primary Color</label>
-        <input
-          type="color"
-          value={theme.primary_color}
-          onChange={(e) => setTheme({ ...theme, primary_color: e.target.value })}
-          className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/8"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Primary Color</label>
+          <input
+            type="color"
+            value={theme.primary_color}
+            onChange={(e) => setTheme({ ...theme, primary_color: e.target.value })}
+            className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/8"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Secondary Color</label>
+          <input
+            type="color"
+            value={theme.secondary_color}
+            onChange={(e) => setTheme({ ...theme, secondary_color: e.target.value })}
+            className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/8"
+          />
+        </div>
       </div>
 
-      <div>
-        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Secondary Color</label>
-        <input
-          type="color"
-          value={theme.secondary_color}
-          onChange={(e) => setTheme({ ...theme, secondary_color: e.target.value })}
-          className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/8"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Background Color</label>
-        <input
-          type="color"
-          value={theme.background_color}
-          onChange={(e) => setTheme({ ...theme, background_color: e.target.value })}
-          className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/8"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Text Color</label>
-        <input
-          type="color"
-          value={theme.text_color}
-          onChange={(e) => setTheme({ ...theme, text_color: e.target.value })}
-          className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/8"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Background</label>
+          <input
+            type="color"
+            value={theme.background_color}
+            onChange={(e) => setTheme({ ...theme, background_color: e.target.value })}
+            className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/8"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Text Color</label>
+          <input
+            type="color"
+            value={theme.text_color}
+            onChange={(e) => setTheme({ ...theme, text_color: e.target.value })}
+            className="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-white/8"
+          />
+        </div>
       </div>
 
       <div>
@@ -137,11 +161,40 @@ function ThemeCustomizer() {
           onChange={(e) => setTheme({ ...theme, font_family: e.target.value })}
           className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
         >
-          <option value="Inter">Inter</option>
-          <option value="Roboto">Roboto</option>
-          <option value="Open Sans">Open Sans</option>
-          <option value="Montserrat">Montserrat</option>
+          {FONT_OPTIONS.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
         </select>
+      </div>
+
+      <div>
+        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Border Radius</label>
+        <select
+          value={theme.border_radius}
+          onChange={(e) => setTheme({ ...theme, border_radius: e.target.value })}
+          className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+        >
+          {RADIUS_OPTIONS.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Button Style</label>
+        <div className="flex gap-2">
+          {(['rounded', 'pill', 'square'] as const).map((style) => (
+            <button
+              key={style}
+              onClick={() => setTheme({ ...theme, button_style: style })}
+              className={`flex-1 py-2 rounded-lg border text-xs font-medium capitalize transition-colors ${
+                theme.button_style === style ? 'border-[#f97316] bg-[#f97316]/15 text-[#f97316]' : 'border-white/8 text-[#6b7280]'
+              }`}
+            >
+              {style}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div>
@@ -166,33 +219,23 @@ function ThemeCustomizer() {
   )
 }
 
-interface SalesData {
-  day: string
-  revenue: number
-  orders: number
-}
-
-interface InventoryItem {
-  item_name: string
-  stock_quantity: number
-  reorder_threshold: number
-  unit: string
-}
-
 export default function ManagerPanel() {
   const [view, setView] = useState<'dashboard' | 'menu' | 'inventory' | 'theme'>('dashboard')
   const [salesData, setSalesData] = useState<SalesData[]>([])
+  const [categoryData, setCategoryData] = useState<CategoryData[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [salesRes, inventoryRes] = await Promise.all([
+        const [salesRes, categoryRes, inventoryRes] = await Promise.all([
+          apiClient.get<any>('/analytics/category-sales'),
           apiClient.get<any>('/analytics/category-sales'),
           apiClient.get<any>('/inventory'),
         ])
         setSalesData(salesRes.sales || [])
+        setCategoryData(categoryRes.categories || categoryRes.sales || [])
         setInventory(inventoryRes.inventory || inventoryRes.items || [])
       } catch (err) {
         console.error('Failed to load manager data:', err)
@@ -261,39 +304,79 @@ export default function ManagerPanel() {
             </div>
           </div>
 
-          <div className="bg-[#111118] border border-white/8 rounded-2xl p-5 mb-4">
-            <h3 className="text-sm font-semibold mb-4 text-[#6b7280] uppercase tracking-widest font-mono">Weekly Revenue</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={salesData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="day" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} width={40} />
-                <Tooltip contentStyle={{ background: '#111118', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px' }} labelStyle={{ color: '#f1f5f9', fontWeight: 600 }} itemStyle={{ color: '#f97316' }} formatter={(v: number) => [`$${v.toLocaleString()}`, 'Revenue']} />
-                <Area type="monotone" dataKey="revenue" stroke="#f97316" strokeWidth={2.5} fill="url(#revGrad)" dot={false} activeDot={{ r: 4, fill: '#f97316', strokeWidth: 0 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div className="bg-[#111118] border border-white/8 rounded-2xl p-5">
+              <h3 className="text-sm font-semibold mb-4 text-[#6b7280] uppercase tracking-widest font-mono">Weekly Revenue</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={salesData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="day" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false } />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} width={40} />
+                  <Tooltip contentStyle={{ background: '#111118', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px' }} labelStyle={{ color: '#f1f5f9', fontWeight: 600 }} itemStyle={{ color: '#f97316' }} formatter={(v: number) => [`$${v.toLocaleString()}`, 'Revenue']} />
+                  <Area type="monotone" dataKey="revenue" stroke="#f97316" strokeWidth={2.5} fill="url(#revGrad)" dot={false} activeDot={{ r: 4, fill: '#f97316', strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-[#111118] border border-white/8 rounded-2xl p-5">
+              <h3 className="text-sm font-semibold mb-4 text-[#6b7280] uppercase tracking-widest font-mono">Orders by Category</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={categoryData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="category_type" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+                  <Tooltip contentStyle={{ background: '#111118', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px' }} labelStyle={{ color: '#f1f5f9', fontWeight: 600 }} />
+                  <Bar dataKey="total_sales" fill="#f97316" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'Dine-In', pct: 58, color: 'bg-orange-500' },
-              { label: 'Drive-Thru', pct: 27, color: 'bg-blue-500' },
-              { label: 'Delivery', pct: 15, color: 'bg-violet-500' },
-            ].map((seg) => (
-              <div key={seg.label} className="bg-[#111118] border border-white/8 rounded-xl p-4 text-center">
-                <div className={`text-2xl font-display font-bold ${seg.color.replace('bg-', 'text-')}`}>{seg.pct}%</div>
-                <div className="text-xs text-[#6b7280] mt-0.5">{seg.label}</div>
-                <div className="mt-2 h-1 bg-white/5 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${seg.color}`} style={{ width: `${seg.pct}%` }} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-[#111118] border border-white/8 rounded-2xl p-5">
+              <h3 className="text-sm font-semibold mb-4 text-[#6b7280] uppercase tracking-widest font-mono">Order Distribution</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    dataKey="total_sales"
+                    nameKey="category_type"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={{ stroke: '#6b7280' }}
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: '#111118', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Dine-In', pct: 58, color: 'bg-orange-500' },
+                { label: 'Drive-Thru', pct: 27, color: 'bg-blue-500' },
+                { label: 'Delivery', pct: 15, color: 'bg-violet-500' },
+              ].map((seg) => (
+                <div key={seg.label} className="bg-[#111118] border border-white/8 rounded-xl p-4 text-center">
+                  <div className={`text-2xl font-display font-bold ${seg.color.replace('bg-', 'text-')}`}>{seg.pct}%</div>
+                  <div className="text-xs text-[#6b7280] mt-0.5">{seg.label}</div>
+                  <div className="mt-2 h-1 bg-white/5 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${seg.color}`} style={{ width: `${seg.pct}%` }} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}

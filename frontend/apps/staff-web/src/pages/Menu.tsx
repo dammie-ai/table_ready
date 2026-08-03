@@ -53,6 +53,8 @@ export default function Menu() {
     return !item.is_active || item.out_of_stock_flag || item.stock_quantity <= 0
   }
 
+  const [addedItem, setAddedItem] = useState<number | null>(null)
+
   const handleAddToCart = (item: MenuItem) => {
     if (isOutOfStock(item)) return
     addItem({
@@ -60,7 +62,8 @@ export default function Menu() {
       name: item.name,
       base_price: item.base_price,
     })
-    navigate('/cart')
+    setAddedItem(item.item_id)
+    setTimeout(() => setAddedItem(null), 1500)
   }
 
   if (loading || themeLoading) {
@@ -85,13 +88,20 @@ export default function Menu() {
         <h1 className="text-3xl font-bold" style={{ color: theme?.text_color }}>
           {theme?.restaurant_name || 'Menu'}
         </h1>
-        <button
-          onClick={() => navigate('/combos')}
-          className="text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
-          style={{ backgroundColor: theme?.primary_color }}
-        >
-          Combo Deals
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/cart')}
+            className="relative text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            style={{ backgroundColor: theme?.primary_color }}
+          >
+            Cart
+            {items.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-xs rounded-full flex items-center justify-center font-bold" style={{ color: theme?.primary_color }}>
+                {items.reduce((sum, i) => sum + i.quantity, 0)}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -157,14 +167,16 @@ export default function Menu() {
                    <span className="text-xl font-bold" style={{ color: theme?.primary_color }}>
                      ${item.base_price.toFixed(2)}
                    </span>
-                   <button
-                     onClick={() => handleAddToCart(item)}
-                     disabled={outOfStock}
-                     className="text-white px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                     style={{ backgroundColor: theme?.primary_color }}
-                   >
-                     {outOfStock ? 'Unavailable' : 'Add'}
-                   </button>
+                    <button
+                      onClick={() => handleAddToCart(item)}
+                      disabled={outOfStock}
+                      className="text-white px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      style={{ 
+                        backgroundColor: addedItem === item.item_id ? '#10b981' : theme?.primary_color 
+                      }}
+                    >
+                      {outOfStock ? 'Unavailable' : addedItem === item.item_id ? 'Added!' : 'Add'}
+                    </button>
                  </div>
               </div>
             </div>
