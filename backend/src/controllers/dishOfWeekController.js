@@ -7,7 +7,13 @@ const pool = db.pool || db;
  */
 exports.getDishOfWeek = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM promotions WHERE type = $1 LIMIT 1', ['dish_of_week']);
+    const result = await pool.query(
+      `SELECT p.*, mi.name, mi.base_price, mi.image_url
+       FROM promotions p
+       LEFT JOIN menu_items mi ON p.menu_item_id = mi.item_id
+       WHERE p.type = $1 LIMIT 1`,
+      ['dish_of_week']
+    );
     return res.status(200).json({ success: true, dish: result.rows[0] || null });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });

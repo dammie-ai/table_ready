@@ -31,7 +31,7 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
   }
 
   try {
-    const { order_type, is_held, items, table_number, notes, ordered_by_user_id, idempotency_key } = req.body;
+    const { order_type, is_held, items, table_number, notes, ordered_by_user_id, idempotency_key, payment_method = 'card' } = req.body;
 
     if (idempotency_key) {
       const existingOrder = await pool.query(
@@ -99,18 +99,44 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
             [menuItemId]
           );
 
-          if (directCheck.rows.length === 0) {
-            throw new Error(`Menu Item or Inventory #${menuItemId} does not exist.`);
-          }
+          if (directCheck.rows.length > 0) {
+            if (directCheck.rows[0].stock_quantity < orderQty) {
+              throw new Error(`Insufficient stock for item "${directCheck.rows[0].item_name}".`);
+            }
 
-          if (directCheck.rows[0].stock_quantity < orderQty) {
-            throw new Error(`Insufficient stock for item "${directCheck.rows[0].item_name}".`);
-          }
+            resolvedDeductions.push({
+              inventory_id: menuItemId,
+              deduct_quantity: orderQty
+            });
+          } else {
+            // Not a recipe item and not a direct inventory item — fall back to the
+            // menu item's own stock_quantity (the same field menuController/customer
+            // Menu page use for the out-of-stock toggle).
+            const menuItemCheck = await client.query(
+              `SELECT item_id, name, stock_quantity, out_of_stock_flag, is_active
+               FROM menu_items WHERE item_id = $1 FOR UPDATE`,
+              [menuItemId]
+            );
 
-          resolvedDeductions.push({
-            inventory_id: menuItemId,
-            deduct_quantity: orderQty
-          });
+            if (menuItemCheck.rows.length === 0) {
+              throw new Error(`Menu item #${menuItemId} does not exist.`);
+            }
+
+            const menuItem = menuItemCheck.rows[0];
+
+            if (!menuItem.is_active || menuItem.out_of_stock_flag) {
+              throw new Error(`Menu item "${menuItem.name}" is not currently available.`);
+            }
+
+            if (menuItem.stock_quantity < orderQty) {
+              throw new Error(`Insufficient stock for item "${menuItem.name}".`);
+            }
+
+            resolvedDeductions.push({
+              menu_item_id: menuItemId,
+              deduct_quantity: orderQty
+            });
+          }
         } else {
           // Recipe found: Validate stock for ALL required ingredients
           for (const ingredient of recipeRes.rows) {
@@ -135,7 +161,17 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
           }
         }
 
-        const basePrice = item.price || 0;
+        // Price is always resolved server-side (never trust a client-supplied price).
+        // menu_items.base_price is the source of truth when the item is a real menu
+        // item; pure direct-inventory items (no menu_items row) fall back to
+        // whatever price the caller sent, defaulting to 0.
+        const priceRes = await client.query(
+          `SELECT base_price FROM menu_items WHERE item_id = $1`,
+          [menuItemId]
+        );
+        const basePrice = priceRes.rows.length > 0
+          ? parseFloat(priceRes.rows[0].base_price)
+          : (item.price || 0);
         const dynamicUnitPrice = calculateAdjustedPrice(basePrice, multiplier);
 
         let modifierTotal = 0;
@@ -162,9 +198,9 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
     const totalWithTax = parseFloat((calculatedTotal + taxAmount).toFixed(2));
 
     const insertOrderQuery = `
-      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation)
-      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8)
-      RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at;
+      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation, payment_method, payment_status)
+      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10)
+      RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at, payment_method, payment_status;
     `;
 
     const orderResult = await client.query(insertOrderQuery, [
@@ -175,13 +211,25 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
       table_number || null,
       notes || null,
       idempotency_key || null,
-      taxAmount
+      taxAmount,
+      payment_method,
+      'Pending'
     ]);
 
     const createdOrder = orderResult.rows[0];
 
-    // 4. Deduct stock across all resolved recipe ingredients
+    // 4. Deduct stock across all resolved recipe ingredients / direct menu items
     for (const deduction of resolvedDeductions) {
+      if (deduction.menu_item_id) {
+        await client.query(
+          `UPDATE menu_items
+           SET stock_quantity = stock_quantity - $1
+           WHERE item_id = $2`,
+          [deduction.deduct_quantity, deduction.menu_item_id]
+        );
+        continue;
+      }
+
       await client.query(
         `UPDATE inventory
          SET stock_quantity = stock_quantity - $1
@@ -233,6 +281,7 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
                 json_build_object(
                   'order_item_id', oi.order_item_id,
                   'item_id', oi.item_id,
+                  'name', COALESCE(mi.name, 'Item #' || oi.item_id),
                   'quantity', oi.quantity,
                   'item_status', oi.item_status,
                   'custom_instructions', oi.custom_instructions,
@@ -241,6 +290,7 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
               ) AS items
        FROM orders o
        LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
+       LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
        WHERE o.master_order_id = $1
        GROUP BY o.master_order_id`,
       [createdOrder.master_order_id]
@@ -367,9 +417,27 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
   router.get('/kitchen-orders', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
   try {
     const kitchenOrders = await pool.query(
-      `SELECT * FROM orders
-       WHERE status NOT IN ('ON_HOLD', 'CANCELLED_AND_REFUNDED', 'COMPLETED', 'SERVED')
-       ORDER BY created_at ASC`
+      `SELECT o.*,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'order_item_id', oi.order_item_id,
+                    'item_id', oi.item_id,
+                    'name', COALESCE(mi.name, 'Item #' || oi.item_id),
+                    'quantity', oi.quantity,
+                    'item_status', oi.item_status,
+                    'custom_instructions', oi.custom_instructions,
+                    'modifiers', oi.modifiers
+                  )
+                ) FILTER (WHERE oi.order_item_id IS NOT NULL),
+                '[]'
+              ) AS items
+       FROM orders o
+       LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
+       LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
+       WHERE o.status NOT IN ('ON_HOLD', 'CANCELLED_AND_REFUNDED', 'COMPLETED', 'SERVED')
+       GROUP BY o.master_order_id
+       ORDER BY o.created_at ASC`
     );
 
     return res.status(200).json({

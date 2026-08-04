@@ -1,5 +1,13 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 require('dotenv').config();
+
+// pg returns NUMERIC/DECIMAL (OID 1700) and BIGINT/COUNT() (OID 20) columns as
+// strings by default to avoid precision loss beyond Number.MAX_SAFE_INTEGER.
+// Every count/sum in this app is well within safe integer range and the
+// frontend treats these as numbers (.toFixed(), arithmetic, reduce sums), so
+// parse both as numbers at the driver level rather than patching every caller.
+types.setTypeParser(1700, (val) => (val === null ? null : parseFloat(val)));
+types.setTypeParser(20, (val) => (val === null ? null : parseInt(val, 10)));
 
 const pool = new Pool({
   user: process.env.DB_USER,

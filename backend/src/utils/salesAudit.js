@@ -207,7 +207,7 @@ async function runNow(io = null) {
   return runSalesAudit(configRes.rows[0], io);
 }
 
-function scheduleSalesAudit(io) {
+function checkDueAudits(io) {
   pool.query(
     `SELECT * FROM sales_audit_config WHERE is_active = true AND next_run <= NOW() ORDER BY config_id ASC`
   ).then(async (res) => {
@@ -221,8 +221,15 @@ function scheduleSalesAudit(io) {
   }).catch((err) => {
     console.error('[SalesAudit] Schedule check error:', err.message);
   });
+}
 
-  setInterval(() => scheduleSalesAudit(io), 60 * 1000);
+// Called once at server startup. Registers exactly one recurring interval —
+// the interval callback must call checkDueAudits directly, NOT
+// scheduleSalesAudit again, or each tick would register another interval on
+// top of the existing one, doubling the timer count every 60s.
+function scheduleSalesAudit(io) {
+  checkDueAudits(io);
+  setInterval(() => checkDueAudits(io), 60 * 1000);
 }
 
 function createDefaultAuditConfig() {

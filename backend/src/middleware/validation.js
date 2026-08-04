@@ -66,6 +66,7 @@ const schemas = {
     order_type: z.enum(['IN_HOUSE', 'DRIVE_THRU', 'DELIVERY', 'ORDER_FROM_HOME', 'PICKUP', 'DINE_IN']).optional(),
     is_held: z.boolean().optional(),
     table_number: z.number().int().positive().optional(),
+    payment_method: z.enum(['card', 'cash']).optional(),
     notes: z.string().optional(),
     ordered_by_user_id: z.number().int().positive().optional(),
     idempotency_key: z.string().optional(),
