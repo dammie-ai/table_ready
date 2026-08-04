@@ -1,5 +1,4 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, typography } from '../theme';
 import MenuScreen from '../screens/MenuScreen';
@@ -29,23 +28,21 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
 
 export default function TabNavigator() {
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarStyle: styles.tabBar,
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textSecondary,
-          tabBarLabelStyle: styles.label,
-          tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
-        })}
-      >
-        <Tab.Screen name="Menu" component={MenuScreen} options={{ tabBarLabel: 'Menu' }} />
-        <Tab.Screen name="Cart" component={CartScreen} options={{ tabBarLabel: 'Cart' }} />
-        <Tab.Screen name="Orders" component={OrderHistoryScreen} options={{ tabBarLabel: 'Orders' }} />
-        <Tab.Screen name="Profile" component={SettingsScreen} options={{ tabBarLabel: 'Profile' }} />
-      </Tab.Navigator>
-    </NavigationContainer>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarLabelStyle: styles.label,
+        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
+      })}
+    >
+      <Tab.Screen name="Menu" component={MenuScreen} options={{ tabBarLabel: 'Menu' }} />
+      <Tab.Screen name="Cart" component={CartScreen} options={{ tabBarLabel: 'Cart' }} />
+      <Tab.Screen name="Orders" component={OrderHistoryScreen} options={{ tabBarLabel: 'Orders' }} />
+      <Tab.Screen name="Profile" component={SettingsScreen} options={{ tabBarLabel: 'Profile' }} />
+    </Tab.Navigator>
   );
 }
 

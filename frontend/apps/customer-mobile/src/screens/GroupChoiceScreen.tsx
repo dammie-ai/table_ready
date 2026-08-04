@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import { colors, spacing, typography } from '../theme';
+import { colors, spacing, typography, borderRadius } from '../theme';
 
 type GroupType = 'solo' | 'group';
 type SubMode = 'create' | 'join';

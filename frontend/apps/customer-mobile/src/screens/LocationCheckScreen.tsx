@@ -3,9 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator,
 import { colors, spacing, borderRadius, typography } from '../theme';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import * as SecureStore from 'expo-secure-store';
 import * as Location from 'expo-location';
-import { checkLocation, getConfig } from '@table-ready/shared';
+import { checkLocation, getConfig, getStorageItem, setStorageItem } from '@table-ready/shared';
 
 export default function LocationCheckScreen({ navigation }: any) {
   const [phase, setPhase] = useState<'loading' | 'success' | 'error' | 'manual'>('loading');
@@ -19,7 +18,7 @@ export default function LocationCheckScreen({ navigation }: any) {
 
   const checkGeofence = async () => {
     try {
-      const stored = await SecureStore.getItemAsync('tableready_within_geofence');
+      const stored = await getStorageItem('tableready_within_geofence');
       if (stored !== null) {
         setWithinGeofence(stored !== 'false');
         setPhase('success');
@@ -46,16 +45,16 @@ export default function LocationCheckScreen({ navigation }: any) {
         longitude: location.coords.longitude,
       });
 
-      if (res.is_within_geofence) {
+      if (res.allowed) {
         setWithinGeofence(true);
         setPhase('success');
-        await SecureStore.setItemAsync('tableready_within_geofence', 'true');
+        await setStorageItem('tableready_within_geofence', 'true');
         setTimeout(() => navigation.replace('GroupChoice'), 1500);
       } else {
         setWithinGeofence(false);
         setPhase('error');
         setErrorMsg('You are outside the restaurant geofence.');
-        await SecureStore.setItemAsync('tableready_within_geofence', 'false');
+        await setStorageItem('tableready_within_geofence', 'false');
       }
     } catch (err) {
       setPhase('error');
@@ -64,7 +63,7 @@ export default function LocationCheckScreen({ navigation }: any) {
   };
 
   const handleContinueAnyway = async () => {
-    await SecureStore.setItemAsync('tableready_within_geofence', 'false');
+    await setStorageItem('tableready_within_geofence', 'false');
     setWithinGeofence(false);
     setPhase('manual');
   };

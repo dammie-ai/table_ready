@@ -138,9 +138,14 @@ export default function MenuScreen({ route, navigation }: any) {
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={typography.h2}>Menu</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Combos')} style={styles.comboButton}>
-            <Text style={styles.comboButtonText}>🍽️ Combo Deals</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <TouchableOpacity onPress={() => navigation.navigate('Combos')} style={styles.comboButton}>
+              <Text style={styles.comboButtonText}>🍽️ Combo Deals</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.comboButton}>
+              <Text style={styles.comboButtonText}>🛒 Cart</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>

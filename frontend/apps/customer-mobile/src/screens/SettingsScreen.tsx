@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native'
-import * as SecureStore from 'expo-secure-store'
-import { getNotificationPreferences, updateNotificationPreferences, deleteAccount } from '@table-ready/shared'
+import { getNotificationPreferences, updateNotificationPreferences, deleteAccount, deleteStorageItem } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
 
 export default function SettingsScreen({ navigation }: any) {
@@ -40,7 +39,7 @@ export default function SettingsScreen({ navigation }: any) {
 
   const handleLogout = async () => {
     try {
-      await SecureStore.deleteItemAsync('tableready_token')
+      await deleteStorageItem('tableready_token')
     } catch {
       // ignore
     }
@@ -57,7 +56,7 @@ export default function SettingsScreen({ navigation }: any) {
         onPress: async () => {
           try {
             await deleteAccount()
-            await SecureStore.deleteItemAsync('tableready_token')
+            await deleteStorageItem('tableready_token')
             logout()
             navigation.replace('Login')
           } catch (err) {

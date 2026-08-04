@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert } from 'react-native'
-import { getMenuItemDetail, type MenuItem, type MenuItemDetailResponse } from '@table-ready/shared'
+import { getMenuItemDetail, useCartStore, type MenuItem, type MenuItemDetailResponse } from '@table-ready/shared'
 
 export default function ItemDetailScreen({ route, navigation }: any) {
   const { item } = route.params || {}
   const [detail, setDetail] = useState<MenuItemDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [added, setAdded] = useState(false)
+  const addItem = useCartStore((s) => s.addItem)
 
   useEffect(() => {
     if (item?.item_id) {
@@ -44,6 +46,9 @@ export default function ItemDetailScreen({ route, navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Text style={styles.backButtonText}>← Back</Text>
+      </TouchableOpacity>
       {item?.image_url && (
         <Image source={{ uri: item.image_url }} style={styles.image} resizeMode="cover" />
       )}
@@ -83,9 +88,15 @@ export default function ItemDetailScreen({ route, navigation }: any) {
           <TouchableOpacity
             style={[styles.primaryButton, outOfStock && styles.disabledButton]}
             disabled={outOfStock}
-            onPress={() => Alert.alert('Added to cart', `${item?.name} added to cart`)}
+            onPress={() => {
+              addItem({ menu_item_id: item.item_id, name: item.name, base_price: item.base_price })
+              setAdded(true)
+              setTimeout(() => setAdded(false), 1500)
+            }}
           >
-            <Text style={styles.primaryButtonText}>{outOfStock ? 'Out of Stock' : 'Add to Cart'}</Text>
+            <Text style={styles.primaryButtonText}>
+              {outOfStock ? 'Out of Stock' : added ? 'Added ✓' : 'Add to Cart'}
+            </Text>
           </TouchableOpacity>
           {detail?.modifiers && detail.modifiers.length > 0 && (
             <TouchableOpacity style={styles.secondaryButton} onPress={handleCustomize}>
@@ -107,6 +118,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  backButton: {
+    padding: 16,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2563eb',
   },
   image: {
     width: '100%',

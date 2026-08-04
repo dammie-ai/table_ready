@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useCartStore } from '@table-ready/shared';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { useCartStore, createOrder } from '@table-ready/shared';
 import Button from '../components/Button';
 import { colors, spacing, borderRadius, typography } from '../theme';
 
@@ -16,8 +16,13 @@ export default function CheckoutScreen({ navigation }: any) {
   const [splitBill, setSplitBill] = useState(false);
   const [splitMode, setSplitMode] = useState<'even' | 'itemized'>('even');
   const [splitCount, setSplitCount] = useState(2);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  // Group ordering isn't wired through navigation params yet — no route
+  // currently passes a group type into Checkout, so this always renders as
+  // an individual order rather than referencing an undefined variable.
+  const groupType = 'individual';
 
-  const cart = useCartStore((s) => s.cart);
+  const cart = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
 
   const subtotal = cart.reduce((sum, item) => sum + item.base_price * item.quantity, 0);
@@ -29,13 +34,41 @@ export default function CheckoutScreen({ navigation }: any) {
   const ORDER_TYPES = [
     { value: 'pickup', label: 'PICKUP', emoji: '📦' },
     { value: 'delivery', label: 'DELIVERY', emoji: '🚗' },
-    { value: 'dine-in', label: 'IN_HOUSE', emoji: '🪑' },
-    { value: 'order-from-home', label: 'FROM_HOME', emoji: '🏠' },
+    { value: 'dine-in', label: 'DINE_IN', emoji: '🪑' },
+    { value: 'order-from-home', label: 'ORDER_FROM_HOME', emoji: '🏠' },
   ];
 
-  const handlePay = () => {
-    clearCart();
-    navigation.replace('OrderTracking', { id: '1' });
+  const handlePay = async () => {
+    if (cart.length === 0 || placingOrder) return
+    setPlacingOrder(true)
+    try {
+      const orderTypeLabel = ORDER_TYPES.find((ot) => ot.value === orderType)?.label || 'PICKUP'
+      const items = cart.map((item) => ({
+        menu_item_id: item.menu_item_id!,
+        quantity: item.quantity,
+        custom_instructions: item.custom_instructions,
+      }))
+      const notes = [instructions, orderType === 'delivery' ? `Delivery address: ${address}` : null]
+        .filter(Boolean)
+        .join('\n') || undefined
+
+      const res = await createOrder({
+        order_type: orderTypeLabel as any,
+        items,
+        table_number: orderType === 'dine-in' && tableNumber ? Number(tableNumber) : undefined,
+        notes,
+        idempotency_key: `mobile-checkout-${Date.now()}`,
+        // @ts-expect-error payment_method isn't in the shared CheckoutPayload type yet, but the backend accepts it
+        payment_method: 'cash',
+      })
+
+      clearCart()
+      navigation.replace('OrderTracking', { id: String(res.order.master_order_id), orderType: orderTypeLabel })
+    } catch (err) {
+      Alert.alert('Order failed', err instanceof Error ? err.message : 'Please try again.')
+    } finally {
+      setPlacingOrder(false)
+    }
   };
 
   return (
@@ -176,7 +209,7 @@ export default function CheckoutScreen({ navigation }: any) {
         <View style={styles.summaryCard}>
           <Text style={styles.sectionLabel}>Order Summary</Text>
           {cart.map((item) => (
-            <View key={item.cartId} style={styles.summaryItem}>
+            <View key={`${item.menu_item_id}-${item.combo_id || ''}`} style={styles.summaryItem}>
               <Text style={styles.summaryItemText} numberOfLines={1}>
                 {item.quantity}× {item.name}
               </Text>
@@ -282,19 +315,16 @@ export default function CheckoutScreen({ navigation }: any) {
           <Text style={styles.sectionLabel}>Payment Method</Text>
           <View style={styles.paymentRow}>
             <View style={styles.cardBrand}>
-              <Text style={styles.cardBrandText}>VISA</Text>
+              <Text style={styles.cardBrandText}>💵</Text>
             </View>
             <View style={styles.cardDetails}>
-              <Text style={styles.cardNumber}>Visa ending in 4242</Text>
-              <Text style={styles.cardExpiry}>Exp 09/27</Text>
+              <Text style={styles.cardNumber}>Cash</Text>
+              <Text style={styles.cardExpiry}>Pay when your order is ready</Text>
             </View>
-            <TouchableOpacity>
-              <Text style={styles.changeText}>Change</Text>
-            </TouchableOpacity>
           </View>
           <View style={styles.secureRow}>
             <Text style={styles.secureIcon}>🔒</Text>
-            <Text style={styles.secureText}>Secured by Stripe. An idempotency key prevents duplicate charges.</Text>
+            <Text style={styles.secureText}>An idempotency key prevents duplicate orders. Card payment is coming soon.</Text>
           </View>
         </View>
 
@@ -302,10 +332,18 @@ export default function CheckoutScreen({ navigation }: any) {
       </ScrollView>
 
       <View style={styles.payButtonContainer}>
-        <TouchableOpacity style={styles.payButton} onPress={handlePay}>
-          <Text style={styles.payButtonText}>
-            Pay Now — {splitBill ? `$${splitAmount.toFixed(2)} each` : `$${grandTotal.toFixed(2)}`}
-          </Text>
+        <TouchableOpacity
+          style={[styles.payButton, placingOrder && { opacity: 0.6 }]}
+          onPress={handlePay}
+          disabled={placingOrder || cart.length === 0}
+        >
+          {placingOrder ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.payButtonText}>
+              Place Order — {splitBill ? `$${splitAmount.toFixed(2)} each` : `$${grandTotal.toFixed(2)}`}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

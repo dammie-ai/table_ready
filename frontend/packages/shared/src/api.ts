@@ -161,7 +161,7 @@ export async function verifyTableCode(payload: { table_code: string }) {
 }
 
 export async function checkLocation(payload: { latitude: number; longitude: number }) {
-  return request<{ success: boolean; is_within_geofence: boolean }>('/tables/check-location', { method: 'POST', body: JSON.stringify(payload) })
+  return request<{ success: boolean; allowed: boolean; distance_miles: number; radius_miles: number; message: string }>('/tables/check-location', { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export async function verifyQRCode(payload: { qr_code: string }) {
