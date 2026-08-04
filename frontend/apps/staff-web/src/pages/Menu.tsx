@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getSocket } from '../lib/socket'
 import { useCartStore } from '../stores/cartStore'
 import { getMenuItems, type MenuItem } from '../lib/menuApi'
-import { useTheme } from '../hooks/useTheme'
+import { useTheme, themeBackgroundStyle, themeRadiusPx } from '../hooks/useTheme'
 
 export default function Menu() {
   const [items, setItems] = useState<MenuItem[]>([])
@@ -84,11 +84,23 @@ export default function Menu() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 pb-24">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold" style={{ color: theme?.text_color }}>
-          {theme?.restaurant_name || 'Menu'}
-        </h1>
+    <div className="min-h-screen" style={themeBackgroundStyle(theme)}>
+    <div className="max-w-4xl mx-auto p-4 pb-24" style={{ fontFamily: theme?.font_family }}>
+      {theme?.announcement_banner && (
+        <div
+          className="text-center text-sm font-medium py-2 px-4 rounded-lg mb-4 text-white"
+          style={{ backgroundColor: theme?.accent_color }}
+        >
+          {theme.announcement_banner}
+        </div>
+      )}
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-3" style={{ flexDirection: theme?.logo_position === 'center' ? 'column' : 'row' }}>
+          {theme?.logo_url && <img src={theme.logo_url} alt="" className="h-10 w-10 object-contain" style={{ borderRadius: themeRadiusPx(theme) }} />}
+          <h1 className="text-3xl font-bold" style={{ color: theme?.text_color }}>
+            {theme?.restaurant_name || 'Menu'}
+          </h1>
+        </div>
         <div className="flex items-center gap-3">
           {groupCode && (
             <button
@@ -137,9 +149,10 @@ export default function Menu() {
           return (
             <div
               key={item.item_id}
-              className={`border rounded-lg overflow-hidden ${
+              className={`border overflow-hidden ${
                 item.is_trending ? 'border-orange-400' : 'border-gray-200'
               } ${outOfStock ? 'opacity-60 bg-gray-50' : 'bg-white'}`}
+              style={{ borderRadius: themeRadiusPx(theme) }}
             >
               {item.image_url && (
                 <div className="relative h-48 bg-gray-100">
@@ -162,7 +175,7 @@ export default function Menu() {
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-lg">{item.name}</h3>
-                 {item.is_trending && (
+                 {item.is_trending && theme?.show_trending_badges && (
                       <span className="text-xs text-white px-2 py-1 rounded" style={{ backgroundColor: theme?.primary_color }}>
                         Trending
                       </span>
@@ -175,14 +188,15 @@ export default function Menu() {
 
                  <div className="flex items-center justify-between mt-3">
                    <span className="text-xl font-bold" style={{ color: theme?.primary_color }}>
-                     ${item.base_price.toFixed(2)}
+                     {theme?.currency_symbol || '$'}{item.base_price.toFixed(2)}
                    </span>
                    <button
                      onClick={() => handleAddToCart(item)}
                      disabled={outOfStock}
-                     className="text-white px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                     style={{ 
-                       backgroundColor: addedItem === item.item_id ? '#10b981' : theme?.primary_color 
+                     className="text-white px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                     style={{
+                       borderRadius: themeRadiusPx(theme),
+                       backgroundColor: addedItem === item.item_id ? '#10b981' : theme?.primary_color,
                      }}
                    >
                      {outOfStock ? 'Unavailable' : addedItem === item.item_id ? 'Added!' : 'Add'}
@@ -197,6 +211,7 @@ export default function Menu() {
       {filtered.length === 0 && (
         <p className="text-center text-gray-500 mt-8">No items found in this category.</p>
       )}
+    </div>
     </div>
   )
 }

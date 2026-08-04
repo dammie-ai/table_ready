@@ -27,21 +27,12 @@ export default function Login() {
         username,
         password,
       })
+      // /staff already picks the right dashboard from primaryRole (which
+      // setAuth derives with manager/admin taking priority over kitchen/
+      // waiter/delivery) — no need to duplicate that priority logic here,
+      // and doing so previously sent multi-role managers to Kitchen first.
       setAuth(res.token, res.user)
-      
-      // Navigate based on role
-      const roles = res.user.roles
-      if (roles.includes('kitchen')) {
-        navigate('/kitchen')
-      } else if (roles.includes('waiter')) {
-        navigate('/waiter')
-      } else if (roles.includes('delivery')) {
-        navigate('/delivery')
-      } else if (roles.includes('manager') || roles.includes('admin') || roles.includes('assistant_manager')) {
-        navigate('/staff')
-      } else {
-        navigate('/staff')
-      }
+      navigate('/staff')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -58,17 +49,7 @@ export default function Login() {
         password: pass,
       })
       setAuth(res.token, res.user)
-      
-      const roles = res.user.roles
-      if (roles.includes('kitchen')) {
-        navigate('/kitchen')
-      } else if (roles.includes('waiter')) {
-        navigate('/waiter')
-      } else if (roles.includes('delivery')) {
-        navigate('/delivery')
-      } else {
-        navigate('/staff')
-      }
+      navigate('/staff')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {

@@ -1,28 +1,29 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiClient } from '../lib/api'
 
 export default function TablePin() {
-  const [pin, setPin] = useState('')
-  const [tableNumber, setTableNumber] = useState('')
+  const [searchParams] = useSearchParams()
+  const [pin, setPin] = useState(() => searchParams.get('code') || '')
+  const [tableNumber, setTableNumber] = useState(() => searchParams.get('table') || '')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [autoVerifying, setAutoVerifying] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const verify = useCallback(async (tableNum: string, code: string) => {
     setLoading(true)
     setError('')
 
     try {
       const res = await apiClient.post<{ success: boolean; table_id: number; message: string }>('/tables/verify-code', {
-        table_number: Number(tableNumber),
-        code: pin,
+        table_number: Number(tableNum),
+        code,
       })
 
       if (res.success) {
         localStorage.setItem('tableready_table_id', String(res.table_id))
-        localStorage.setItem('tableready_table_number', tableNumber)
+        localStorage.setItem('tableready_table_number', tableNum)
         navigate('/menu?mode=dine-in')
       } else {
         setError(res.message || 'Invalid PIN')
@@ -32,6 +33,36 @@ export default function TablePin() {
     } finally {
       setLoading(false)
     }
+  }, [navigate])
+
+  // A table's QR code just encodes this page's URL with ?table=&code= already
+  // filled in — scanning it (with any camera app, no in-app scanner needed)
+  // skips manual PIN entry entirely.
+  useEffect(() => {
+    const qrTable = searchParams.get('table')
+    const qrCode = searchParams.get('code')
+    if (qrTable && qrCode && qrCode.length === 4) {
+      setAutoVerifying(true)
+      verify(qrTable, qrCode)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await verify(tableNumber, pin)
+  }
+
+  if (autoVerifying && !error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+        <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center">
+          <div className="w-12 h-12 mx-auto mb-4 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <h1 className="text-xl font-bold text-gray-900 mb-1">Table {tableNumber} scanned</h1>
+          <p className="text-sm text-gray-600">Seating you now...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

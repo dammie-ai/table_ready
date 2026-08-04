@@ -20,16 +20,23 @@ interface AuthState {
   user: User | null
   primaryRole: User['roles'][number] | null
   setAuth: (token: string, user: User) => void
+  switchRole: (role: string) => void
   logout: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
       user: null,
       primaryRole: null,
       setAuth: (token, user) => set({ token, user, primaryRole: getPrimaryRole(user.roles) }),
+      switchRole: (role) => {
+        const { user } = get()
+        if (user && user.roles.includes(role)) {
+          set({ primaryRole: role })
+        }
+      },
       logout: () => set({ token: null, user: null, primaryRole: null }),
     }),
     {

@@ -12,13 +12,25 @@ type CheckoutStep = 'details' | 'location' | 'payment'
 
 const stripePromise = loadStripe((import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || '')
 
+// Read lazily inside useState initializers (not as a module-level const) —
+// every page is statically imported up front in App.tsx, so a module-level
+// read would run once at app boot, before the customer has ever verified a
+// table PIN, and stay stale for the whole session.
+const getVerifiedTableNumber = () =>
+  typeof window !== 'undefined' ? localStorage.getItem('tableready_table_number') || '' : ''
+
 export default function Checkout() {
   const [clientSecret, setClientSecret] = useState('')
-  const [orderType, setOrderType] = useState<'PICKUP' | 'DELIVERY' | 'DINE_IN'>('PICKUP')
-  const [tableNumber, setTableNumber] = useState('')
+  const [verifiedTableNumber] = useState(getVerifiedTableNumber)
+  const [orderType, setOrderType] = useState<'PICKUP' | 'DELIVERY' | 'DINE_IN'>(() =>
+    getVerifiedTableNumber() ? 'DINE_IN' : 'PICKUP'
+  )
+  const [tableNumber, setTableNumber] = useState(getVerifiedTableNumber)
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [specialInstructions, setSpecialInstructions] = useState('')
   const [tip, setTip] = useState(0)
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card')
+  const [placingCashOrder, setPlacingCashOrder] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState<CheckoutStep>('details')
   const items = useCartStore((s) => s.items)
@@ -32,10 +44,15 @@ export default function Checkout() {
   const finalTotal = subtotal + tax + tip
 
   useEffect(() => {
+    // Guards against landing on /checkout directly with nothing in the cart
+    // (e.g. a stale URL or back-button). Intentionally mount-only: it must
+    // NOT re-fire when handleSuccess empties the cart after a successful
+    // purchase, which would hijack the post-purchase redirect back to /cart.
     if (items.length === 0) {
       navigate('/cart')
     }
-  }, [items, navigate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const needsLocationCheck = orderType === 'DELIVERY' || orderType === 'DINE_IN'
 
@@ -55,18 +72,69 @@ export default function Checkout() {
   }
 
   const handleSuccess = (createdOrderId?: number) => {
-    clearCart()
+    // Navigate away first — clearing the cart while still on /checkout would
+    // trigger the empty-cart redirect effect above and hijack this navigation.
     if (createdOrderId) {
       navigate(`/order-tracking/${createdOrderId}`)
     } else {
       navigate('/order-success')
     }
+    clearCart()
+  }
+
+  const buildOrderItems = () =>
+    items.flatMap((i) => {
+      if (i.combo_id && i.combo_main) {
+        const comboItems = [
+          { menu_item_id: i.combo_main.menu_item_id, quantity: i.quantity, custom_instructions: i.custom_instructions },
+        ]
+        if (i.combo_sides) {
+          i.combo_sides.forEach((side) => {
+            comboItems.push({ menu_item_id: side.menu_item_id, quantity: i.quantity, custom_instructions: i.custom_instructions })
+          })
+        }
+        return comboItems
+      }
+      return [{ menu_item_id: i.menu_item_id, quantity: i.quantity, custom_instructions: i.custom_instructions }]
+    })
+
+  const handleCashOrder = async () => {
+    setError('')
+    setPlacingCashOrder(true)
+    try {
+      const orderRes = await apiClient.post<{ order: { master_order_id: number } }>('/orders', {
+        order_type: orderType,
+        table_number: tableNumber ? Number(tableNumber) : undefined,
+        items: buildOrderItems(),
+        notes: [specialInstructions, deliveryAddress ? `Delivery: ${deliveryAddress}` : null].filter(Boolean).join('\n') || undefined,
+        tip_value: tip || undefined,
+        payment_method: 'cash',
+        idempotency_key: `checkout-cash-${Date.now()}`,
+      })
+      handleSuccess(orderRes.order.master_order_id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to place order')
+    } finally {
+      setPlacingCashOrder(false)
+    }
+  }
+
+  const proceedToPayment = () => {
+    if (paymentMethod === 'cash') {
+      handleCashOrder()
+    } else {
+      handleCreateIntent()
+    }
   }
 
   const handleLocationVerified = (locationValid: boolean) => {
     if (locationValid) {
-      setStep('payment')
-      handleCreateIntent()
+      if (paymentMethod === 'cash') {
+        handleCashOrder()
+      } else {
+        setStep('payment')
+        handleCreateIntent()
+      }
     }
   }
 
@@ -109,14 +177,20 @@ export default function Checkout() {
           {orderType === 'DINE_IN' && (
             <div>
               <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Table Number</h2>
-              <input
-                type="number"
-                value={tableNumber}
-                onChange={(e) => setTableNumber(e.target.value)}
-                placeholder="Enter table number"
-                className="w-full border rounded-lg px-4 py-2"
-                required
-              />
+              {verifiedTableNumber ? (
+                <div className="w-full border rounded-lg px-4 py-2 bg-green-50 border-green-200 text-green-800 text-sm">
+                  Table {verifiedTableNumber} — confirmed via your table PIN
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  value={tableNumber}
+                  onChange={(e) => setTableNumber(e.target.value)}
+                  placeholder="Enter table number"
+                  className="w-full border rounded-lg px-4 py-2"
+                  required
+                />
+              )}
             </div>
           )}
 
@@ -143,6 +217,29 @@ export default function Checkout() {
               className="w-full border rounded-lg px-4 py-2"
               rows={3}
             />
+          </div>
+
+          <div>
+            <h2 className="text-xl font-semibold mb-3" style={{ color: theme?.text_color }}>Payment Method</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {(['card', 'cash'] as const).map((method) => (
+                <button
+                  key={method}
+                  onClick={() => setPaymentMethod(method)}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    paymentMethod === method ? 'border-2' : 'border border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={paymentMethod === method ? { borderColor: theme?.primary_color, backgroundColor: theme?.primary_color + '15' } : undefined}
+                >
+                  <span style={{ color: paymentMethod === method ? theme?.primary_color : theme?.text_color }}>
+                    {method === 'card' ? 'Card' : 'Cash'}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {paymentMethod === 'cash' && (
+              <p className="text-sm text-[#6b7280] mt-2">You'll pay in person when your order is ready.</p>
+            )}
           </div>
 
           <div>
@@ -184,18 +281,27 @@ export default function Checkout() {
               <span className="text-2xl font-bold" style={{ color: theme?.primary_color }}>${finalTotal.toFixed(2)}</span>
             </div>
 
+            {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+
             <button
               onClick={() => {
                 if (needsLocationCheck) {
                   setStep('location')
                 } else {
-                  handleCreateIntent()
+                  proceedToPayment()
                 }
               }}
-              className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90"
+              disabled={placingCashOrder}
+              className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
               style={{ backgroundColor: theme?.primary_color }}
             >
-              {needsLocationCheck ? 'Continue to Location Check' : 'Continue to Payment'}
+              {placingCashOrder
+                ? 'Placing order...'
+                : needsLocationCheck
+                ? 'Continue to Location Check'
+                : paymentMethod === 'cash'
+                ? 'Place Order — Pay with Cash'
+                : 'Continue to Payment'}
             </button>
           </div>
         </div>
@@ -215,6 +321,7 @@ export default function Checkout() {
       {clientSecret && (
         <Elements options={options} stripe={stripePromise}>
           <CheckoutForm
+            clientSecret={clientSecret}
             orderType={orderType}
             tableNumber={tableNumber}
             deliveryAddress={deliveryAddress}

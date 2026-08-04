@@ -55,14 +55,16 @@ export default function OrderTracking() {
     const socket = getSocket()
     socket.emit('join_order', id)
 
-    const handleUpdate = (data: Order) => {
-      setOrder((prev) => (prev ? { ...prev, ...data } : prev))
+    const handleUpdate = (data: { orderId: number; status: string; progressPercentage: number; updatedAt: string }) => {
+      setOrder((prev) =>
+        prev ? { ...prev, status: data.status, progress_percentage: data.progressPercentage } : prev
+      )
     }
 
-    socket.on('order_updated', handleUpdate)
+    socket.on('order_status_updated', handleUpdate)
 
     return () => {
-      socket.off('order_updated', handleUpdate)
+      socket.off('order_status_updated', handleUpdate)
     }
   }, [id])
 

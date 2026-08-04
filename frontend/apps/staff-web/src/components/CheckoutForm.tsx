@@ -4,6 +4,7 @@ import { apiClient } from '../lib/api'
 import { useCartStore } from '../stores/cartStore'
 
 interface CheckoutFormProps {
+  clientSecret: string
   orderType: string
   tableNumber: string
   deliveryAddress: string
@@ -13,6 +14,7 @@ interface CheckoutFormProps {
 }
 
 export default function CheckoutForm({
+  clientSecret,
   orderType,
   tableNumber,
   deliveryAddress,
@@ -36,11 +38,16 @@ export default function CheckoutForm({
       return
     }
 
+    const cardElement = elements.getElement(CardElement)
+    if (!cardElement) {
+      setError('Card field not ready')
+      setProcessing(false)
+      return
+    }
+
     try {
-      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: { return_url: window.location.href },
-        redirect: 'if_required',
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: cardElement },
       })
 
       if (stripeError) {
@@ -80,7 +87,7 @@ export default function CheckoutForm({
           ]
         })
 
-        const orderRes = await apiClient.post<{ master_order_id: number }>('/orders', {
+        const orderRes = await apiClient.post<{ order: { master_order_id: number } }>('/orders', {
           order_type: orderType,
           table_number: tableNumber ? Number(tableNumber) : undefined,
           items: orderItems,
@@ -88,14 +95,14 @@ export default function CheckoutForm({
           tip_value: tip || undefined,
           idempotency_key: `checkout-${Date.now()}`,
         })
+        const createdOrderId = orderRes.order.master_order_id
 
         await apiClient.post('/payments/confirm', {
           paymentIntentId: paymentIntent.id,
-          orderId: orderRes.master_order_id,
+          orderId: createdOrderId,
         })
 
-        useCartStore.getState().clearCart()
-        onSuccess(orderRes.master_order_id)
+        onSuccess(createdOrderId)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Checkout failed')

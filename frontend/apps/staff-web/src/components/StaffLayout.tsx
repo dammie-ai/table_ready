@@ -2,23 +2,52 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { useTheme } from '../hooks/useTheme'
-import { LayoutDashboard, UtensilsCrossed, Users, Calendar, ClipboardList, Settings, BarChart3, Tag, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, UtensilsCrossed, Users, Calendar, ClipboardList, Settings, BarChart3, Tag, LogOut, Menu, X, ChevronDown, Check } from 'lucide-react'
 
 interface StaffLayoutProps {
   children: React.ReactNode
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  manager: 'Manager',
+  admin: 'Admin',
+  assistant_manager: 'Assistant Manager',
+  kitchen: 'Kitchen',
+  waiter: 'Waiter',
+  delivery: 'Delivery',
+  other: 'Staff',
+}
+
+const ROLE_HOME: Record<string, string> = {
+  manager: '/staff',
+  admin: '/staff',
+  assistant_manager: '/staff',
+  kitchen: '/kitchen',
+  waiter: '/waiter',
+  delivery: '/delivery',
+  other: '/staff',
+}
+
 export default function StaffLayout({ children }: StaffLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
   const primaryRole = useAuthStore((s) => s.primaryRole)
+  const user = useAuthStore((s) => s.user)
+  const switchRole = useAuthStore((s) => s.switchRole)
   const { theme } = useTheme()
 
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const handleSwitchRole = (role: string) => {
+    switchRole(role)
+    setRoleMenuOpen(false)
+    navigate(ROLE_HOME[role] || '/staff')
   }
 
   const isActive = (path: string) => location.pathname === path
@@ -89,6 +118,34 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {user && user.roles.length > 1 && (
+          <div className="relative px-3 pt-3">
+            <button
+              onClick={() => setRoleMenuOpen((v) => !v)}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/8 text-sm font-medium text-[#f1f5f9] hover:bg-white/8 transition-colors"
+            >
+              <span>Viewing as: <span className="text-[#f97316]">{ROLE_LABELS[primaryRole || ''] || primaryRole}</span></span>
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${roleMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {roleMenuOpen && (
+              <div className="absolute left-3 right-3 mt-1 bg-[#1c1c27] border border-white/8 rounded-xl overflow-hidden z-10 shadow-xl">
+                {user.roles.map((role) => (
+                  <button
+                    key={role}
+                    onClick={() => handleSwitchRole(role)}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm text-left hover:bg-white/5 transition-colors"
+                  >
+                    <span className={role === primaryRole ? 'text-[#f97316] font-medium' : 'text-[#f1f5f9]'}>
+                      {ROLE_LABELS[role] || role}
+                    </span>
+                    {role === primaryRole && <Check className="w-4 h-4 text-[#f97316]" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <nav className="p-3 space-y-1">
           {navItems.map((item) => {
