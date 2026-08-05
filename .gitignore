@@ -3,6 +3,7 @@ node_modules/
 backups/
 *.sql
 *.sql.gz
+!backend/src/config/init.sql
 frontend/apps/*/node_modules/
 frontend/packages/*/node_modules/
 frontend/apps/customer-mobile/.expo/
