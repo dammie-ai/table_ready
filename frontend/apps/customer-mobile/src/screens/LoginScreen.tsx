@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { colors, spacing, borderRadius, typography } from '../theme';

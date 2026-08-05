@@ -4,7 +4,6 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import { colors, spacing, borderRadius, typography } from '../theme';
-import * as SecureStore from 'expo-secure-store';
 
 export default function WelcomeScreen({ navigation }: any) {
   const [showJoinCode, setShowJoinCode] = useState(false);
@@ -66,9 +65,11 @@ export default function WelcomeScreen({ navigation }: any) {
 
       <View style={styles.secondaryRow}>
         <Button title="🔑 Join Table" onPress={() => setShowJoinCode(true)} variant="tertiary" style={styles.secondaryButton} />
-        <Button title="📋 Waitlist" onPress={() => {}} variant="tertiary" style={styles.secondaryButton} />
-        <Button title="📅 Reserve" onPress={() => {}} variant="tertiary" style={styles.secondaryButton} />
+        <Button title="📋 Waitlist" onPress={() => navigation.navigate('Waitlist')} variant="tertiary" style={styles.secondaryButton} />
+        <Button title="📅 Reserve" onPress={() => navigation.navigate('Reservations')} variant="tertiary" style={styles.secondaryButton} />
       </View>
+
+      <Button title="Sign In / My Account" onPress={() => navigation.navigate('Login')} variant="tertiary" style={styles.button} />
 
       <Modal visible={showJoinCode} transparent animationType="fade">
         <TouchableOpacity

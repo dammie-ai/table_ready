@@ -8,8 +8,7 @@ export default function TableCartScreen({ navigation }: any) {
   const [roomCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
   const [joinCode, setJoinCode] = useState('');
   const [mode, setMode] = useState<'create' | 'join'>('create');
-  const cart = useCartStore((s) => s.cart);
-  const updateItem = useCartStore((s) => s.updateItem);
+  const cart = useCartStore((s) => s.items);
 
   const handleJoin = () => {
     if (joinCode.length < 4) return;

@@ -22,6 +22,7 @@ export default function LocationCheckScreen({ navigation }: any) {
       if (stored !== null) {
         setWithinGeofence(stored !== 'false');
         setPhase('success');
+        setTimeout(() => navigation.replace('GroupChoice'), 1500);
         return;
       }
     } catch {

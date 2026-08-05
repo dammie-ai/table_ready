@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Alert, Platform } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { createReservation, getReservations, cancelReservation } from '@table-ready/shared'

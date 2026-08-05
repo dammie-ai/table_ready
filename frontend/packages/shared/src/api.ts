@@ -116,6 +116,10 @@ export async function releaseOrderHold(id: number) {
   return request<{ success: boolean; message: string }>(`/orders/${id}/release-hold`, { method: 'POST', body: '{}' })
 }
 
+export async function cancelOrder(id: number) {
+  return request<{ success: boolean; message: string; order: Order }>(`/orders/${id}/cancel`, { method: 'PATCH', body: '{}' })
+}
+
 export async function customerArrived(id: number, payload: { vehicle?: string; curbside_lane?: string }) {
   return request<{ success: boolean; message: string }>(`/orders/${id}/customer-arrived`, { method: 'POST', body: JSON.stringify(payload) })
 }

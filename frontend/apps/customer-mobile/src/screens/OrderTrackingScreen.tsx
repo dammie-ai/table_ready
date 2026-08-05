@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import Button from '../components/Button';
 import { colors, spacing, borderRadius, typography } from '../theme';
+import { getOrder, releaseOrderHold, cancelOrder, createServiceRequest, getSocket, type Order } from '@table-ready/shared';
 
 const STEPS = [
   { id: 'RECEIVED', label: 'Order Received', sublabel: 'We got your order!' },
@@ -15,38 +16,130 @@ const STEPS = [
 ];
 
 const SERVICE_TYPES = [
-  { emoji: '💧', label: 'Water' },
-  { emoji: '🧻', label: 'Napkins' },
-  { emoji: '🧾', label: 'Bill' },
-  { emoji: '🆘', label: 'Help' },
+  { emoji: '💧', label: 'Water', type: 'refill' },
+  { emoji: '🧻', label: 'Napkins', type: 'other' },
+  { emoji: '🧾', label: 'Bill', type: 'bill_request' },
+  { emoji: '🆘', label: 'Help', type: 'call_server' },
 ];
 
 export default function OrderTrackingScreen({ navigation, route }: any) {
-  const [currentStep, setCurrentStep] = useState(2);
-  const [isOnHold, setIsOnHold] = useState(true);
+  const orderId = route.params?.id;
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [releasing, setReleasing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [isCancelled, setIsCancelled] = useState(false);
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
   const [showServiceToast, setShowServiceToast] = useState('');
+  const [toastError, setToastError] = useState('');
 
   const orderType = route.params?.orderType || 'dine-in';
   const isPickup = orderType === 'pickup';
+
+  const currentStep = order ? Math.max(STEPS.findIndex((s) => s.id === order.status), 0) : 0;
+  const isOnHold = order?.status === 'ON_HOLD';
+  const isCancelled = order?.status === 'CANCELLED' || order?.status === 'CANCELLED_AND_REFUNDED';
   const isAtPickupStep = STEPS[currentStep]?.id === 'READY_FOR_PICKUP';
-  const PICKUP_CODE = 'TR-882';
 
-  const handleRelease = () => {
-    setIsOnHold(false);
-    setShowPopup(false);
-    if (currentStep < STEPS.length - 1) {
-      setTimeout(() => setCurrentStep((s) => s + 1), 500);
+  useEffect(() => {
+    if (!orderId) {
+      setLoadError('No order ID provided.');
+      setLoading(false);
+      return;
     }
-  };
 
-  const handleServiceRequest = (label: string) => {
+    let cancelled = false;
+
+    getOrder(Number(orderId))
+      .then((res) => {
+        if (!cancelled) setOrder(res.order);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load order');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    const socket = getSocket();
+    socket.emit('join_order', orderId);
+
+    const handleStatusUpdate = (data: { status: string; progressPercentage: number }) => {
+      setOrder((prev) => (prev ? { ...prev, status: data.status, progress_percentage: data.progressPercentage } : prev));
+    };
+    socket.on('order_status_updated', handleStatusUpdate);
+
+    return () => {
+      cancelled = true;
+      socket.off('order_status_updated', handleStatusUpdate);
+    };
+  }, [orderId]);
+
+  const handleRelease = useCallback(async () => {
+    if (!orderId) return;
+    setReleasing(true);
+    try {
+      await releaseOrderHold(Number(orderId));
+      setShowPopup(false);
+      const res = await getOrder(Number(orderId));
+      setOrder(res.order);
+    } catch (err) {
+      setToastError(err instanceof Error ? err.message : 'Failed to release order');
+      setTimeout(() => setToastError(''), 3000);
+    } finally {
+      setReleasing(false);
+    }
+  }, [orderId]);
+
+  const handleCancel = useCallback(async () => {
+    if (!orderId) return;
+    setCancelling(true);
+    try {
+      const res = await cancelOrder(Number(orderId));
+      setOrder(res.order);
+    } catch (err) {
+      setToastError(err instanceof Error ? err.message : 'This order can no longer be cancelled');
+      setTimeout(() => setToastError(''), 3000);
+    } finally {
+      setCancelling(false);
+    }
+  }, [orderId]);
+
+  const handleServiceRequest = useCallback(async (label: string, type: string) => {
     setSentRequests((prev) => new Set(prev).add(label));
-    setShowServiceToast(label);
-    setTimeout(() => setShowServiceToast(''), 2000);
-  };
+    try {
+      await createServiceRequest({ type, notes: order ? `Order #${order.master_order_id}` : undefined });
+      setShowServiceToast(label);
+      setTimeout(() => setShowServiceToast(''), 2000);
+    } catch (err) {
+      setSentRequests((prev) => {
+        const next = new Set(prev);
+        next.delete(label);
+        return next;
+      });
+      setToastError(err instanceof Error ? err.message : 'Failed to send request');
+      setTimeout(() => setToastError(''), 3000);
+    }
+  }, [order]);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.message}>Loading your order...</Text>
+      </View>
+    );
+  }
+
+  if (loadError || !order) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.message}>{loadError || 'Order not found.'}</Text>
+        <Button title="Back to Menu" onPress={() => navigation.navigate('Menu')} variant="secondary" style={{ marginTop: spacing.lg }} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -55,10 +148,10 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={typography.h2}>Order #1</Text>
+          <Text style={typography.h2}>Order #{order.master_order_id}</Text>
           <Text style={styles.headerSub}>
             {isCancelled
-              ? '❌ Cancelled by restaurant'
+              ? 'Cancelled'
               : isOnHold
                 ? '⏸ On Hold — awaiting release'
                 : STEPS[currentStep]?.sublabel}
@@ -84,7 +177,11 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
             <View style={styles.cancelledContent}>
               <Text style={styles.cancelledTitle}>Order Cancelled</Text>
               <Text style={styles.cancelledText}>
-                This order was cancelled by the restaurant: "Item no longer available." A refund will be processed within 3–5 business days.
+                {order.payment_status === 'Refunded'
+                  ? 'A refund has been processed.'
+                  : order.payment_status === 'Paid'
+                    ? 'A refund will be processed within 3–5 business days.'
+                    : 'No payment was collected for this order.'}
               </Text>
             </View>
           </View>
@@ -102,25 +199,11 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           </View>
         )}
 
-        {isPickup && isAtPickupStep && !isCancelled && (
+        {isPickup && isAtPickupStep && !isCancelled && order.pickup_code && (
           <View style={styles.pickupCodeBox}>
             <Text style={styles.pickupLabel}>Your Pickup Code</Text>
-            <Text style={styles.pickupCode}>{PICKUP_CODE}</Text>
+            <Text style={styles.pickupCode}>{order.pickup_code}</Text>
             <Text style={styles.pickupHint}>Show this at the counter</Text>
-          </View>
-        )}
-
-        {!isCancelled && (
-          <View style={styles.estimateCard}>
-            <View style={styles.estimateIcon}>
-              <Text style={styles.estimateEmoji}>⏱️</Text>
-            </View>
-            <View>
-              <Text style={styles.estimateLabel}>Estimated time</Text>
-              <Text style={styles.estimateValue}>
-                {isOnHold ? '—' : currentStep >= STEPS.length - 2 ? 'Done!' : '18–22 min'}
-              </Text>
-            </View>
           </View>
         )}
 
@@ -179,21 +262,13 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           </View>
         )}
 
-        {!isOnHold && !isCancelled && currentStep < STEPS.length - 1 && (
+        {!isCancelled && ['RECEIVED', 'ON_HOLD'].includes(order.status) && (
           <TouchableOpacity
-            style={styles.demoButton}
-            onPress={() => setCurrentStep((s) => s + 1)}
+            style={[styles.cancelButton, cancelling && { opacity: 0.5 }]}
+            onPress={handleCancel}
+            disabled={cancelling}
           >
-            <Text style={styles.demoButtonText}>Next Step →</Text>
-          </TouchableOpacity>
-        )}
-
-        {!isCancelled && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => setIsCancelled(true)}
-          >
-            <Text style={styles.cancelButtonText}>Cancel Order</Text>
+            <Text style={styles.cancelButtonText}>{cancelling ? 'Cancelling...' : 'Cancel Order'}</Text>
           </TouchableOpacity>
         )}
 
@@ -206,7 +281,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
                 return (
                   <TouchableOpacity
                     key={s.label}
-                    onPress={() => !sent && handleServiceRequest(s.label)}
+                    onPress={() => !sent && handleServiceRequest(s.label, s.type)}
                     style={[
                       styles.serviceButton,
                       sent && styles.serviceButtonSent,
@@ -228,24 +303,12 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           </View>
         )}
 
-        {!isCancelled && currentStep >= STEPS.length - 2 && (
-          <TouchableOpacity style={styles.receiptButton}>
-            <Text style={styles.receiptButtonText}>📄 View Receipt</Text>
-          </TouchableOpacity>
-        )}
-
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
 
       {isOnHold && !isCancelled && (
         <View style={styles.bottomAction}>
           <Button title="🚀 Release to Kitchen" onPress={() => setShowPopup(true)} variant="primary" style={styles.bottomButton} />
-        </View>
-      )}
-
-      {isPickup && isAtPickupStep && !isCancelled && (
-        <View style={styles.bottomAction}>
-          <Button title="✅ I've Arrived" onPress={() => setCurrentStep((s) => s + 1)} variant="secondary" style={styles.bottomButton} />
         </View>
       )}
 
@@ -260,7 +323,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
               Confirm you're at the restaurant and we'll send your order straight to the kitchen.
             </Text>
             <View style={styles.modalButtons}>
-              <Button title="Yes, Release Order" onPress={handleRelease} variant="primary" style={styles.modalButton} />
+              <Button title={releasing ? 'Releasing...' : 'Yes, Release Order'} onPress={handleRelease} variant="primary" style={styles.modalButton} />
               <Button title="Cancel" onPress={() => setShowPopup(false)} variant="secondary" style={styles.modalButton} />
             </View>
           </View>
@@ -272,6 +335,12 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           <Text style={styles.toastText}>✅ {showServiceToast} request sent</Text>
         </View>
       )}
+
+      {toastError && (
+        <View style={[styles.toast, { backgroundColor: colors.error }]}>
+          <Text style={styles.toastText}>{toastError}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -280,6 +349,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xxl,
+    backgroundColor: colors.background,
+  },
+  message: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.md,
   },
   header: {
     flexDirection: 'row',
@@ -410,36 +492,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.xs,
   },
-  estimateCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  estimateIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#eff6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  estimateEmoji: {
-    fontSize: 24,
-  },
-  estimateLabel: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  estimateValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
   progressCard: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
@@ -506,17 +558,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#92400e',
   },
-  demoButton: {
-    backgroundColor: '#f3f4f6',
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-  },
-  demoButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
   cancelButton: {
     backgroundColor: '#fef2f2',
     paddingVertical: spacing.md,
@@ -573,19 +614,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.success,
-  },
-  receiptButton: {
-    backgroundColor: '#eff6ff',
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  receiptButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
   },
   bottomAction: {
     position: 'absolute',

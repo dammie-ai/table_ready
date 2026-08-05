@@ -18,6 +18,7 @@ export {
   getOrder,
   getOrderReceipt,
   releaseOrderHold,
+  cancelOrder,
   customerArrived,
   createPaymentIntent,
   confirmPayment,
