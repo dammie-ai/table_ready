@@ -50,7 +50,7 @@ services:
     name: tableready-staff-web
     runtime: static
     branch: main
-    buildCommand: npm install --legacy-peer-deps && npm run build --workspace=frontend/apps/staff-web
+    buildCommand: npm install --legacy-peer-deps && cd frontend/apps/staff-web && npm run build
     staticPublishPath: frontend/apps/staff-web/dist
     envVars:
       - key: VITE_STRIPE_PUBLISHABLE_KEY
