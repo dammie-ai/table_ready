@@ -1,11 +1,16 @@
 import { Platform } from 'react-native'
 
-// On web the browser runs on the same machine as the backend, so localhost
-// works. On a real device (Expo Go), "localhost" means the phone itself —
-// it has to hit the dev machine's actual LAN address instead.
+// On web, only use localhost when actually served from localhost (local
+// dev); a deployed build (Vercel/Render static site) needs the real
+// deployed backend. On a real device (Expo Go), "localhost"/LAN IPs only
+// work on the same network as the dev machine, so point at the deployed
+// backend by default too — swap back to a LAN IP here for local-only testing.
+const DEPLOYED_API = 'https://tableready-backend.onrender.com/api'
 const API_BASE = Platform.OS === 'web'
-  ? 'http://localhost:8001/api'
-  : 'http://172.20.18.66:8001/api'
+  ? (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+      ? 'http://localhost:8001/api'
+      : DEPLOYED_API)
+  : DEPLOYED_API
 
 function getToken(): string | null {
   if (typeof window !== 'undefined') {

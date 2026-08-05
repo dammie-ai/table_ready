@@ -3,9 +3,14 @@ import { Platform } from 'react-native'
 
 let socket: Socket | null = null
 
-// Same reasoning as api.ts: a real device can't reach "localhost" on the
-// dev machine, it needs the actual LAN address.
-const SOCKET_URL = Platform.OS === 'web' ? 'http://localhost:8001' : 'http://172.20.18.66:8001'
+// Same reasoning as api.ts: only use localhost when actually served from
+// localhost, otherwise point at the deployed backend.
+const DEPLOYED_SOCKET = 'https://tableready-backend.onrender.com'
+const SOCKET_URL = Platform.OS === 'web'
+  ? (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+      ? 'http://localhost:8001'
+      : DEPLOYED_SOCKET)
+  : DEPLOYED_SOCKET
 
 export function getSocket() {
   if (!socket) {
