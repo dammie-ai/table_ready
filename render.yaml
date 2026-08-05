@@ -1,0 +1,47 @@
+databases:
+  - name: tableready-db
+    databaseName: tableready_db
+    user: tableready_admin
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: tableready-backend
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: tableready-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: tableready-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: tableready-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: tableready-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: tableready-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:5173,http://localhost:19006
+      - key: PORT
+        value: 8001
