@@ -1,3 +1,5 @@
+import { API_ORIGIN } from './api'
+
 export interface MenuItem {
   item_id: number
   name: string
@@ -59,25 +61,25 @@ export interface GeofenceConfig {
 }
 
 export async function getGeofenceConfig(): Promise<GeofenceConfig> {
-  const res = await fetch('http://localhost:8001/api/config/geofence')
+  const res = await fetch(`${API_ORIGIN}/api/config/geofence`)
   const data = await res.json()
   return data
 }
 
 export async function getMenuItems(): Promise<MenuResponse> {
-  const res = await fetch('http://localhost:8001/api/menu')
+  const res = await fetch(`${API_ORIGIN}/api/menu`)
   const data = await res.json()
   return data
 }
 
 export async function getComboMeals(): Promise<{ success: boolean; combos: ComboMeal[] }> {
-  const res = await fetch('http://localhost:8001/api/combo-meals')
+  const res = await fetch(`${API_ORIGIN}/api/combo-meals`)
   const data = await res.json()
   return data
 }
 
 export async function getComboMealDetail(id: number): Promise<ComboDetailResponse> {
-  const res = await fetch(`http://localhost:8001/api/combo-meals/${id}`)
+  const res = await fetch(`${API_ORIGIN}/api/combo-meals/${id}`)
   const data = await res.json()
   return data
 }
