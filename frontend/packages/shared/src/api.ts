@@ -1,8 +1,11 @@
 import { Platform } from 'react-native'
 
+// On web the browser runs on the same machine as the backend, so localhost
+// works. On a real device (Expo Go), "localhost" means the phone itself —
+// it has to hit the dev machine's actual LAN address instead.
 const API_BASE = Platform.OS === 'web'
   ? 'http://localhost:8001/api'
-  : 'http://localhost:8001/api'
+  : 'http://172.20.18.66:8001/api'
 
 function getToken(): string | null {
   if (typeof window !== 'undefined') {
