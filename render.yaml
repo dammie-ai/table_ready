@@ -45,3 +45,18 @@ services:
         value: http://localhost:5173,http://localhost:19006
       - key: PORT
         value: 8001
+
+  - type: web
+    name: tableready-staff-web
+    runtime: static
+    plan: free
+    region: oregon
+    buildCommand: npm install --legacy-peer-deps && npm run build --workspace=frontend/apps/staff-web
+    staticPublishPath: frontend/apps/staff-web/dist
+    envVars:
+      - key: VITE_STRIPE_PUBLISHABLE_KEY
+        value: pk_test_51TvFSeD5QLIB6xlPLn5qDHwfafeKdNB0kz9xcL94Rr80zej76G0y5P26xhRJb1JBb75Mkj2L6OlFxPDGtKrMFrg400r5KfasRk
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
