@@ -1,5 +1,8 @@
 .env
+.env.local
 node_modules/
+.vite
+*.tsbuildinfo
 backups/
 *.sql
 *.sql.gz

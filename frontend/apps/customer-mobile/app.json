@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "TableReady Customer",
+    "slug": "table-ready-customer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tableready.customer"
+    },
+    "android": {
+      "package": "com.tableready.customer"
+    },
+    "plugins": [
+      "expo-location",
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "newArchEnabled": false
+        }
+      ]
+    ]
+  }
+}
