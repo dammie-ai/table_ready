@@ -389,6 +389,10 @@ export interface CheckoutPayload {
   idempotency_key?: string
 }
 
+export interface CreateOrderPayload extends CheckoutPayload {
+  payment_method?: 'card' | 'cash'
+}
+
 export interface OrderResponse {
   success: boolean
   message?: string

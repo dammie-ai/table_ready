@@ -58,7 +58,6 @@ export default function CheckoutScreen({ navigation }: any) {
         table_number: orderType === 'dine-in' && tableNumber ? Number(tableNumber) : undefined,
         notes,
         idempotency_key: `mobile-checkout-${Date.now()}`,
-        // @ts-expect-error payment_method isn't in the shared CheckoutPayload type yet, but the backend accepts it
         payment_method: 'cash',
       })
 
