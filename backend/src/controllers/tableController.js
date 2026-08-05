@@ -282,11 +282,11 @@ exports.verifyQRCode = async (req, res) => {
 
     if (latitude && longitude) {
       const radiusMiles = await getDeliveryRadius();
-      const locationCheck = isWithinDeliveryRadius(latitude, longitude, 0.5);
+      const locationCheck = isWithinDeliveryRadius(latitude, longitude, radiusMiles);
       if (!locationCheck.isAllowed) {
         return res.status(403).json({
           success: false,
-          error: `You must be within 0.5 miles of the restaurant to scan this QR code. You are ${locationCheck.distanceMiles} miles away.`,
+          error: `You must be within ${radiusMiles} miles of the restaurant to scan this QR code. You are ${locationCheck.distanceMiles} miles away.`,
           distance_miles: locationCheck.distanceMiles,
         });
       }

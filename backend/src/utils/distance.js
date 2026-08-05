@@ -27,20 +27,21 @@ const RESTAURANT_LAT = parseFloat(process.env.RESTAURANT_LAT) || 40.7128;
 const RESTAURANT_LON = parseFloat(process.env.RESTAURANT_LON) || -74.0060;
 
 /**
- * Validates if a customer's location falls within the 10-mile delivery zone
- * @param {number} customerLat 
- * @param {number} customerLon 
+ * Validates if a customer's location falls within the given radius (miles).
+ * @param {number} customerLat
+ * @param {number} customerLon
+ * @param {number} [radiusMiles] - defaults to MAX_DELIVERY_RADIUS_MILES if not given
  * @returns {Object} { isAllowed: boolean, distanceMiles: number }
  */
-const isWithinDeliveryRadius = (customerLat, customerLon) => {
+const isWithinDeliveryRadius = (customerLat, customerLon, radiusMiles = MAX_DELIVERY_RADIUS_MILES) => {
   if (!customerLat || !customerLon) {
     return { isAllowed: false, error: 'Latitude and longitude are required for delivery validation.' };
   }
 
   const distance = calculateDistanceInMiles(RESTAURANT_LAT, RESTAURANT_LON, parseFloat(customerLat), parseFloat(customerLon));
-  
+
   return {
-    isAllowed: distance <= MAX_DELIVERY_RADIUS_MILES,
+    isAllowed: distance <= radiusMiles,
     distanceMiles: parseFloat(distance.toFixed(2))
   };
 };
