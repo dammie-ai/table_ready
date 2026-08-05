@@ -42,7 +42,7 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: ALLOWED_ORIGINS
-        value: http://localhost:5173,http://localhost:19006
+        value: http://localhost:5173,http://localhost:19006,https://tableready-staff-web.onrender.com
       - key: PORT
         value: 8001
 
