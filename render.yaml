@@ -49,8 +49,6 @@ services:
   - type: web
     name: tableready-staff-web
     runtime: static
-    plan: free
-    region: oregon
     buildCommand: npm install --legacy-peer-deps && npm run build --workspace=frontend/apps/staff-web
     staticPublishPath: frontend/apps/staff-web/dist
     envVars:
