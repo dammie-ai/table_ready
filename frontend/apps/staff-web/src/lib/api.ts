@@ -1,4 +1,10 @@
-const API_BASE = 'http://localhost:8001/api'
+// Only use localhost when actually served from localhost (local dev) —
+// a deployed build needs the real deployed backend instead.
+const DEPLOYED_API = 'https://tableready-backend.onrender.com'
+export const API_ORIGIN = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'http://localhost:8001'
+  : DEPLOYED_API
+const API_BASE = `${API_ORIGIN}/api`
 
 function getToken(): string | null {
   if (typeof window !== 'undefined') {
