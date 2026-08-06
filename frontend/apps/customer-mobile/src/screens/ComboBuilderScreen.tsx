@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import Button from '../components/Button';
 import { colors, spacing, borderRadius, typography } from '../theme';
-import { getComboMeals, type ComboMeal } from '@table-ready/shared';
+import { getComboMeals, getMenuItems, type ComboMeal, type MenuItem } from '@table-ready/shared';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -11,45 +11,28 @@ const STEPS = ['Select Combo', 'Pick Main', 'Pick Sides', 'Review'];
 export default function ComboBuilderScreen({ navigation }: any) {
   const [step, setStep] = useState<Step>(1);
   const [combos, setCombos] = useState<ComboMeal[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCombo, setSelectedCombo] = useState<ComboMeal | null>(null);
-  const [selectedMain, setSelectedMain] = useState<any>(null);
-  const [selectedSides, setSelectedSides] = useState<any[]>([]);
+  const [selectedMain, setSelectedMain] = useState<MenuItem | null>(null);
+  const [selectedSides, setSelectedSides] = useState<MenuItem[]>([]);
 
-  useState(() => {
-    getComboMeals()
-      .then((res) => {
-        setCombos(res.combos);
-        setLoading(false);
+  useEffect(() => {
+    Promise.all([getComboMeals(), getMenuItems()])
+      .then(([comboRes, menuRes]) => {
+        setCombos(comboRes.combos);
+        setMenuItems(menuRes.items);
       })
-      .catch(() => setLoading(false));
-  });
+      .finally(() => setLoading(false));
+  }, []);
 
-  const mainItems = selectedCombo
-    ? combos.flatMap((c) => []).concat(
-        // We'll use a fallback: filter menu items by category
-        []
-      )
-    : [];
-  
-  // For demo purposes, we use static menu items matching the combo category
-  const demoMenuItems = [
-    { id: '1', name: 'Classic Burger', category: 'Entrees', price: 14.99, image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=200&h=200&fit=crop' },
-    { id: '2', name: 'Grilled Chicken', category: 'Entrees', price: 16.99, image: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=200&h=200&fit=crop' },
-    { id: '3', name: 'Caesar Salad', category: 'Entrees', price: 12.99, image: 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=200&h=200&fit=crop' },
-    { id: '4', name: 'Fish & Chips', category: 'Entrees', price: 17.99, image: 'https://images.unsplash.com/photo-1579208030886-b937da0925dc?w=200&h=200&fit=crop' },
-    { id: '5', name: 'French Fries', category: 'Sides', price: 5.99, image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=200&h=200&fit=crop' },
-    { id: '6', name: 'Onion Rings', category: 'Sides', price: 6.99, image: 'https://images.unsplash.com/photo-1639024471283-03518883512d?w=200&h=200&fit=crop' },
-    { id: '7', name: 'Coleslaw', category: 'Sides', price: 4.99, image: 'https://images.unsplash.com/photo-1607532941433-304659e8198a?w=200&h=200&fit=crop' },
-    { id: '8', name: 'Chocolate Cake', category: 'Desserts', price: 8.99, image: 'https://images.unsplash.com/photo-1517427294546-5aa121f68e8a?w=200&h=200&fit=crop' },
-    { id: '9', name: 'Ice Cream', category: 'Desserts', price: 6.99, image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=200&h=200&fit=crop' },
-    { id: '10', name: 'Cheesecake', category: 'Desserts', price: 7.99, image: 'https://images.unsplash.com/photo-1524351199678-941a58a3df50?w=200&h=200&fit=crop' },
-  ];
-
+  const availableItems = (item: MenuItem) => item.is_active && !item.out_of_stock_flag;
   const availableMains = selectedCombo
-    ? demoMenuItems.filter((m) => m.category === selectedCombo.required_main_category)
+    ? menuItems.filter((m) => m.category_type === selectedCombo.required_main_category && availableItems(m))
     : [];
-  const availableSides = demoMenuItems.filter((m) => m.category === selectedCombo?.sides_category || 'Sides');
+  const availableSides = selectedCombo
+    ? menuItems.filter((m) => m.category_type === selectedCombo.sides_category && availableItems(m))
+    : [];
   const maxSides = selectedCombo?.max_sides || 0;
 
   const handleSelectCombo = (combo: ComboMeal) => {
@@ -59,14 +42,14 @@ export default function ComboBuilderScreen({ navigation }: any) {
     setStep(2);
   };
 
-  const handleSelectMain = (item: any) => {
+  const handleSelectMain = (item: MenuItem) => {
     setSelectedMain(item);
   };
 
-  const handleToggleSide = (item: any) => {
+  const handleToggleSide = (item: MenuItem) => {
     setSelectedSides((prev) => {
-      const exists = prev.find((s) => s.id === item.id);
-      if (exists) return prev.filter((s) => s.id !== item.id);
+      const exists = prev.find((s) => s.item_id === item.item_id);
+      if (exists) return prev.filter((s) => s.item_id !== item.item_id);
       if (prev.length >= maxSides) return prev;
       return [...prev, item];
     });
@@ -78,8 +61,9 @@ export default function ComboBuilderScreen({ navigation }: any) {
       newCombo: {
         name: selectedCombo.name,
         price: selectedCombo.base_price,
-        main: selectedMain,
-        sides: selectedSides,
+        comboId: selectedCombo.combo_id,
+        main: { id: selectedMain.item_id, name: selectedMain.name, price: selectedMain.base_price, image: selectedMain.image_url },
+        sides: selectedSides.map((s) => ({ id: s.item_id, name: s.name, price: s.base_price, image: s.image_url })),
       },
     });
   };
@@ -158,7 +142,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
               </View>
               <View style={styles.comboTags}>
                 <View style={styles.comboTag}>
-                  <Text style={styles.comboTagText}>1 {selectedCombo?.required_main_category === 'Desserts' ? 'Dessert' : 'Entree'}</Text>
+                  <Text style={styles.comboTagText}>1 {combo.required_main_category === 'Desserts' ? 'Dessert' : 'Entree'}</Text>
                 </View>
                 <View style={[styles.comboTag, styles.comboTagOrange]}>
                   <Text style={[styles.comboTagText, styles.comboTagTextOrange]}>
@@ -179,20 +163,20 @@ export default function ComboBuilderScreen({ navigation }: any) {
             </Text>
             <View style={styles.itemList}>
               {availableMains.map((item) => {
-                const isSelected = selectedMain?.id === item.id;
+                const isSelected = selectedMain?.item_id === item.item_id;
                 return (
                   <TouchableOpacity
-                    key={item.id}
+                    key={item.item_id}
                     onPress={() => handleSelectMain(item)}
                     style={[
                       styles.itemCard,
                       isSelected && styles.itemCardSelected,
                     ]}
                   >
-                    <Image source={{ uri: item.image }} style={styles.itemImage} resizeMode="cover" />
+                    <Image source={{ uri: item.image_url || undefined }} style={styles.itemImage} resizeMode="cover" />
                     <View style={styles.itemInfo}>
                       <Text style={styles.itemName}>{item.name}</Text>
-                      <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+                      <Text style={styles.itemPrice}>${item.base_price.toFixed(2)}</Text>
                     </View>
                     {isSelected && (
                       <View style={styles.checkBadge}>
@@ -234,11 +218,11 @@ export default function ComboBuilderScreen({ navigation }: any) {
             </View>
             <View style={styles.sideGrid}>
               {availableSides.map((item) => {
-                const isSelected = selectedSides.some((s) => s.id === item.id);
+                const isSelected = selectedSides.some((s) => s.item_id === item.item_id);
                 const isDisabled = !isSelected && selectedSides.length >= maxSides;
                 return (
                   <TouchableOpacity
-                    key={item.id}
+                    key={item.item_id}
                     onPress={() => !isDisabled && handleToggleSide(item)}
                     disabled={isDisabled}
                     style={[
@@ -247,7 +231,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
                       isDisabled && styles.sideCardDisabled,
                     ]}
                   >
-                    <Image source={{ uri: item.image }} style={styles.sideImage} resizeMode="cover" />
+                    <Image source={{ uri: item.image_url || undefined }} style={styles.sideImage} resizeMode="cover" />
                     {isSelected && (
                       <View style={styles.sideCheck}>
                         <Text style={styles.sideCheckText}>✓</Text>
@@ -255,7 +239,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
                     )}
                     <View style={styles.sideContent}>
                       <Text style={styles.sideName}>{item.name}</Text>
-                      <Text style={styles.sidePrice}>${item.price.toFixed(2)}</Text>
+                      <Text style={styles.sidePrice}>${item.base_price.toFixed(2)}</Text>
                     </View>
                   </TouchableOpacity>
                 );
@@ -275,7 +259,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Your Combo</Text>
             <View style={styles.reviewCard}>
-              <Image source={{ uri: selectedMain.image }} style={styles.reviewImage} resizeMode="cover" />
+              <Image source={{ uri: selectedMain.image_url || undefined }} style={styles.reviewImage} resizeMode="cover" />
               <View style={styles.reviewContent}>
                 <View style={styles.reviewHeader}>
                   <Text style={styles.reviewComboName}>{selectedCombo.name}</Text>
@@ -292,7 +276,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
                 <View style={styles.reviewSection}>
                   <Text style={styles.reviewSectionLabel}>Sides ({selectedSides.length})</Text>
                   {selectedSides.map((side, i) => (
-                    <View key={side.id} style={styles.reviewItemRow}>
+                    <View key={side.item_id} style={styles.reviewItemRow}>
                       <View style={[styles.reviewDot, styles.reviewDotOrange]} />
                       <Text style={styles.reviewItemText}>Side {i + 1}: {side.name}</Text>
                     </View>
