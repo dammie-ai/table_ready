@@ -43,11 +43,33 @@ export default function CheckoutScreen({ navigation }: any) {
     setPlacingOrder(true)
     try {
       const orderTypeLabel = ORDER_TYPES.find((ot) => ot.value === orderType)?.label || 'PICKUP'
-      const items = cart.map((item) => ({
-        menu_item_id: item.menu_item_id!,
-        quantity: item.quantity,
-        custom_instructions: item.custom_instructions,
-      }))
+      // The backend has no concept of combo items at all — nothing in
+      // orderRoutes.js handles combo_main/combo_sides, so sending a combo
+      // cart entry as-is (no menu_item_id) would silently drop it from the
+      // order. Flatten each combo into its real constituent menu items
+      // instead, so the kitchen/order actually reflects what was ordered.
+      const items = cart.flatMap((item) => {
+        if (item.combo_main) {
+          const noteSuffix = item.name ? ` (from ${item.name} combo)` : ''
+          return [
+            {
+              menu_item_id: item.combo_main.menu_item_id,
+              quantity: item.quantity,
+              custom_instructions: (item.custom_instructions || '') + noteSuffix,
+            },
+            ...(item.combo_sides || []).map((side) => ({
+              menu_item_id: side.menu_item_id,
+              quantity: item.quantity,
+              custom_instructions: noteSuffix,
+            })),
+          ]
+        }
+        return [{
+          menu_item_id: item.menu_item_id!,
+          quantity: item.quantity,
+          custom_instructions: item.custom_instructions,
+        }]
+      })
       const notes = [instructions, orderType === 'delivery' ? `Delivery address: ${address}` : null]
         .filter(Boolean)
         .join('\n') || undefined

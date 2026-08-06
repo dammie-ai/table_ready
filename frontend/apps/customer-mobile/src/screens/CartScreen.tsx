@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
@@ -12,20 +12,31 @@ export default function CartScreen({ navigation, route }: any) {
   const clearCart = useCartStore((s) => s.clearCart);
   const groupType = route.params?.groupType || 'solo';
   const newCombo = route.params?.newCombo;
+  const addedComboRef = useRef(false);
 
-  if (newCombo && cart.length === 0) {
-    addCombo({
-      cartId: `combo-${Date.now()}`,
-      type: 'combo',
-      name: newCombo.name,
-      base_price: newCombo.price,
-      quantity: 1,
-      image: newCombo.main?.image,
-      combo_id: newCombo.comboId,
-      combo_main: { menu_item_id: newCombo.main?.id, name: newCombo.main?.name, base_price: newCombo.main?.price },
-      combo_sides: newCombo.sides?.map((s: any) => ({ menu_item_id: s.id, name: s.name, base_price: s.price })),
-    });
-  }
+  // Calling a store action directly in the component body (during render)
+  // is invalid React — it was reliably crashing with "Cannot update a
+  // component while rendering a different component" once this path
+  // actually got exercised. The ref guard keeps it firing exactly once,
+  // matching the original `cart.length === 0` intent without re-adding
+  // if the cart is cleared later.
+  useEffect(() => {
+    if (newCombo && !addedComboRef.current) {
+      addedComboRef.current = true;
+      addCombo({
+        cartId: `combo-${Date.now()}`,
+        type: 'combo',
+        name: newCombo.name,
+        base_price: newCombo.price,
+        quantity: 1,
+        image: newCombo.main?.image,
+        combo_id: newCombo.comboId,
+        combo_main: { menu_item_id: newCombo.main?.id, name: newCombo.main?.name, base_price: newCombo.main?.price },
+        combo_sides: newCombo.sides?.map((s: any) => ({ menu_item_id: s.id, name: s.name, base_price: s.price })),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const subtotal = cart.reduce((sum, item) => sum + item.base_price * item.quantity, 0);
   const tax = subtotal * 0.08;

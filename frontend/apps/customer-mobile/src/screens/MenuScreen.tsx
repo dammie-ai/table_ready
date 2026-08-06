@@ -57,8 +57,8 @@ export default function MenuScreen({ route, navigation }: any) {
     );
   }
 
-  const dowItem = dishOfWeek ? items.find((m) => m.item_id === dishOfWeek.itemId) : null;
-  const discountedPrice = dowItem ? dowItem.base_price * (1 - (dishOfWeek?.discountPercent || 0) / 100) : 0;
+  const dowItem = dishOfWeek ? items.find((m) => m.item_id === dishOfWeek.menu_item_id) : null;
+  const discountedPrice = dowItem ? dowItem.base_price * (1 - (dishOfWeek?.discount_percentage || 0) / 100) : 0;
 
   const renderItem = ({ item }: { item: MenuItem }) => {
     const outOfStock = isOutOfStock(item);
@@ -86,7 +86,7 @@ export default function MenuScreen({ route, navigation }: any) {
         )}
         {isDow && !outOfStock && (
           <View style={styles.dowBadge}>
-            <Text style={styles.dowText}>🌟 {dishOfWeek.discountPercent}% OFF</Text>
+            <Text style={styles.dowText}>🌟 {dishOfWeek.discount_percentage}% OFF</Text>
           </View>
         )}
         <View style={styles.cardContent}>
@@ -188,7 +188,7 @@ export default function MenuScreen({ route, navigation }: any) {
             <Text style={styles.dowLabel}>🌟 Dish of the Week</Text>
             <Text style={styles.dowName}>{dowItem.name}</Text>
             <View style={styles.dowPriceRow}>
-              <Text style={styles.dowDiscount}>{dishOfWeek.discountPercent}% OFF</Text>
+              <Text style={styles.dowDiscount}>{dishOfWeek.discount_percentage}% OFF</Text>
               <Text style={styles.dowPrice}>${discountedPrice.toFixed(2)}</Text>
               <Text style={styles.dowOriginal}>${dowItem.base_price.toFixed(2)}</Text>
             </View>
