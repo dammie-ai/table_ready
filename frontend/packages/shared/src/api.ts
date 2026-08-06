@@ -208,7 +208,7 @@ export async function cancelReservation(id: number) {
   return request<{ success: boolean }>(`/reservations/${id}/cancel`, { method: 'PATCH', body: '{}' })
 }
 
-export async function createServiceRequest(payload: { type: string; notes?: string }) {
+export async function createServiceRequest(payload: { table_number: number; request_type: string; notes?: string }) {
   return request<{ success: boolean; request: any }>('/service-requests', { method: 'POST', body: JSON.stringify(payload) })
 }
 

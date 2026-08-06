@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native'
-import { createServiceRequest, getServiceRequests } from '@table-ready/shared'
+import { createServiceRequest, getServiceRequests, getStorageItem } from '@table-ready/shared'
 
 const REQUEST_TYPES = [
-  { key: 'water', label: 'Water', icon: '💧' },
-  { key: 'napkins', label: 'Napkins', icon: '🧻' },
-  { key: 'bill', label: 'Bill', icon: '🧾' },
-  { key: 'assistance', label: 'Assistance', icon: '🆘' },
+  { key: 'refill', label: 'Water', icon: '💧' },
+  { key: 'other', label: 'Napkins', icon: '🧻' },
+  { key: 'bill_request', label: 'Bill', icon: '🧾' },
+  { key: 'call_server', label: 'Assistance', icon: '🆘' },
 ]
 
 export default function ServiceRequestsScreen({ navigation }: any) {
@@ -28,9 +28,11 @@ export default function ServiceRequestsScreen({ navigation }: any) {
     }
   }
 
-  const handleRequest = async (type: string) => {
+  const handleRequest = async (request_type: string) => {
     try {
-      await createServiceRequest({ type, notes: '' })
+      const stored = await getStorageItem('tableready_table_number')
+      const table_number = stored ? Number(stored) : 0
+      await createServiceRequest({ table_number, request_type, notes: '' })
       Alert.alert('Request Sent', 'Staff has been notified')
       loadRequests()
     } catch (err) {
@@ -78,7 +80,7 @@ export default function ServiceRequestsScreen({ navigation }: any) {
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{item.type.toUpperCase()}</Text>
+                <Text style={styles.cardTitle}>{item.request_type.replace('_', ' ').toUpperCase()}</Text>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
                   <Text style={styles.statusText}>{item.status}</Text>
                 </View>

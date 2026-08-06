@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import { colors, borderRadius, spacing } from '../theme';
+import { borderRadius, spacing } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 
 type Props = {
   label?: string;
@@ -26,12 +27,20 @@ export default function Input({
   error,
   rightAction,
 }: Props) {
+  const colors = useThemeStore((s) => s.colors);
+
   return (
     <View style={styles.wrapper}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputContainer, error && styles.inputError]}>
+      {label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
+      <View
+        style={[
+          styles.inputContainer,
+          { borderColor: colors.border, backgroundColor: colors.surface },
+          error && { borderColor: colors.error },
+        ]}
+      >
         <TextInput
-          style={[styles.input, multiline && styles.multiline]}
+          style={[styles.input, { color: colors.text }, multiline && styles.multiline]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -43,11 +52,11 @@ export default function Input({
         />
         {rightAction && (
           <TouchableOpacity onPress={rightAction.onPress} style={styles.rightAction}>
-            <Text style={styles.rightActionText}>{rightAction.label}</Text>
+            <Text style={[styles.rightActionText, { color: colors.primary }]}>{rightAction.label}</Text>
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <Text style={[styles.error, { color: colors.error }]}>{error}</Text>}
     </View>
   );
 }
@@ -60,26 +69,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
     marginBottom: spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
-  },
-  inputError: {
-    borderColor: colors.error,
   },
   input: {
     flex: 1,
     paddingVertical: spacing.md,
     fontSize: 16,
-    color: colors.text,
   },
   multiline: {
     height: 80,
@@ -89,13 +91,11 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   rightActionText: {
-    color: colors.primary,
     fontWeight: '600',
     fontSize: 14,
   },
   error: {
     fontSize: 12,
-    color: colors.error,
     marginTop: spacing.xs,
   },
 });

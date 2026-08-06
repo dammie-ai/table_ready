@@ -88,6 +88,18 @@ export default function Settings() {
 
   const b = (key: keyof Branding, value: any) => setBranding((prev) => ({ ...prev, [key]: value }))
 
+  // No cloud file storage in this deployment, so uploaded images are
+  // inlined as data URIs and stored directly in the branding config —
+  // fine for a small logo/background image, no backend changes needed.
+  const handleImageUpload = (key: 'logo_url' | 'background_image_url') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => b(key, reader.result as string)
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#09090f]">
@@ -161,8 +173,17 @@ export default function Settings() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Logo URL</label>
-                  <input type="text" value={branding.logo_url} onChange={(e) => b('logo_url', e.target.value)} placeholder="https://..." className={inputCls} />
+                  <label className={labelCls}>Logo</label>
+                  <div className="flex items-center gap-3">
+                    {branding.logo_url && (
+                      <img src={branding.logo_url} alt="" className="h-10 w-10 object-contain rounded bg-white/5 border border-white/10 shrink-0" />
+                    )}
+                    <input type="text" value={branding.logo_url} onChange={(e) => b('logo_url', e.target.value)} placeholder="https://... or upload" className={inputCls} />
+                  </div>
+                  <label className="inline-block mt-2 text-xs text-[#f97316] cursor-pointer hover:underline">
+                    Upload an image
+                    <input type="file" accept="image/*" onChange={handleImageUpload('logo_url')} className="hidden" />
+                  </label>
                 </div>
                 <div>
                   <label className={labelCls}>Logo Position</label>
@@ -207,8 +228,15 @@ export default function Settings() {
               <ColorField label="Background Color" value={branding.background_color} onChange={(v) => b('background_color', v)} />
             ) : (
               <div>
-                <label className={labelCls}>Background Image URL</label>
-                <input type="text" value={branding.background_image_url} onChange={(e) => b('background_image_url', e.target.value)} placeholder="https://..." className={inputCls} />
+                <label className={labelCls}>Background Image</label>
+                <input type="text" value={branding.background_image_url} onChange={(e) => b('background_image_url', e.target.value)} placeholder="https://... or upload" className={inputCls} />
+                <label className="inline-block mt-2 text-xs text-[#f97316] cursor-pointer hover:underline">
+                  Upload an image
+                  <input type="file" accept="image/*" onChange={handleImageUpload('background_image_url')} className="hidden" />
+                </label>
+                {branding.background_image_url && (
+                  <img src={branding.background_image_url} alt="" className="mt-2 h-24 w-full object-cover rounded-lg border border-white/10" />
+                )}
               </div>
             )}
           </div>

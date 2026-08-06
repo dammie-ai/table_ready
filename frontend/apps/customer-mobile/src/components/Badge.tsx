@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, borderRadius, spacing } from '../theme';
+import { borderRadius, spacing } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 
 type Props = {
   label: string;
@@ -7,6 +8,7 @@ type Props = {
 };
 
 export default function Badge({ label, variant = 'primary' }: Props) {
+  const colors = useThemeStore((s) => s.colors);
   const backgroundColor =
     variant === 'secondary'
       ? colors.secondary
