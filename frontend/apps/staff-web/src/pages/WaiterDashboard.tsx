@@ -26,24 +26,38 @@ interface Session {
   started_at: string
 }
 
+interface MyTable {
+  table_id: number
+  table_number: number
+  status_state: string
+  capacity: number
+  section: string
+  master_order_id: number | null
+  order_status: string | null
+  total_amount: number | null
+}
+
 export default function WaiterDashboard() {
   const [tables, setTables] = useState<Table[]>([])
   const [requests, setRequests] = useState<ServiceRequest[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
+  const [myTables, setMyTables] = useState<MyTable[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'floor' | 'alerts'>('floor')
+  const [view, setView] = useState<'floor' | 'alerts' | 'my-tables'>('my-tables')
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [tablesRes, requestsRes, sessionsRes] = await Promise.all([
+        const [tablesRes, requestsRes, sessionsRes, myTablesRes] = await Promise.all([
           apiClient.get<any>('/tables/floor-layout'),
           apiClient.get<any>('/service-requests'),
           apiClient.get<any>('/sessions'),
+          apiClient.get<any>('/tables/my-tables'),
         ])
         setTables(tablesRes.tables || [])
         setRequests(requestsRes.requests || [])
         setSessions(sessionsRes.sessions || [])
+        setMyTables(myTablesRes.tables || [])
       } catch (err) {
         console.error('Failed to load waiter data:', err)
       } finally {
@@ -59,6 +73,7 @@ export default function WaiterDashboard() {
     })
     socket.on('table_status_updated', ({ table_id, status_state }: { table_id: number; status_state: string }) => {
       setTables((prev) => prev.map((t) => t.table_id === table_id ? { ...t, status_state } : t))
+      setMyTables((prev) => prev.map((t) => t.table_id === table_id ? { ...t, status_state } : t))
     })
 
     return () => {
@@ -125,7 +140,7 @@ export default function WaiterDashboard() {
           <span className="text-sm font-medium text-[#f1f5f9]">Waiter Dashboard</span>
         </div>
         <div className="flex gap-1">
-          {(['floor', 'alerts'] as const).map((v) => (
+          {(['my-tables', 'floor', 'alerts'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -138,13 +153,56 @@ export default function WaiterDashboard() {
                   {requests.filter((r) => r.status === 'pending').length}
                 </span>
               )}
-              {v === 'floor' ? 'Floor Map' : 'Alerts'}
+              {v === 'floor' ? 'Floor Map' : v === 'my-tables' ? 'My Tables' : 'Alerts'}
             </button>
           ))}
         </div>
       </div>
 
-      {view === 'floor' ? (
+      {view === 'my-tables' ? (
+        <div className="p-4 md:p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-display font-bold text-xl">My Tables</h2>
+            <span className="text-xs text-[#6b7280]">{myTables.length} / 3 assigned</span>
+          </div>
+
+          {myTables.length === 0 ? (
+            <div className="text-center text-[#6b7280] py-16">
+              <div className="text-4xl mb-3">🪑</div>
+              <p className="font-medium">No tables assigned to you yet</p>
+              <p className="text-xs mt-1">Ask a manager to assign you a table.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {myTables.map((table) => (
+                <div
+                  key={table.table_id}
+                  className={`rounded-xl border p-5 ${statusColor(table.status_state)}`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="font-display font-bold text-2xl">Table {table.table_number}</div>
+                    <span className="text-xs capitalize opacity-80">{table.status_state}</span>
+                  </div>
+                  <div className="text-xs opacity-70 mb-3">👥 Seats {table.capacity} · {table.section}</div>
+                  {table.master_order_id ? (
+                    <div className="bg-black/20 rounded-lg p-3">
+                      <div className="text-sm font-semibold">Order #{table.master_order_id}</div>
+                      <div className="text-xs opacity-80 mt-0.5 capitalize">
+                        {table.order_status?.toLowerCase().replace(/_/g, ' ')}
+                      </div>
+                      {table.total_amount !== null && (
+                        <div className="text-xs opacity-60 mt-1">${Number(table.total_amount).toFixed(2)}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs opacity-50 italic">No active order</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : view === 'floor' ? (
         <div className="p-4 md:p-6">
           <div className="flex gap-2 mb-5 flex-wrap">
             {(['available', 'occupied', 'cleaning', 'reserved'] as const).map((s) => (

@@ -30,7 +30,24 @@ export default function OrderTracking() {
   const { id } = useParams<{ id: string }>()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
+  const [ratingScore, setRatingScore] = useState<number | null>(null)
+  const [ratingSubmitted, setRatingSubmitted] = useState(false)
+  const [ratingSubmitting, setRatingSubmitting] = useState(false)
   const { theme } = useTheme()
+
+  const submitRating = async (score: number) => {
+    if (!id || ratingSubmitting) return
+    setRatingScore(score)
+    setRatingSubmitting(true)
+    try {
+      await apiClient.post(`/orders/${id}/rate`, { score })
+      setRatingSubmitted(true)
+    } catch (err) {
+      console.error('Failed to submit rating:', err)
+    } finally {
+      setRatingSubmitting(false)
+    }
+  }
 
   const { showReleasePopup, tracking, handleRelease, handleDismiss, radius } = useGeofenceTracker(order, () => {
     setOrder(prev => prev ? { ...prev, status: 'RECEIVED' } : null)
@@ -161,6 +178,38 @@ export default function OrderTracking() {
           </span>
         </div>
       </div>
+
+      {order.status === 'PICKED_UP' && (
+        <div className="border rounded-lg p-4 mb-6" style={{ borderColor: theme?.primary_color + '40' }}>
+          {ratingSubmitted ? (
+            <p className="text-center font-medium" style={{ color: theme?.text_color }}>
+              Thanks for the feedback! 🙌
+            </p>
+          ) : (
+            <>
+              <h2 className="text-xl font-semibold mb-1" style={{ color: theme?.text_color }}>How was the service?</h2>
+              <p className="text-sm text-gray-600 mb-4">Rate your experience from 0 (poor) to 10 (excellent).</p>
+              <div className="grid grid-cols-11 gap-1">
+                {Array.from({ length: 11 }, (_, i) => i).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => submitRating(n)}
+                    disabled={ratingSubmitting}
+                    className="aspect-square rounded-lg text-sm font-semibold border disabled:opacity-50"
+                    style={
+                      ratingScore === n
+                        ? { backgroundColor: theme?.primary_color, color: '#fff', borderColor: theme?.primary_color }
+                        : { borderColor: theme?.primary_color + '40', color: theme?.text_color }
+                    }
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="text-center text-sm text-gray-500">
         Status updates automatically • No refresh needed

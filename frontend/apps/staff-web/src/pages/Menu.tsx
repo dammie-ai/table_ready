@@ -94,6 +94,11 @@ export default function Menu() {
           {theme.announcement_banner}
         </div>
       )}
+      {typeof window !== 'undefined' && localStorage.getItem('tableready_waiter_name') && (
+        <div className="text-center text-sm py-2 px-4 rounded-lg mb-4" style={{ color: theme?.text_color, backgroundColor: theme?.primary_color + '15' }}>
+          🧑‍🍳 You're being served by <span className="font-semibold">{localStorage.getItem('tableready_waiter_name')}</span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-3" style={{ flexDirection: theme?.logo_position === 'center' ? 'column' : 'row' }}>
           {theme?.logo_url && <img src={theme.logo_url} alt="" className="h-10 w-10 object-contain" style={{ borderRadius: themeRadiusPx(theme) }} />}

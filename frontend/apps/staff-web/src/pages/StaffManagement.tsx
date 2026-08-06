@@ -10,15 +10,27 @@ interface StaffMember {
   account_lock_status?: boolean
 }
 
+interface TableRow {
+  table_id: number
+  table_number: number
+  status_state: string
+  waiter_id: number | null
+  waiter_name: string | null
+}
+
 export default function StaffManagement() {
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ username: '', password: '', role: 'waiter', name: '' })
+  const [tables, setTables] = useState<TableRow[]>([])
+  const [assignError, setAssignError] = useState<string | null>(null)
+  const [assigningTableId, setAssigningTableId] = useState<number | null>(null)
   const { theme } = useTheme()
 
   useEffect(() => {
     loadStaff()
+    loadTables()
   }, [])
 
   const loadStaff = async () => {
@@ -31,6 +43,39 @@ export default function StaffManagement() {
       setLoading(false)
     }
   }
+
+  const loadTables = async () => {
+    try {
+      const res = await apiClient.get<{ success: boolean; tables: TableRow[] }>('/tables/floor-layout')
+      setTables(res.tables || [])
+    } catch (err) {
+      console.error('Failed to load tables:', err)
+    }
+  }
+
+  const assignWaiter = async (tableId: number, waiterId: string) => {
+    setAssignError(null)
+    setAssigningTableId(tableId)
+    try {
+      const res = await apiClient.patch<{ success: boolean; table: { waiter_id: number | null } }>(
+        `/tables/${tableId}/assign-waiter`,
+        { waiter_id: waiterId ? Number(waiterId) : null }
+      )
+      const waiter = staff.find((s) => s.id === res.table.waiter_id)
+      setTables((prev) =>
+        prev.map((t) =>
+          t.table_id === tableId ? { ...t, waiter_id: res.table.waiter_id, waiter_name: waiter?.username || null } : t
+        )
+      )
+    } catch (err) {
+      setAssignError(err instanceof Error ? err.message : 'Failed to assign waiter')
+    } finally {
+      setAssigningTableId(null)
+    }
+  }
+
+  const waitersOnly = staff.filter((s) => s.role === 'waiter')
+  const tableCountForWaiter = (waiterId: number) => tables.filter((t) => t.waiter_id === waiterId).length
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -168,6 +213,41 @@ export default function StaffManagement() {
               </div>
             ))
           )}
+        </div>
+
+        <div className="mt-10">
+          <h2 className="text-2xl font-bold mb-1" style={{ color: theme?.text_color }}>Table Assignments</h2>
+          <p className="text-sm text-[#6b7280] mb-4">Each waiter can be assigned up to 3 tables.</p>
+
+          {assignError && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {assignError}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {tables.map((table) => (
+              <div key={table.table_id} className="bg-[#111118] border border-white/8 rounded-2xl p-5 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-lg" style={{ color: theme?.text_color }}>Table {table.table_number}</h3>
+                  <p className="text-sm text-[#6b7280] capitalize">{table.status_state}</p>
+                </div>
+                <select
+                  value={table.waiter_id ?? ''}
+                  onChange={(e) => assignWaiter(table.table_id, e.target.value)}
+                  disabled={assigningTableId === table.table_id}
+                  className="bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none disabled:opacity-50"
+                >
+                  <option value="">Unassigned</option>
+                  {waitersOnly.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.username} ({tableCountForWaiter(w.id)}/3)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
