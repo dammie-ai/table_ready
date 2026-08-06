@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { CartItem } from './types'
+import { getStorageItem, setStorageItem, deleteStorageItem } from './storage'
 
 interface CartState {
   items: CartItem[]
@@ -62,6 +63,16 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'tableready_cart',
+      // No storage option here defaults to the global localStorage, which
+      // doesn't exist on native — and by the time any App.tsx-level polyfill
+      // for it would run, this module (imported transitively by every
+      // screen) has already evaluated and captured the reference. Give it
+      // an explicit adapter instead of depending on that timing.
+      storage: createJSONStorage(() => ({
+        getItem: getStorageItem,
+        setItem: setStorageItem,
+        removeItem: deleteStorageItem,
+      })),
     }
   )
 )
