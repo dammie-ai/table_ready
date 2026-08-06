@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { getStorageItem, setStorageItem, deleteStorageItem } from './storage'
 
 interface User {
   id: number
@@ -24,6 +25,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'tableready_auth',
+      storage: createJSONStorage(() => ({
+        getItem: getStorageItem,
+        setItem: setStorageItem,
+        removeItem: deleteStorageItem,
+      })),
     }
   )
 )
