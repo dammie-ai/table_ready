@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiClient } from '../lib/api'
+import { useTheme } from '../hooks/useTheme'
 
 // Browsers ship no window.BarcodeDetector types yet — declare just enough
 // of the shape this file uses.
@@ -31,6 +32,8 @@ export default function TablePin() {
   const streamRef = useRef<MediaStream | null>(null)
   const pollRef = useRef<number | null>(null)
   const navigate = useNavigate()
+  const { theme } = useTheme()
+  const primary = theme?.primary_color || '#2563eb'
 
   const verify = useCallback(async (tableNum: string, code: string) => {
     setLoading(true)
@@ -153,9 +156,9 @@ export default function TablePin() {
 
   if (autoVerifying && !error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: primary }}>
         <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl text-center">
-          <div className="w-12 h-12 mx-auto mb-4 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <div className="w-12 h-12 mx-auto mb-4 border-4 rounded-full animate-spin" style={{ borderColor: primary + '40', borderTopColor: primary }} />
           <h1 className="text-xl font-bold text-gray-900 mb-1">Table {tableNumber} scanned</h1>
           <p className="text-sm text-gray-600">Seating you now...</p>
         </div>
@@ -165,7 +168,7 @@ export default function TablePin() {
 
   if (mode === 'scan') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800 p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: primary }}>
         <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
           <div className="text-center mb-4">
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Scan Table QR Code</h1>
@@ -187,7 +190,8 @@ export default function TablePin() {
           <button
             type="button"
             onClick={() => setMode('manual')}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700"
+            className="w-full text-white py-3 rounded-xl font-semibold hover:opacity-90"
+            style={{ backgroundColor: primary }}
           >
             Enter PIN Manually
           </button>
@@ -204,7 +208,7 @@ export default function TablePin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: primary }}>
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Enter Table PIN</h1>
@@ -245,7 +249,8 @@ export default function TablePin() {
         <button
           type="submit"
           disabled={loading || pin.length !== 4}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40 transition-colors"
+          className="w-full text-white py-3 rounded-xl font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
+          style={{ backgroundColor: primary }}
         >
           {loading ? 'Verifying...' : 'Start Ordering'}
         </button>
@@ -253,7 +258,8 @@ export default function TablePin() {
         <button
           type="button"
           onClick={() => { setScanError(''); setMode('scan') }}
-          className="w-full mt-3 text-blue-600 text-sm font-medium hover:text-blue-700"
+          className="w-full mt-3 text-sm font-medium hover:opacity-80"
+          style={{ color: primary }}
         >
           Scan QR Code Instead
         </button>

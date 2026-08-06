@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMenuItems, getComboMeals, getComboMealDetail, type MenuItem, type ComboMeal, type ComboMealSide } from '../lib/menuApi'
 import { useCartStore } from '../stores/cartStore'
+import { useTheme } from '../hooks/useTheme'
 
 type Step = 'select-combo' | 'pick-main' | 'pick-sides' | 'review'
 
 export default function ComboBuilder() {
+  const { theme } = useTheme()
+  const primary = theme?.primary_color || '#2563eb'
   const [step, setStep] = useState<Step>('select-combo')
   const [combos, setCombos] = useState<ComboMeal[]>([])
   const [selectedCombo, setSelectedCombo] = useState<(ComboMeal & { sides: ComboMealSide[] }) | null>(null)
@@ -108,7 +111,7 @@ export default function ComboBuilder() {
     <div className="max-w-2xl mx-auto p-4">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Combo Builder</h1>
-        <button onClick={() => navigate('/menu')} className="text-blue-600 hover:underline">
+        <button onClick={() => navigate('/menu')} className="hover:underline" style={{ color: primary }}>
           Back to Menu
         </button>
       </div>
@@ -121,12 +124,15 @@ export default function ComboBuilder() {
           const isComplete = idx < currentIdx
           return (
             <div key={label} className="flex items-center gap-2 flex-1">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                isActive ? 'bg-blue-600 text-white' : isComplete ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  isActive ? 'text-white' : isComplete ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'
+                }`}
+                style={isActive ? { backgroundColor: primary } : undefined}
+              >
                 {isComplete ? '✓' : idx + 1}
               </div>
-              <span className={`text-sm hidden sm:inline ${isActive ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              <span className={`text-sm hidden sm:inline ${isActive ? 'font-medium' : 'text-gray-500'}`} style={isActive ? { color: primary } : undefined}>
                 {label}
               </span>
               {idx < 3 && <div className="flex-1 h-0.5 bg-gray-200 mx-2" />}
@@ -141,7 +147,8 @@ export default function ComboBuilder() {
             <button
               key={combo.combo_id}
               onClick={() => handleSelectCombo(combo)}
-              className="w-full bg-white border-2 border-gray-200 rounded-xl p-4 text-left hover:border-blue-500 hover:shadow-lg transition-all"
+              className="w-full bg-white border-2 border-gray-200 rounded-xl p-4 text-left hover:shadow-lg transition-all hover:[border-color:var(--theme-primary)]"
+              style={{ '--theme-primary': primary } as React.CSSProperties}
             >
               <div className="flex gap-4">
                 {combo.image_url && (
@@ -150,7 +157,7 @@ export default function ComboBuilder() {
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold">{combo.name}</h3>
                   <p className="text-sm text-gray-600 mt-1">{combo.description}</p>
-                  <p className="text-lg font-bold text-blue-600 mt-2">${combo.base_price.toFixed(2)}</p>
+                  <p className="text-lg font-bold mt-2" style={{ color: primary }}>${combo.base_price.toFixed(2)}</p>
                 </div>
               </div>
             </button>
@@ -170,13 +177,14 @@ export default function ComboBuilder() {
               <button
                 key={item.item_id}
                 onClick={() => handleSelectMain(item)}
-                className="w-full bg-white border-2 border-gray-200 rounded-xl p-4 text-left hover:border-blue-500 transition-all flex justify-between items-center"
+                className="w-full bg-white border-2 border-gray-200 rounded-xl p-4 text-left hover:[border-color:var(--theme-primary)] transition-all flex justify-between items-center"
+                style={{ '--theme-primary': primary } as React.CSSProperties}
               >
                 <div>
                   <h3 className="font-semibold">{item.name}</h3>
                   <p className="text-sm text-gray-600">{item.description}</p>
                 </div>
-                <span className="text-blue-600 font-bold">${item.base_price.toFixed(2)}</span>
+                <span className="font-bold" style={{ color: primary }}>${item.base_price.toFixed(2)}</span>
               </button>
             ))}
           </div>
@@ -190,7 +198,7 @@ export default function ComboBuilder() {
         <div>
           <h2 className="text-xl font-semibold mb-4">Step 2: Pick Your Sides</h2>
           <p className="text-sm text-gray-600 mb-4">Choose up to {selectedCombo.max_sides} sides from {selectedCombo.sides_category}.</p>
-          <p className="text-sm text-blue-600 mb-4">Selected: {selectedSides.length} / {selectedCombo.max_sides}</p>
+          <p className="text-sm mb-4" style={{ color: primary }}>Selected: {selectedSides.length} / {selectedCombo.max_sides}</p>
           <div className="grid gap-3">
             {sideItems.map((item) => {
               const isSelected = selectedSides.some(s => s.item_id === item.item_id)
@@ -200,14 +208,18 @@ export default function ComboBuilder() {
                   onClick={() => toggleSide(item)}
                   disabled={!isSelected && selectedSides.length >= (selectedCombo.max_sides || 2)}
                   className={`w-full border-2 rounded-xl p-4 text-left transition-all flex justify-between items-center ${
-                    isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-500'
+                    isSelected ? '' : 'border-gray-200 bg-white hover:[border-color:var(--theme-primary)]'
                   } ${!isSelected && selectedSides.length >= (selectedCombo.max_sides || 2) ? 'opacity-50' : ''}`}
+                  style={{
+                    '--theme-primary': primary,
+                    ...(isSelected ? { borderColor: primary, backgroundColor: primary + '10' } : {}),
+                  } as React.CSSProperties}
                 >
                   <div>
                     <h3 className="font-semibold">{item.name}</h3>
                     <p className="text-sm text-gray-600">{item.description}</p>
                   </div>
-                  <span className="text-blue-600 font-bold">${item.base_price.toFixed(2)}</span>
+                  <span className="font-bold" style={{ color: primary }}>${item.base_price.toFixed(2)}</span>
                 </button>
               )
             })}
@@ -219,10 +231,11 @@ export default function ComboBuilder() {
             <button onClick={() => setStep('pick-main')} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium">
               Back
             </button>
-            <button 
-              onClick={() => setStep('review')} 
+            <button
+              onClick={() => setStep('review')}
               disabled={!canProceedFromSides}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium disabled:opacity-50"
+              className="flex-1 text-white py-3 rounded-lg font-medium disabled:opacity-50"
+              style={{ backgroundColor: primary }}
             >
               Continue
             </button>
@@ -234,7 +247,7 @@ export default function ComboBuilder() {
         <div>
           <h2 className="text-xl font-semibold mb-4">Step 3: Review Your Combo</h2>
           <div className="bg-white border-2 border-gray-200 rounded-xl p-6 mb-6">
-            <h3 className="text-xl font-bold text-blue-600 mb-4">{selectedCombo.name}</h3>
+            <h3 className="text-xl font-bold mb-4" style={{ color: primary }}>{selectedCombo.name}</h3>
             
             <div className="mb-4">
               <p className="text-sm text-gray-600 uppercase tracking-wide mb-2">Main</p>
@@ -260,7 +273,7 @@ export default function ComboBuilder() {
             <div className="border-t pt-4 mt-4">
               <div className="flex justify-between text-lg font-bold">
                 <span>Combo Price</span>
-                <span className="text-blue-600">${selectedCombo.base_price.toFixed(2)}</span>
+                <span style={{ color: primary }}>${selectedCombo.base_price.toFixed(2)}</span>
               </div>
               <p className="text-xs text-gray-500 mt-1">You save ${(selectedMain.base_price + selectedSides.reduce((sum, s) => sum + s.base_price, 0) - selectedCombo.base_price).toFixed(2)} with this combo!</p>
             </div>
@@ -270,7 +283,7 @@ export default function ComboBuilder() {
             <button onClick={() => setStep('pick-sides')} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium">
               Back
             </button>
-            <button onClick={handleAddToCart} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium">
+            <button onClick={handleAddToCart} className="flex-1 text-white py-3 rounded-lg font-medium" style={{ backgroundColor: primary }}>
               Add to Cart
             </button>
           </div>

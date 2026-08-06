@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../lib/api'
+import { useTheme } from '../hooks/useTheme'
 
 interface GeofenceConfig {
   success: boolean
@@ -34,6 +35,8 @@ export default function Welcome() {
   const [geofenceRadius, setGeofenceRadius] = useState(200)
   const [joinCode, setJoinCode] = useState('')
   const navigate = useNavigate()
+  const { theme } = useTheme()
+  const primary = theme?.primary_color || '#2563eb'
 
   useEffect(() => {
     const withinGeofence = localStorage.getItem('tableready_within_geofence') === 'true'
@@ -52,7 +55,7 @@ export default function Welcome() {
         setStatus('Loading restaurant location...')
         const geofenceConfig = await apiClient.get<GeofenceConfig>('/config/geofence')
         setGeofenceRadius(geofenceConfig.radius_meters || 200)
-        
+
         if (!geofenceConfig.restaurant_latitude || !geofenceConfig.restaurant_longitude) {
           setError('Restaurant location not configured.')
           setStatus('')
@@ -143,17 +146,17 @@ export default function Welcome() {
 
   if (step === 'location') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: primary }}>
         <div className="text-center p-8">
-          <h1 className="text-5xl font-bold text-white mb-4">TableReady</h1>
-          <p className="text-xl text-blue-100 mb-12">Order from your table or on the go</p>
-          
+          <h1 className="text-5xl font-bold text-white mb-4">{theme?.restaurant_name || 'TableReady'}</h1>
+          <p className="text-xl text-white/80 mb-12">Order from your table or on the go</p>
+
           <div className="max-w-sm mx-auto bg-white/10 backdrop-blur rounded-2xl p-6">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse" />
+              <div className="w-3 h-3 rounded-full bg-white/60 animate-pulse" />
               <p className="text-white">{status || 'Checking your location...'}</p>
             </div>
-            
+
             {error && (
               <div className="bg-red-500/20 border border-red-500/40 rounded-xl p-4 mb-4">
                 <p className="text-red-200 text-sm">{error}</p>
@@ -186,7 +189,7 @@ export default function Welcome() {
             {distance !== null && !error && (
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-blue-100">Distance to restaurant</span>
+                  <span className="text-white/80">Distance to restaurant</span>
                   <span className="font-mono text-white">{Math.round(distance)}m</span>
                 </div>
                 <div className="h-2 bg-white/20 rounded-full overflow-hidden">
@@ -199,7 +202,7 @@ export default function Welcome() {
             )}
           </div>
 
-          <p className="text-blue-200 mt-8">
+          <p className="text-white/70 mt-8">
             Staff? <button onClick={() => navigate('/login')} className="underline">Sign in</button>
           </p>
         </div>
@@ -209,27 +212,30 @@ export default function Welcome() {
 
   if (step === 'dinein' && orderMode) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: primary }}>
         <div className="text-center p-8">
-          <h1 className="text-5xl font-bold text-white mb-4">TableReady</h1>
-          <p className="text-xl text-blue-100 mb-12">How are you ordering?</p>
+          <h1 className="text-5xl font-bold text-white mb-4">{theme?.restaurant_name || 'TableReady'}</h1>
+          <p className="text-xl text-white/80 mb-12">How are you ordering?</p>
 
           <div className="grid gap-4 max-w-sm mx-auto">
             <button
               onClick={handleDineIn}
-              className="bg-white text-blue-600 py-4 px-6 rounded-xl text-lg font-semibold hover:bg-blue-50 shadow-lg"
+              className="bg-white py-4 px-6 rounded-xl text-lg font-semibold hover:bg-white/90 shadow-lg"
+              style={{ color: primary }}
             >
               Dine In
             </button>
             <button
               onClick={handlePickup}
-              className="bg-white text-blue-600 py-4 px-6 rounded-xl text-lg font-semibold hover:bg-blue-50 shadow-lg"
+              className="bg-white py-4 px-6 rounded-xl text-lg font-semibold hover:bg-white/90 shadow-lg"
+              style={{ color: primary }}
             >
               Pickup
             </button>
             <button
               onClick={handleDelivery}
-              className="bg-white text-blue-600 py-4 px-6 rounded-xl text-lg font-semibold hover:bg-blue-50 shadow-lg"
+              className="bg-white py-4 px-6 rounded-xl text-lg font-semibold hover:bg-white/90 shadow-lg"
+              style={{ color: primary }}
             >
               Delivery
             </button>
@@ -237,7 +243,7 @@ export default function Welcome() {
 
           <button
             onClick={() => { setStep('mode'); setOrderMode(null) }}
-            className="mt-6 text-blue-200 underline text-sm"
+            className="mt-6 text-white/70 underline text-sm"
           >
             Back
           </button>
@@ -249,17 +255,18 @@ export default function Welcome() {
   if (step === 'group-code') {
     const groupCode = localStorage.getItem('tableready_group_code') || ''
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: primary }}>
         <div className="text-center p-8 max-w-sm">
           <div className="text-5xl mb-4">👥</div>
           <h1 className="text-2xl font-bold text-white mb-2">Your Group Code</h1>
-          <p className="text-blue-100 mb-6">Share this with your table so they can join your shared cart.</p>
+          <p className="text-white/80 mb-6">Share this with your table so they can join your shared cart.</p>
           <div className="bg-white/10 border-2 border-white/30 rounded-2xl py-6 px-4 mb-8">
             <span className="text-5xl font-bold text-white tracking-[0.3em]">{groupCode}</span>
           </div>
           <button
             onClick={() => setStep('dinein')}
-            className="w-full bg-white text-blue-600 py-4 px-6 rounded-xl text-lg font-semibold hover:bg-blue-50 shadow-lg"
+            className="w-full bg-white py-4 px-6 rounded-xl text-lg font-semibold hover:bg-white/90 shadow-lg"
+            style={{ color: primary }}
           >
             Continue
           </button>
@@ -269,22 +276,24 @@ export default function Welcome() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: primary }}>
       <div className="text-center p-8">
-        <h1 className="text-5xl font-bold text-white mb-4">TableReady</h1>
-        <p className="text-xl text-blue-100 mb-12">Order from your table or on the go</p>
+        <h1 className="text-5xl font-bold text-white mb-4">{theme?.restaurant_name || 'TableReady'}</h1>
+        <p className="text-xl text-white/80 mb-12">Order from your table or on the go</p>
 
         <div className="grid gap-4 max-w-sm mx-auto">
           <button
             onClick={() => handleModeSelect('individual')}
-            className="bg-white text-blue-600 py-4 px-6 rounded-xl text-lg font-semibold hover:bg-blue-50 shadow-lg flex items-center justify-center gap-3"
+            className="bg-white py-4 px-6 rounded-xl text-lg font-semibold hover:bg-white/90 shadow-lg flex items-center justify-center gap-3"
+            style={{ color: primary }}
           >
             <span className="text-2xl">👤</span>
             Just Me
           </button>
           <button
             onClick={() => handleModeSelect('group')}
-            className="bg-white text-blue-600 py-4 px-6 rounded-xl text-lg font-semibold hover:bg-blue-50 shadow-lg flex items-center justify-center gap-3"
+            className="bg-white py-4 px-6 rounded-xl text-lg font-semibold hover:bg-white/90 shadow-lg flex items-center justify-center gap-3"
+            style={{ color: primary }}
           >
             <span className="text-2xl">👥</span>
             Group Order
@@ -298,7 +307,7 @@ export default function Welcome() {
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
             placeholder="Have a group code?"
             maxLength={6}
-            className="flex-1 rounded-xl px-4 py-2.5 text-center tracking-widest text-blue-900 outline-none"
+            className="flex-1 rounded-xl px-4 py-2.5 text-center tracking-widest text-gray-900 outline-none"
           />
           <button
             onClick={handleJoinGroup}
@@ -309,7 +318,7 @@ export default function Welcome() {
           </button>
         </div>
 
-        <p className="text-blue-200 mt-8">
+        <p className="text-white/70 mt-8">
           Staff? <button onClick={() => navigate('/login')} className="underline">Sign in</button>
         </p>
       </div>

@@ -231,7 +231,8 @@ export default function OrderTracking() {
               </button>
               <button
                 onClick={handleRelease}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium"
+                className="flex-1 text-white py-3 rounded-lg font-medium"
+                style={{ backgroundColor: theme?.primary_color || '#2563eb' }}
               >
                 Start Cooking
               </button>

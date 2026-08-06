@@ -162,7 +162,7 @@ export default function KitchenDisplay() {
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
-                  {togglingId === item.item_id ? '...' : item.out_of_stock_flag ? 'Restock' : '86 It'}
+                  {togglingId === item.item_id ? '...' : item.out_of_stock_flag ? 'Restock' : 'Mark Out of Stock'}
                 </button>
               </div>
             ))}
