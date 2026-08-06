@@ -23,7 +23,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c
 }
 
-type WelcomeStep = 'location' | 'mode' | 'dinein'
+type WelcomeStep = 'location' | 'mode' | 'group-code' | 'dinein'
 
 export default function Welcome() {
   const [step, setStep] = useState<WelcomeStep>('location')
@@ -32,6 +32,7 @@ export default function Welcome() {
   const [status, setStatus] = useState('')
   const [orderMode, setOrderMode] = useState<'individual' | 'group' | null>(null)
   const [geofenceRadius, setGeofenceRadius] = useState(200)
+  const [joinCode, setJoinCode] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -114,9 +115,17 @@ export default function Welcome() {
     if (mode === 'group') {
       const groupCode = Math.random().toString(36).substring(2, 8).toUpperCase()
       localStorage.setItem('tableready_group_code', groupCode)
+      setStep('group-code')
     } else {
       localStorage.removeItem('tableready_group_code')
+      setStep('dinein')
     }
+  }
+
+  const handleJoinGroup = () => {
+    if (!joinCode.trim()) return
+    localStorage.setItem('tableready_group_code', joinCode.trim().toUpperCase())
+    setOrderMode('group')
     setStep('dinein')
   }
 
@@ -237,6 +246,28 @@ export default function Welcome() {
     )
   }
 
+  if (step === 'group-code') {
+    const groupCode = localStorage.getItem('tableready_group_code') || ''
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
+        <div className="text-center p-8 max-w-sm">
+          <div className="text-5xl mb-4">👥</div>
+          <h1 className="text-2xl font-bold text-white mb-2">Your Group Code</h1>
+          <p className="text-blue-100 mb-6">Share this with your table so they can join your shared cart.</p>
+          <div className="bg-white/10 border-2 border-white/30 rounded-2xl py-6 px-4 mb-8">
+            <span className="text-5xl font-bold text-white tracking-[0.3em]">{groupCode}</span>
+          </div>
+          <button
+            onClick={() => setStep('dinein')}
+            className="w-full bg-white text-blue-600 py-4 px-6 rounded-xl text-lg font-semibold hover:bg-blue-50 shadow-lg"
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
       <div className="text-center p-8">
@@ -257,6 +288,24 @@ export default function Welcome() {
           >
             <span className="text-2xl">👥</span>
             Group Order
+          </button>
+        </div>
+
+        <div className="max-w-sm mx-auto mt-4 flex gap-2">
+          <input
+            type="text"
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+            placeholder="Have a group code?"
+            maxLength={6}
+            className="flex-1 rounded-xl px-4 py-2.5 text-center tracking-widest text-blue-900 outline-none"
+          />
+          <button
+            onClick={handleJoinGroup}
+            disabled={!joinCode.trim()}
+            className="bg-white/20 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-white/30 disabled:opacity-40"
+          >
+            Join
           </button>
         </div>
 

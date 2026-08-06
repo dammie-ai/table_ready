@@ -1,4 +1,4 @@
-import { API_ORIGIN } from './api'
+import { API_ORIGIN, apiClient } from './api'
 
 export interface MenuItem {
   item_id: number
@@ -70,6 +70,13 @@ export async function getMenuItems(): Promise<MenuResponse> {
   const res = await fetch(`${API_ORIGIN}/api/menu`)
   const data = await res.json()
   return data
+}
+
+export async function toggleMenuItemStock(itemId: number) {
+  return apiClient.patch<{ success: boolean; message: string; item: MenuItem }>(
+    `/menu/${itemId}/toggle-stock`,
+    {}
+  )
 }
 
 export async function getComboMeals(): Promise<{ success: boolean; combos: ComboMeal[] }> {

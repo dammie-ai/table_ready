@@ -28,6 +28,13 @@ interface InventoryItem {
   unit: string
 }
 
+interface ServiceRating {
+  id: number
+  username: string
+  ratings_count: number
+  avg_score: number | null
+}
+
 const COLORS = ['#f97316', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 export default function ManagerPanel() {
@@ -36,21 +43,24 @@ export default function ManagerPanel() {
   const [staffData, setStaffData] = useState<StaffPerf[]>([])
   const [dishOfWeek, setDishOfWeek] = useState<{ name: string } | null>(null)
   const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [serviceRatings, setServiceRatings] = useState<ServiceRating[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [categoryRes, staffRes, dishRes, inventoryRes] = await Promise.all([
+        const [categoryRes, staffRes, dishRes, inventoryRes, ratingsRes] = await Promise.all([
           apiClient.get<any>('/analytics/category-sales'),
           apiClient.get<any>('/analytics/staff-performance'),
           apiClient.get<any>('/promotions/dish-of-week'),
           apiClient.get<any>('/inventory'),
+          apiClient.get<any>('/analytics/service-ratings'),
         ])
         setCategoryData(categoryRes.sales || [])
         setStaffData((staffRes.staff || []).slice().sort((a: StaffPerf, b: StaffPerf) => b.orders_handled - a.orders_handled))
         setDishOfWeek(dishRes.dish || null)
         setInventory(inventoryRes.inventory || inventoryRes.items || [])
+        setServiceRatings(ratingsRes.waiters || [])
       } catch (err) {
         console.error('Failed to load manager data:', err)
       } finally {
@@ -219,6 +229,31 @@ export default function ManagerPanel() {
                 ))}
                 {staffData.length === 0 && <p className="text-sm text-[#6b7280]">No staff activity yet.</p>}
               </div>
+            </div>
+          </div>
+
+          <div className="bg-[#111118] border border-white/8 rounded-2xl p-5 mt-4">
+            <h3 className="text-sm font-semibold mb-1 text-[#6b7280] uppercase tracking-widest font-mono">Customer Service Ratings</h3>
+            <p className="text-xs text-[#6b7280] mb-4">From post-checkout customer feedback (0-10) — separate from sales performance above.</p>
+            <div className="space-y-2">
+              {serviceRatings.map((r) => (
+                <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5">
+                  <div>
+                    <div className="text-sm font-medium">{r.username}</div>
+                    <div className="text-[10px] text-[#6b7280]">{r.ratings_count} rating{r.ratings_count === 1 ? '' : 's'}</div>
+                  </div>
+                  <div
+                    className="text-sm font-semibold px-2.5 py-1 rounded-full"
+                    style={{
+                      color: r.avg_score === null ? '#6b7280' : r.avg_score >= 7 ? '#10b981' : r.avg_score >= 4 ? '#f59e0b' : '#ef4444',
+                      backgroundColor: r.avg_score === null ? 'transparent' : 'rgba(255,255,255,0.05)',
+                    }}
+                  >
+                    {r.avg_score === null ? 'No ratings yet' : `${r.avg_score} / 10`}
+                  </div>
+                </div>
+              ))}
+              {serviceRatings.length === 0 && <p className="text-sm text-[#6b7280]">No waiters on staff yet.</p>}
             </div>
           </div>
 

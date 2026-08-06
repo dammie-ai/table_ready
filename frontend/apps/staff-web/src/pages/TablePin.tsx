@@ -16,7 +16,7 @@ export default function TablePin() {
     setError('')
 
     try {
-      const res = await apiClient.post<{ success: boolean; table_id: number; message: string }>('/tables/verify-code', {
+      const res = await apiClient.post<{ success: boolean; table_id: number; message: string; waiter_name: string | null }>('/tables/verify-code', {
         table_number: Number(tableNum),
         code,
       })
@@ -24,6 +24,11 @@ export default function TablePin() {
       if (res.success) {
         localStorage.setItem('tableready_table_id', String(res.table_id))
         localStorage.setItem('tableready_table_number', tableNum)
+        if (res.waiter_name) {
+          localStorage.setItem('tableready_waiter_name', res.waiter_name)
+        } else {
+          localStorage.removeItem('tableready_waiter_name')
+        }
         navigate('/menu?mode=dine-in')
       } else {
         setError(res.message || 'Invalid PIN')

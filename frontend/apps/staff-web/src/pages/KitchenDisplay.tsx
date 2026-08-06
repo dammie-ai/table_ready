@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
 import { getSocket } from '../lib/socket'
+import { getMenuItems, toggleMenuItemStock, type MenuItem } from '../lib/menuApi'
 
 interface Order {
   master_order_id: number
@@ -14,6 +15,10 @@ interface Order {
 export default function KitchenDisplay() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'orders' | 'stock'>('orders')
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [stockLoading, setStockLoading] = useState(true)
+  const [togglingId, setTogglingId] = useState<number | null>(null)
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -27,7 +32,19 @@ export default function KitchenDisplay() {
       }
     }
 
+    const loadMenuItems = async () => {
+      try {
+        const res = await getMenuItems()
+        setMenuItems(res.items || [])
+      } catch (err) {
+        console.error('Failed to load menu items:', err)
+      } finally {
+        setStockLoading(false)
+      }
+    }
+
     loadOrders()
+    loadMenuItems()
 
     const socket = getSocket()
     socket.on('new_kitchen_order', (order: Order) => {
@@ -40,12 +57,31 @@ export default function KitchenDisplay() {
         )
       )
     })
+    socket.on('menu_item_updated', (data: { item_id: number; out_of_stock_flag?: boolean }) => {
+      if (data.out_of_stock_flag === undefined) return
+      setMenuItems((prev) =>
+        prev.map((m) => (m.item_id === data.item_id ? { ...m, out_of_stock_flag: data.out_of_stock_flag! } : m))
+      )
+    })
 
     return () => {
       socket.off('new_kitchen_order')
       socket.off('kitchen_order_updated')
+      socket.off('menu_item_updated')
     }
   }, [])
+
+  const toggleStock = async (itemId: number) => {
+    setTogglingId(itemId)
+    try {
+      const res = await toggleMenuItemStock(itemId)
+      setMenuItems((prev) => prev.map((m) => (m.item_id === itemId ? res.item : m)))
+    } catch (err) {
+      console.error('Failed to toggle stock:', err)
+    } finally {
+      setTogglingId(null)
+    }
+  }
 
   const advanceStatus = async (orderId: number, currentStatus: string) => {
     const statusFlow: Record<string, string> = {
@@ -80,7 +116,59 @@ export default function KitchenDisplay() {
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <h1 className="text-4xl font-bold mb-6 text-center">Kitchen Display</h1>
 
-      {orders.length === 0 ? (
+      <div className="flex justify-center gap-3 mb-8">
+        <button
+          onClick={() => setView('orders')}
+          className={`px-6 py-2 rounded-lg text-lg font-semibold ${
+            view === 'orders' ? 'bg-yellow-500 text-gray-900' : 'bg-gray-800 text-gray-300'
+          }`}
+        >
+          Orders
+        </button>
+        <button
+          onClick={() => setView('stock')}
+          className={`px-6 py-2 rounded-lg text-lg font-semibold ${
+            view === 'stock' ? 'bg-yellow-500 text-gray-900' : 'bg-gray-800 text-gray-300'
+          }`}
+        >
+          Stock
+        </button>
+      </div>
+
+      {view === 'stock' ? (
+        stockLoading ? (
+          <p className="text-center text-gray-400 text-2xl py-20">Loading menu items...</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-w-6xl mx-auto">
+            {menuItems.map((item) => (
+              <div
+                key={item.item_id}
+                className={`rounded-lg p-4 border-2 flex items-center justify-between ${
+                  item.out_of_stock_flag ? 'bg-gray-800 border-red-600' : 'bg-gray-800 border-gray-700'
+                }`}
+              >
+                <div>
+                  <p className="text-lg font-semibold">{item.name}</p>
+                  <p className={`text-sm ${item.out_of_stock_flag ? 'text-red-400' : 'text-green-400'}`}>
+                    {item.out_of_stock_flag ? 'Out of stock' : 'In stock'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => toggleStock(item.item_id)}
+                  disabled={togglingId === item.item_id}
+                  className={`px-4 py-2 rounded-lg font-bold whitespace-nowrap disabled:opacity-50 ${
+                    item.out_of_stock_flag
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {togglingId === item.item_id ? '...' : item.out_of_stock_flag ? 'Restock' : '86 It'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )
+      ) : orders.length === 0 ? (
         <p className="text-center text-gray-400 text-2xl py-20">No active orders</p>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
