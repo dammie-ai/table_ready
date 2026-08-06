@@ -11,6 +11,20 @@ export const colors = {
   disabled: '#9ca3af',
 };
 
+// Same brand primary/secondary in both modes — only the neutral
+// background/surface/text/border/disabled shades flip for dark mode.
+export const darkColors = {
+  ...colors,
+  background: '#0a0a0f',
+  surface: '#16161d',
+  text: '#f1f5f9',
+  textSecondary: '#9ca3af',
+  border: '#27272f',
+  error: '#f87171',
+  success: '#4ade80',
+  disabled: '#4b5563',
+};
+
 export const typography = {
   h1: { fontSize: 36, fontWeight: 'bold' as const, color: colors.text },
   h2: { fontSize: 24, fontWeight: '700' as const, color: colors.text },

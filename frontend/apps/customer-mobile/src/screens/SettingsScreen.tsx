@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native'
 import { getNotificationPreferences, updateNotificationPreferences, deleteAccount, deleteStorageItem } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
+import { useThemeStore } from '../stores/themeStore'
 
 export default function SettingsScreen({ navigation }: any) {
   const [prefs, setPrefs] = useState({
@@ -11,6 +12,9 @@ export default function SettingsScreen({ navigation }: any) {
   })
   const [loading, setLoading] = useState(true)
   const logout = useAuthStore((s) => s.logout)
+  const colors = useThemeStore((s) => s.colors)
+  const mode = useThemeStore((s) => s.mode)
+  const setMode = useThemeStore((s) => s.setMode)
 
   useEffect(() => {
     loadPreferences()
@@ -76,29 +80,37 @@ export default function SettingsScreen({ navigation }: any) {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Order Updates</Text>
+      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
+        <View style={[styles.row, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Dark Mode</Text>
+          <Switch value={mode === 'dark'} onValueChange={(v) => setMode(v ? 'dark' : 'light')} />
+        </View>
+      </View>
+
+      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
+        <View style={[styles.row, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Order Updates</Text>
           <Switch value={prefs.order_updates} onValueChange={(v) => togglePref('order_updates', v)} />
         </View>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Promotions</Text>
+        <View style={[styles.row, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Promotions</Text>
           <Switch value={prefs.promotions} onValueChange={(v) => togglePref('promotions', v)} />
         </View>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Reminders</Text>
+        <View style={[styles.row, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Reminders</Text>
           <Switch value={prefs.reminders} onValueChange={(v) => togglePref('reminders', v)} />
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-          <Text style={styles.menuItemText}>Log Out</Text>
+      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleLogout}>
+          <Text style={[styles.menuItemText, { color: colors.primary }]}>Log Out</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.menuItem, styles.dangerItem]} onPress={handleDeleteAccount}>
           <Text style={[styles.menuItemText, styles.dangerText]}>Delete Account</Text>
