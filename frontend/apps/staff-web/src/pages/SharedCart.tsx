@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getSocket, listenForCartUpdates, type CartUpdatePayload } from '../lib/sharedCart'
 import { useCartStore } from '../stores/cartStore'
+import { useTheme } from '../hooks/useTheme'
 
 interface RemoteCartItem {
   menu_item_id: number
@@ -20,6 +21,8 @@ export default function SharedCart() {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const navigate = useNavigate()
   const localItems = useCartStore((s) => s.items)
+  const { theme } = useTheme()
+  const primary = theme?.primary_color || '#2563eb'
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true)
@@ -158,7 +161,8 @@ export default function SharedCart() {
                 setJoined(true)
               }
             }}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium"
+            className="w-full text-white py-3 rounded-lg font-medium"
+            style={{ backgroundColor: primary }}
           >
             Join Table
           </button>
@@ -180,7 +184,7 @@ export default function SharedCart() {
           <span className={`text-xs px-2 py-1 rounded ${isOnline ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
             {isOnline ? 'Online' : 'Offline'}
           </span>
-          <button onClick={() => navigate('/menu')} className="text-blue-600 hover:underline">
+          <button onClick={() => navigate('/menu')} className="hover:underline" style={{ color: primary }}>
             Add Items
           </button>
         </div>
@@ -192,7 +196,7 @@ export default function SharedCart() {
         </div>
       )}
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-800">
+      <div className="rounded-lg p-3 mb-4 text-sm" style={{ backgroundColor: primary + '10', border: `1px solid ${primary}30`, color: primary }}>
         Items added by others appear below. All changes sync in real time.
       </div>
 
@@ -204,7 +208,7 @@ export default function SharedCart() {
             <div key={item.menu_item_id} className="border rounded-lg p-4 flex justify-between items-center">
               <div>
                 <h3 className="font-medium">{item.name}</h3>
-                <p className="text-blue-600 font-medium">${item.base_price.toFixed(2)}</p>
+                <p className="font-medium" style={{ color: primary }}>${item.base_price.toFixed(2)}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => handleUpdateQuantity(item.menu_item_id, item.quantity - 1)} className="w-8 h-8 rounded border hover:bg-gray-100">
@@ -224,7 +228,7 @@ export default function SharedCart() {
       )}
 
       <div className="flex gap-3">
-        <button onClick={() => navigate('/checkout')} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium">
+        <button onClick={() => navigate('/checkout')} className="flex-1 text-white py-3 rounded-lg font-medium" style={{ backgroundColor: primary }}>
           Checkout
         </button>
       </div>
