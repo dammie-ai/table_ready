@@ -13,7 +13,7 @@ interface Table {
 interface ServiceRequest {
   request_id: number
   table_number: number
-  type: string
+  request_type: string
   notes?: string
   status: string
   created_at: string
@@ -117,8 +117,8 @@ export default function WaiterDashboard() {
   const requestIcon = (type: string) => {
     switch (type) {
       case 'refill': return '💧'
-      case 'help': return '🆘'
-      case 'check': return '💳'
+      case 'call_server': return '🆘'
+      case 'bill_request': return '💳'
       default: return '📋'
     }
   }
@@ -270,14 +270,14 @@ export default function WaiterDashboard() {
                 <div
                   key={req.request_id}
                   className={`flex items-start justify-between gap-3 p-4 rounded-xl border ${
-                    req.type === 'help' ? 'border-red-500/40 bg-red-500/5' : req.type === 'refill' ? 'border-orange-500/40 bg-orange-500/5' : 'border-white/8 bg-[#111118]'
+                    req.request_type === 'call_server' ? 'border-red-500/40 bg-red-500/5' : req.request_type === 'refill' ? 'border-orange-500/40 bg-orange-500/5' : 'border-white/8 bg-[#111118]'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="text-2xl flex-shrink-0">{requestIcon(req.type)}</div>
+                    <div className="text-2xl flex-shrink-0">{requestIcon(req.request_type)}</div>
                     <div>
                       <div className="font-semibold text-sm">Table {req.table_number}</div>
-                      <div className="text-sm text-[#6b7280]">{req.type.toUpperCase()}</div>
+                      <div className="text-sm text-[#6b7280]">{req.request_type.replace('_', ' ').toUpperCase()}</div>
                       {req.notes && <div className="text-xs text-[#6b7280]/60 mt-1">{req.notes}</div>}
                       <div className="text-[10px] text-[#6b7280]/40 mt-1 font-mono">
                         {new Date(req.created_at).toLocaleTimeString()}

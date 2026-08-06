@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography } from '../theme';
+import { Text, StyleSheet } from 'react-native';
+import { useThemeStore } from '../stores/themeStore';
 import MenuScreen from '../screens/MenuScreen';
 import CartScreen from '../screens/CartScreen';
 import OrderHistoryScreen from '../screens/OrderHistoryScreen';
@@ -15,9 +15,9 @@ export type TabParamList = {
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+function TabIcon({ name, focused, activeColor, inactiveColor }: { name: string; focused: boolean; activeColor: string; inactiveColor: string }) {
   return (
-    <Text style={[styles.icon, focused && styles.iconFocused]}>
+    <Text style={[styles.icon, { color: focused ? activeColor : inactiveColor }]}>
       {name === 'Menu' && '🍽️'}
       {name === 'Cart' && '🛒'}
       {name === 'Orders' && '📋'}
@@ -27,15 +27,19 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
 }
 
 export default function TabNavigator() {
+  const colors = useThemeStore((s) => s.colors);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { backgroundColor: colors.surface, borderTopColor: colors.border }],
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: styles.label,
-        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
+        tabBarIcon: ({ focused }) => (
+          <TabIcon name={route.name} focused={focused} activeColor={colors.primary} inactiveColor={colors.textSecondary} />
+        ),
       })}
     >
       <Tab.Screen name="Menu" component={MenuScreen} options={{ tabBarLabel: 'Menu' }} />
@@ -48,8 +52,6 @@ export default function TabNavigator() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
     borderTopWidth: 1,
     paddingBottom: 8,
     paddingTop: 8,
@@ -61,9 +63,5 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 22,
-    color: colors.textSecondary,
-  },
-  iconFocused: {
-    color: colors.primary,
   },
 });

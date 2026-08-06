@@ -109,7 +109,11 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
   const handleServiceRequest = useCallback(async (label: string, type: string) => {
     setSentRequests((prev) => new Set(prev).add(label));
     try {
-      await createServiceRequest({ type, notes: order ? `Order #${order.master_order_id}` : undefined });
+      await createServiceRequest({
+        table_number: order?.table_number ?? 0,
+        request_type: type,
+        notes: order ? `Order #${order.master_order_id}` : undefined,
+      });
       setShowServiceToast(label);
       setTimeout(() => setShowServiceToast(''), 2000);
     } catch (err) {
