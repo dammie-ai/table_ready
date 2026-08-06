@@ -317,16 +317,13 @@ exports.generateQRCode = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No active session code found for this table.' });
     }
 
-    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
-    const qrData = JSON.stringify({
-      type: 'tableready_table',
-      table_id: tableId,
-      table_number: table_number,
-      code: sessionCode,
-      url: `${baseUrl}/join?code=${sessionCode}&table=${table_number}`,
-    });
+    // The QR image encodes this URL directly (not a wrapping JSON blob) so
+    // any camera app — or this app's own in-browser scanner — can open it
+    // straight away. Must match TablePin's own route/query param names.
+    const baseUrl = process.env.APP_BASE_URL || 'https://tableready-staff-web.onrender.com';
+    const joinUrl = `${baseUrl}/table-pin?table=${table_number}&code=${sessionCode}`;
 
-    const qrImage = await QRCode.toDataURL(qrData, {
+    const qrImage = await QRCode.toDataURL(joinUrl, {
       width: 400,
       margin: 2,
       color: { dark: '#000000', light: '#ffffff' },
@@ -334,12 +331,12 @@ exports.generateQRCode = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      qr_data: qrData,
+      qr_data: joinUrl,
       qr_image: qrImage,
       table_id: tableId,
       table_number: table_number,
       code: sessionCode,
-      join_url: `${baseUrl}/join?code=${sessionCode}&table=${table_number}`,
+      join_url: joinUrl,
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
