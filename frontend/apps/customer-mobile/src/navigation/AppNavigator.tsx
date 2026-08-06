@@ -15,7 +15,6 @@ import OrderTrackingScreen from '../screens/OrderTrackingScreen'
 import OrderHistoryScreen from '../screens/OrderHistoryScreen'
 import ReservationsScreen from '../screens/ReservationsScreen'
 import WaitlistScreen from '../screens/WaitlistScreen'
-import ServiceRequestsScreen from '../screens/ServiceRequestsScreen'
 import SettingsScreen from '../screens/SettingsScreen'
 import TabNavigator from './TabNavigator'
 
@@ -36,7 +35,6 @@ export type RootStackParamList = {
   OrderHistory: undefined
   Reservations: undefined
   Waitlist: undefined
-  ServiceRequests: undefined
   Settings: undefined
 }
 
@@ -62,7 +60,6 @@ export default function Navigation() {
         <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} options={{ title: 'Order History' }} />
         <Stack.Screen name="Reservations" component={ReservationsScreen} options={{ title: 'Reservations' }} />
         <Stack.Screen name="Waitlist" component={WaitlistScreen} options={{ title: 'Waitlist' }} />
-        <Stack.Screen name="ServiceRequests" component={ServiceRequestsScreen} options={{ title: 'Service Requests' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       </Stack.Navigator>
     </NavigationContainer>
