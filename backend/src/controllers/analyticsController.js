@@ -151,3 +151,29 @@ exports.getDishOfWeekStats = async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
+
+/**
+ * GET /api/analytics/service-ratings
+ * Per-waiter average customer service rating (0-10) — kept separate from
+ * getStaffPerformance's sales metrics deliberately, see 002_add_service_ratings.sql.
+ */
+exports.getServiceRatings = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        u.id,
+        u.username,
+        COUNT(sr.rating_id) AS ratings_count,
+        ROUND(AVG(sr.score)::numeric, 2) AS avg_score
+      FROM users u
+      LEFT JOIN service_ratings sr ON sr.waiter_id = u.id
+      WHERE u.role = 'waiter'
+      GROUP BY u.id, u.username
+      ORDER BY avg_score DESC NULLS LAST
+    `);
+
+    return res.status(200).json({ success: true, waiters: result.rows });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};

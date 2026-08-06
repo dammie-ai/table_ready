@@ -17,9 +17,10 @@ exports.verifyTableCode = async (req, res) => {
 
   try {
     const tableRes = await pool.query(
-      `SELECT table_id, status_state, active_pin, pin_expires_at
-        FROM restaurant_tables
-        WHERE table_number = $1`,
+      `SELECT rt.table_id, rt.status_state, rt.active_pin, rt.pin_expires_at, u.username AS waiter_name
+        FROM restaurant_tables rt
+        LEFT JOIN users u ON u.id = rt.waiter_id
+        WHERE rt.table_number = $1`,
       [table_number]
     );
 
@@ -44,7 +45,8 @@ exports.verifyTableCode = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Table verified successfully.',
-      table_id: table.table_id
+      table_id: table.table_id,
+      waiter_name: table.waiter_name || null
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -58,9 +60,97 @@ exports.verifyTableCode = async (req, res) => {
 exports.getFloorLayout = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT table_id, table_number, status_state, updated_at
-       FROM restaurant_tables
-       ORDER BY table_number ASC`
+      `SELECT rt.table_id, rt.table_number, rt.status_state, rt.updated_at, rt.waiter_id, u.username AS waiter_name
+       FROM restaurant_tables rt
+       LEFT JOIN users u ON u.id = rt.waiter_id
+       ORDER BY rt.table_number ASC`
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      tables: result.rows
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * PATCH /api/tables/:id/assign-waiter
+ * Assign (or unassign, with waiter_id: null) a waiter to a table.
+ * Capped at 3 tables per waiter.
+ */
+exports.assignWaiter = async (req, res) => {
+  const { id } = req.params;
+  const { waiter_id } = req.body;
+
+  try {
+    if (waiter_id !== null && waiter_id !== undefined) {
+      const waiterRes = await pool.query(
+        `SELECT id, role FROM users WHERE id = $1`,
+        [waiter_id]
+      );
+      if (waiterRes.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Waiter not found.' });
+      }
+      if (waiterRes.rows[0].role !== 'waiter') {
+        return res.status(400).json({ success: false, error: 'That user is not a waiter.' });
+      }
+
+      const countRes = await pool.query(
+        `SELECT COUNT(*) FROM restaurant_tables WHERE waiter_id = $1 AND table_id != $2`,
+        [waiter_id, id]
+      );
+      if (Number(countRes.rows[0].count) >= 3) {
+        return res.status(400).json({ success: false, error: 'This waiter is already assigned to 3 tables (the max).' });
+      }
+    }
+
+    const result = await pool.query(
+      `UPDATE restaurant_tables SET waiter_id = $1 WHERE table_id = $2 RETURNING table_id, table_number, waiter_id`,
+      [waiter_id ?? null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Table not found.' });
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('table_waiter_assigned', result.rows[0]);
+    }
+
+    return res.status(200).json({ success: true, table: result.rows[0] });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * GET /api/tables/my-tables
+ * A waiter's own assigned tables, with their current order status if occupied.
+ */
+exports.getMyTables = async (req, res) => {
+  try {
+    const waiterId = req.user.id;
+
+    const result = await pool.query(
+      `SELECT
+         rt.table_id, rt.table_number, rt.status_state, rt.capacity, rt.section,
+         o.master_order_id, o.status AS order_status, o.total_amount
+       FROM restaurant_tables rt
+       LEFT JOIN LATERAL (
+         SELECT master_order_id, status, total_amount
+         FROM orders
+         WHERE table_number = rt.table_number
+           AND status NOT IN ('PICKED_UP', 'CANCELLED', 'COMPLETED')
+         ORDER BY master_order_id DESC
+         LIMIT 1
+       ) o ON true
+       WHERE rt.waiter_id = $1
+       ORDER BY rt.table_number ASC`,
+      [waiterId]
     );
 
     return res.status(200).json({
@@ -334,4 +424,6 @@ module.exports = {
   verifyLocation: exports.verifyLocation,
   generateQRCode: exports.generateQRCode,
   verifyQRCode: exports.verifyQRCode,
+  assignWaiter: exports.assignWaiter,
+  getMyTables: exports.getMyTables,
 };
