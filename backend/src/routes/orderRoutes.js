@@ -1109,4 +1109,44 @@ router.post('/:id/complete-pickup', authenticateToken, authorizeRoles('admin', '
   }
 });
 
+// POST /api/orders/:id/rate
+// Customer rates the service on a completed order, 0-10. One rating per
+// order — resubmitting updates the existing score rather than duplicating.
+router.post('/:id/rate', async (req, res) => {
+  const { id } = req.params;
+  const { score, comment } = req.body;
+
+  if (score === undefined || score === null || !Number.isInteger(score) || score < 0 || score > 10) {
+    return res.status(400).json({ success: false, error: 'score must be an integer between 0 and 10.' });
+  }
+
+  try {
+    const orderRes = await pool.query(
+      `SELECT master_order_id, table_number FROM orders WHERE master_order_id = $1`,
+      [id]
+    );
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found.' });
+    }
+
+    const waiterRes = await pool.query(
+      `SELECT waiter_id FROM restaurant_tables WHERE table_number = $1`,
+      [orderRes.rows[0].table_number]
+    );
+    const waiterId = waiterRes.rows[0]?.waiter_id || null;
+
+    const result = await pool.query(
+      `INSERT INTO service_ratings (master_order_id, waiter_id, score, comment)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (master_order_id) DO UPDATE SET score = EXCLUDED.score, comment = EXCLUDED.comment
+       RETURNING *`,
+      [id, waiterId, score, comment || null]
+    );
+
+    return res.status(201).json({ success: true, rating: result.rows[0] });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

@@ -268,6 +268,44 @@ const toggleMenuItem = async (req, res) => {
     }
 };
 
+/**
+ * PATCH /api/menu/:id/toggle-stock
+ * Toggle menu item out-of-stock flag (kitchen/staff/admin) — item stays on
+ * the menu but shows as unavailable, unlike toggleMenuItem which hides it
+ * entirely.
+ */
+const toggleStock = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await pool.query(
+            `UPDATE menu_items SET out_of_stock_flag = NOT out_of_stock_flag WHERE item_id = $1 RETURNING *`,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Menu item not found.' });
+        }
+
+        const item = result.rows[0];
+        item.base_price = parseFloat(item.base_price);
+
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('menu_item_updated', { item_id: item.item_id, out_of_stock_flag: item.out_of_stock_flag });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `${item.name} is now ${item.out_of_stock_flag ? 'OUT OF STOCK' : 'back in stock'}.`,
+            item
+        });
+    } catch (error) {
+        console.error('Error toggling menu item stock:', error);
+        return res.status(500).json({ success: false, error: 'Internal server error.' });
+    }
+};
+
 module.exports = {
     getMenuItems,
     getMenuItemDetail,
@@ -276,5 +314,6 @@ module.exports = {
     removeIngredientFromMenuItem,
     createMenuItem,
     updateMenuItem,
-    toggleMenuItem
+    toggleMenuItem,
+    toggleStock
 };
