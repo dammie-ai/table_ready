@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { joinWaitlist, cancelWaitlistEntry, getFloorLayout } from '@table-ready/shared'
+import { useThemeStore } from '../stores/themeStore'
 
 export default function WaitlistScreen({ navigation }: any) {
+  const colors = useThemeStore((s) => s.colors)
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [tables, setTables] = useState<{ table_id: number; table_number: number; status_state: string }[]>([])
   const [selectedTableId, setSelectedTableId] = useState<number | null>(null)
   const [partySize, setPartySize] = useState('2')
@@ -105,9 +108,9 @@ export default function WaitlistScreen({ navigation }: any) {
       )}
 
       <View style={styles.form}>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Name" />
-        <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Phone (optional)" keyboardType="phone-pad" />
-        <TextInput style={styles.input} value={partySize} onChangeText={setPartySize} placeholder="Party Size" keyboardType="numeric" />
+        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Name" placeholderTextColor={colors.textSecondary} />
+        <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Phone (optional)" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
+        <TextInput style={styles.input} value={partySize} onChangeText={setPartySize} placeholder="Party Size" placeholderTextColor={colors.textSecondary} keyboardType="numeric" />
         <TouchableOpacity style={[styles.button, joining && { opacity: 0.6 }]} onPress={handleJoin} disabled={joining}>
           <Text style={styles.buttonText}>{joining ? 'Joining...' : 'Join Waitlist'}</Text>
         </TouchableOpacity>
@@ -117,10 +120,10 @@ export default function WaitlistScreen({ navigation }: any) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
     padding: 16,
   },
   center: {
@@ -132,19 +135,19 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 16,
-    color: '#111827',
+    color: colors.text,
   },
   listTitle: {
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 12,
-    color: '#111827',
+    color: colors.text,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   emptyQueue: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   tableGrid: {
@@ -157,41 +160,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
   },
   tableChipActive: {
-    backgroundColor: '#c2410c',
-    borderColor: '#c2410c',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   tableChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   tableChipTextActive: {
     color: '#ffffff',
   },
   form: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#ffffff',
+    color: colors.text,
+    backgroundColor: colors.surface,
     marginBottom: 12,
   },
   button: {
-    backgroundColor: '#c2410c',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -203,37 +207,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   confirmCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     marginBottom: 16,
   },
   confirmLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#6b7280',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   confirmPin: {
     fontSize: 40,
     fontWeight: '700',
-    color: '#c2410c',
+    color: colors.primary,
     letterSpacing: 4,
     marginVertical: 8,
   },
   confirmDetail: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 8,
   },
   confirmHint: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   cancelButton: {

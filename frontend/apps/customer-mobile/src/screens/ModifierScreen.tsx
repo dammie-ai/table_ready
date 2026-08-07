@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useCartStore, type MenuItem, type MenuItemModifier } from '@table-ready/shared'
+import { useThemeStore } from '../stores/themeStore'
 
 export default function ModifierScreen({ route, navigation }: any) {
+  const colors = useThemeStore((s) => s.colors)
+  const styles = useMemo(() => createStyles(colors), [colors])
   const { item, modifiers } = route.params || {}
   const [selected, setSelected] = useState<{ modifier_id: number; quantity: number }[]>([])
   const addItem = useCartStore((s) => s.addItem)
@@ -76,32 +79,32 @@ export default function ModifierScreen({ route, navigation }: any) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
     margin: 16,
-    color: '#111827',
+    color: colors.text,
   },
   modifierCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   modifierCardSelected: {
-    borderColor: '#2563eb',
-    backgroundColor: '#eff6ff',
+    borderColor: colors.primary,
+    backgroundColor: colors.background,
   },
   modifierInfo: {
     flex: 1,
@@ -109,25 +112,25 @@ const styles = StyleSheet.create({
   modifierName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
   },
   modifierDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   modifierPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#16a34a',
+    color: colors.success,
   },
   modifierPriceNegative: {
-    color: '#dc2626',
+    color: colors.error,
   },
   footer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
     padding: 16,
   },
   totalRow: {
@@ -138,15 +141,15 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   totalValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#2563eb',
+    color: colors.primary,
   },
   addButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',

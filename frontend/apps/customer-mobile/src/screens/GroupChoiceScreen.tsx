@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Input from '../components/Input';
-import { colors, spacing, typography, borderRadius } from '../theme';
+import { spacing, typography, borderRadius } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 
 type GroupType = 'solo' | 'group';
 type SubMode = 'create' | 'join';
@@ -14,6 +15,8 @@ function generateRoomCode() {
 }
 
 export default function GroupChoiceScreen({ navigation, onSelect }: any) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [groupSubMode, setGroupSubMode] = useState<SubMode | null>(null);
   const [roomCode] = useState(generateRoomCode);
   const [joinCode, setJoinCode] = useState('');
@@ -37,7 +40,7 @@ export default function GroupChoiceScreen({ navigation, onSelect }: any) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={typography.h2}>How are you ordering?</Text>
+        <Text style={[typography.h2, { color: colors.text }]}>How are you ordering?</Text>
         <Text style={styles.subtitle}>Choose your dining style to get started</Text>
       </View>
 
@@ -131,7 +134,7 @@ export default function GroupChoiceScreen({ navigation, onSelect }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -155,7 +158,7 @@ const styles = StyleSheet.create({
   },
   toggleRow: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.border,
     borderRadius: borderRadius.lg,
     padding: 4,
     gap: 4,

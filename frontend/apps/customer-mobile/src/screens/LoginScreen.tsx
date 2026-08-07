@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 import { login as apiLogin, register as apiRegister } from '@table-ready/shared';
 import { useAuthStore } from '@table-ready/shared';
 
 export default function LoginScreen({ navigation }: any) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -140,7 +143,7 @@ export default function LoginScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -176,7 +179,7 @@ const styles = StyleSheet.create({
   },
   toggleRow: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.border,
     borderRadius: borderRadius.lg,
     padding: 4,
     marginHorizontal: spacing.xxl,
