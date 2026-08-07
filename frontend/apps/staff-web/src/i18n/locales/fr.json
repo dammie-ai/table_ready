@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "menu": "Menu",
+    "reservations": "Réservations",
+    "waitlist": "Liste d'attente",
+    "staff": "Personnel",
+    "reports": "Rapports",
+    "promotions": "Promotions",
+    "settings": "Paramètres",
+    "kitchenDisplay": "Écran de cuisine",
+    "floorMap": "Plan de salle",
+    "deliveryQueue": "File de livraison"
+  },
+  "roles": {
+    "manager": "Gérant",
+    "admin": "Administrateur",
+    "assistant_manager": "Gérant adjoint",
+    "kitchen": "Cuisine",
+    "waiter": "Serveur",
+    "delivery": "Livreur",
+    "other": "Personnel"
+  },
+  "layout": {
+    "viewingAs": "Affiché en tant que :",
+    "signOut": "Déconnexion"
+  },
+  "login": {
+    "subtitle": "Accès personnel",
+    "username": "Nom d'utilisateur",
+    "usernamePlaceholder": "Entrez votre nom d'utilisateur",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "signIn": "Se connecter",
+    "signingIn": "Connexion en cours...",
+    "loginFailed": "Échec de la connexion",
+    "quickLogin": "Connexion rapide",
+    "manager": "Gérant",
+    "kitchen": "Cuisine",
+    "waiter": "Serveur",
+    "delivery": "Livreur"
+  },
+  "settings": {
+    "language": "Langue",
+    "languageHint": "Choisissez votre langue d'affichage. Cela n'affecte que votre compte, pas le reste du personnel."
+  }
+}

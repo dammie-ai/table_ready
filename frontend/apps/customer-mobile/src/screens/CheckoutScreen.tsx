@@ -1,14 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
-import { useCartStore, createOrder } from '@table-ready/shared';
-import Button from '../components/Button';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
+import { useCartStore, createOrder, getStorageItem } from '@table-ready/shared';
+import { spacing, borderRadius, typography } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 
 const TIP_PRESETS = [0, 15, 18, 20];
 
 export default function CheckoutScreen({ navigation }: any) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [orderType, setOrderType] = useState('pickup');
   const [tableNumber, setTableNumber] = useState('');
+
+  // A verified table (scanned QR or manually entered on the TablePin
+  // screen) means this is unambiguously a dine-in order — skip making the
+  // customer pick the order type and retype the table number they already
+  // gave us.
+  useEffect(() => {
+    getStorageItem('tableready_table_number').then((stored) => {
+      if (stored) {
+        setOrderType('dine-in');
+        setTableNumber(stored);
+      }
+    }).catch(() => {});
+  }, []);
   const [address, setAddress] = useState('');
   const [instructions, setInstructions] = useState('');
   const [tipPercent, setTipPercent] = useState(18);
@@ -56,23 +73,47 @@ export default function CheckoutScreen({ navigation }: any) {
               menu_item_id: item.combo_main.menu_item_id,
               quantity: item.quantity,
               custom_instructions: (item.custom_instructions || '') + noteSuffix,
+              modifiers: undefined as { modifier_id: number; quantity: number }[] | undefined,
             },
             ...(item.combo_sides || []).map((side) => ({
               menu_item_id: side.menu_item_id,
               quantity: item.quantity,
               custom_instructions: noteSuffix,
+              modifiers: undefined as { modifier_id: number; quantity: number }[] | undefined,
             })),
           ]
         }
         return [{
           menu_item_id: item.menu_item_id!,
           quantity: item.quantity,
-          custom_instructions: item.custom_instructions,
+          custom_instructions: item.custom_instructions || '',
+          modifiers: item.modifiers?.map((m) => ({ modifier_id: m.modifier_id, quantity: m.quantity })),
         }]
       })
       const notes = [instructions, orderType === 'delivery' ? `Delivery address: ${address}` : null]
         .filter(Boolean)
         .join('\n') || undefined
+
+      // Captured here (rather than reusing the one-time check on the
+      // Welcome screen) so the live-tracking distance/ETA has a real
+      // destination to measure the driver against, without relying on a
+      // location grabbed several screens and possibly minutes ago.
+      let deliveryCoords: { delivery_latitude?: number; delivery_longitude?: number } = {}
+      if (orderType === 'delivery') {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync()
+          if (status === 'granted') {
+            const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+            deliveryCoords = {
+              delivery_latitude: position.coords.latitude,
+              delivery_longitude: position.coords.longitude,
+            }
+          }
+        } catch {
+          // Live tracking just won't have a destination to measure
+          // against — not worth blocking the order over.
+        }
+      }
 
       const res = await createOrder({
         order_type: orderTypeLabel as any,
@@ -81,6 +122,7 @@ export default function CheckoutScreen({ navigation }: any) {
         notes,
         idempotency_key: `mobile-checkout-${Date.now()}`,
         payment_method: 'cash',
+        ...deliveryCoords,
       })
 
       clearCart()
@@ -93,7 +135,7 @@ export default function CheckoutScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
@@ -230,7 +272,7 @@ export default function CheckoutScreen({ navigation }: any) {
         <View style={styles.summaryCard}>
           <Text style={styles.sectionLabel}>Order Summary</Text>
           {cart.map((item) => (
-            <View key={`${item.menu_item_id}-${item.combo_id || ''}`} style={styles.summaryItem}>
+            <View key={item.cartId} style={styles.summaryItem}>
               <Text style={styles.summaryItemText} numberOfLines={1}>
                 {item.quantity}× {item.name}
               </Text>
@@ -367,11 +409,11 @@ export default function CheckoutScreen({ navigation }: any) {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

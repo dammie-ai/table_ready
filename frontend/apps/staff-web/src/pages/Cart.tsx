@@ -10,6 +10,8 @@ export default function Cart() {
   const items = useCartStore((s) => s.items)
   const removeItem = useCartStore((s) => s.removeItem)
   const updateQuantity = useCartStore((s) => s.updateQuantity)
+  const removeCartLine = useCartStore((s) => s.removeCartLine)
+  const updateCartLineQuantity = useCartStore((s) => s.updateCartLineQuantity)
   const clearCart = useCartStore((s) => s.clearCart)
   const total = useCartStore((s) => s.total())
   const navigate = useNavigate()
@@ -50,14 +52,14 @@ export default function Cart() {
             {items.map((item) => {
               if (item.combo_id) {
                 return (
-                  <div key={`${item.combo_id}-${item.combo_main?.menu_item_id}`} className="border rounded-lg p-4" style={{ borderColor: theme?.primary_color + '40' }}>
+                  <div key={item.cartId} className="border rounded-lg p-4" style={{ borderColor: theme?.primary_color + '40' }}>
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h3 className="font-semibold text-lg" style={{ color: theme?.text_color }}>{item.name}</h3>
                         <p className="text-xs uppercase tracking-wide mt-1" style={{ color: theme?.primary_color }}>Combo Deal</p>
                       </div>
                       <button
-                        onClick={() => removeItem(item.combo_main!.menu_item_id)}
+                        onClick={() => removeCartLine(item.cartId)}
                         className="text-red-500 hover:text-red-700 text-sm"
                       >
                         Remove
@@ -91,14 +93,14 @@ export default function Cart() {
                         <label className="text-sm" style={{ color: theme?.text_color }}>Qty:</label>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => updateQuantity(item.combo_main!.menu_item_id, item.quantity - 1)}
+                            onClick={() => updateCartLineQuantity(item.cartId, item.quantity - 1)}
                             className="w-8 h-8 rounded border hover:bg-gray-100"
                           >
                             -
                           </button>
                           <span className="w-8 text-center">{item.quantity}</span>
                           <button
-                            onClick={() => updateQuantity(item.combo_main!.menu_item_id, item.quantity + 1)}
+                            onClick={() => updateCartLineQuantity(item.cartId, item.quantity + 1)}
                             className="w-8 h-8 rounded border hover:bg-gray-100"
                           >
                             +

@@ -117,7 +117,7 @@ export default function BillSplitter({ onConfirm, onCancel }: BillSplitterProps)
             <p className="text-sm text-[#6b7280] mb-3">Tap items to assign them to different people</p>
             <div className="space-y-2">
               {items.map((item, idx) => (
-                <div key={item.menu_item_id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                <div key={item.cartId} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
                   <div>
                     <p className="font-medium text-sm" style={{ color: theme?.text_color }}>{item.name}</p>
                     <p className="text-xs text-[#6b7280]">${(item.base_price * item.quantity).toFixed(2)}</p>

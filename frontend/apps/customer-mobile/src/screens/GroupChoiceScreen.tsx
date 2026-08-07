@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import Input from '../components/Input';
 import { colors, spacing, typography, borderRadius } from '../theme';
 
 type GroupType = 'solo' | 'group';
@@ -33,7 +35,7 @@ export default function GroupChoiceScreen({ navigation, onSelect }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={typography.h2}>How are you ordering?</Text>
         <Text style={styles.subtitle}>Choose your dining style to get started</Text>
@@ -125,7 +127,7 @@ export default function GroupChoiceScreen({ navigation, onSelect }: any) {
           </Text>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

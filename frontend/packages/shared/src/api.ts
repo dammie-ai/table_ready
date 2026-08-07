@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import { getStorageItem } from './storage'
 
 // On web, only use localhost when actually served from localhost (local
 // dev); a deployed build (Vercel/Render static site) needs the real
@@ -12,15 +13,23 @@ const API_BASE = Platform.OS === 'web'
       : DEPLOYED_API)
   : DEPLOYED_API
 
-function getToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('tableready_token')
+// The auth token actually lives inside useAuthStore's zustand-persist
+// envelope under 'tableready_auth' (secure on-device storage on native,
+// localStorage on web) — not a bare 'tableready_token' key, which nothing
+// in this app ever wrote to. Mirrors staff-web's lib/api.ts getToken().
+async function getToken(): Promise<string | null> {
+  try {
+    const stored = await getStorageItem('tableready_auth')
+    if (!stored) return null
+    const parsed = JSON.parse(stored)
+    return parsed.state?.token || null
+  } catch {
+    return null
   }
-  return null
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken()
+  const token = await getToken()
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -168,11 +177,11 @@ export async function reorderUsual() {
   return request<{ success: boolean }>('/customer/usual/reorder', { method: 'POST', body: '{}' })
 }
 
-export async function verifyTableCode(payload: { table_code: string }) {
-  return request<{ success: boolean; table: any }>('/tables/verify-code', { method: 'POST', body: JSON.stringify(payload) })
+export async function verifyTableCode(payload: { table_number: number; code: string }) {
+  return request<{ success: boolean; table_id: number; message?: string; waiter_name: string | null }>('/tables/verify-code', { method: 'POST', body: JSON.stringify(payload) })
 }
 
-export async function checkLocation(payload: { latitude: number; longitude: number }) {
+export async function checkLocation(payload: { latitude: number; longitude: number; check_type?: 'delivery' | 'dine_in' | 'qr_scan' }) {
   return request<{ success: boolean; allowed: boolean; distance_miles: number; radius_miles: number; message: string }>('/tables/check-location', { method: 'POST', body: JSON.stringify(payload) })
 }
 
@@ -180,8 +189,12 @@ export async function verifyQRCode(payload: { qr_code: string }) {
   return request<{ success: boolean; table: any }>('/tables/qr/verify', { method: 'POST', body: JSON.stringify(payload) })
 }
 
-export async function joinWaitlist(payload: { party_size: number; name: string; phone: string; table_id?: number }) {
+export async function joinWaitlist(payload: { table_id: number; customer_name: string; phone?: string; party_size: number }) {
   return request<{ success: boolean; entry: any }>('/waitlist/join', { method: 'POST', body: JSON.stringify(payload) })
+}
+
+export async function getFloorLayout() {
+  return request<{ success: boolean; count: number; tables: { table_id: number; table_number: number; status_state: string }[] }>('/tables/floor-layout')
 }
 
 export async function getWaitlist() {
@@ -196,7 +209,7 @@ export async function getWaitlistQueue(tableId: number) {
   return request<{ success: boolean; queue: any[] }>(`/waitlist/queue/${tableId}`)
 }
 
-export async function createReservation(payload: { date: string; time: string; party_size: number; name: string; phone: string; special_requests?: string }) {
+export async function createReservation(payload: { reservation_date: string; reservation_time: string; party_size: number; customer_name: string; customer_phone?: string; table_id?: number; notes?: string }) {
   return request<{ success: boolean; reservation: any }>('/reservations', { method: 'POST', body: JSON.stringify(payload) })
 }
 
@@ -387,6 +400,8 @@ export interface CheckoutPayload {
   notes?: string
   ordered_by_user_id?: number
   idempotency_key?: string
+  delivery_latitude?: number
+  delivery_longitude?: number
 }
 
 export interface CreateOrderPayload extends CheckoutPayload {

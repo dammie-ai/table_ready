@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Панель управления",
+    "menu": "Меню",
+    "reservations": "Бронирования",
+    "waitlist": "Лист ожидания",
+    "staff": "Персонал",
+    "reports": "Отчёты",
+    "promotions": "Акции",
+    "settings": "Настройки",
+    "kitchenDisplay": "Экран кухни",
+    "floorMap": "План зала",
+    "deliveryQueue": "Очередь доставки"
+  },
+  "roles": {
+    "manager": "Менеджер",
+    "admin": "Администратор",
+    "assistant_manager": "Заместитель менеджера",
+    "kitchen": "Кухня",
+    "waiter": "Официант",
+    "delivery": "Курьер",
+    "other": "Персонал"
+  },
+  "layout": {
+    "viewingAs": "Просмотр как:",
+    "signOut": "Выйти"
+  },
+  "login": {
+    "subtitle": "Вход для персонала",
+    "username": "Имя пользователя",
+    "usernamePlaceholder": "Введите имя пользователя",
+    "password": "Пароль",
+    "passwordPlaceholder": "Введите пароль",
+    "signIn": "Войти",
+    "signingIn": "Выполняется вход...",
+    "loginFailed": "Ошибка входа",
+    "quickLogin": "Быстрый вход",
+    "manager": "Менеджер",
+    "kitchen": "Кухня",
+    "waiter": "Официант",
+    "delivery": "Курьер"
+  },
+  "settings": {
+    "language": "Язык",
+    "languageHint": "Выберите язык отображения. Это влияет только на ваш аккаунт, а не на остальной персонал."
+  }
+}

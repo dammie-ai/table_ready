@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "menu": "Menu",
+    "reservations": "Prenotazioni",
+    "waitlist": "Lista d'attesa",
+    "staff": "Personale",
+    "reports": "Report",
+    "promotions": "Promozioni",
+    "settings": "Impostazioni",
+    "kitchenDisplay": "Display cucina",
+    "floorMap": "Piantina sala",
+    "deliveryQueue": "Coda consegne"
+  },
+  "roles": {
+    "manager": "Manager",
+    "admin": "Amministratore",
+    "assistant_manager": "Vice manager",
+    "kitchen": "Cucina",
+    "waiter": "Cameriere",
+    "delivery": "Fattorino",
+    "other": "Personale"
+  },
+  "layout": {
+    "viewingAs": "Visualizzato come:",
+    "signOut": "Esci"
+  },
+  "login": {
+    "subtitle": "Accesso personale",
+    "username": "Nome utente",
+    "usernamePlaceholder": "Inserisci il nome utente",
+    "password": "Password",
+    "passwordPlaceholder": "Inserisci la password",
+    "signIn": "Accedi",
+    "signingIn": "Accesso in corso...",
+    "loginFailed": "Accesso non riuscito",
+    "quickLogin": "Accesso rapido",
+    "manager": "Manager",
+    "kitchen": "Cucina",
+    "waiter": "Cameriere",
+    "delivery": "Fattorino"
+  },
+  "settings": {
+    "language": "Lingua",
+    "languageHint": "Scegli la tua lingua di visualizzazione. Questo influisce solo sul tuo account, non sul resto del personale."
+  }
+}

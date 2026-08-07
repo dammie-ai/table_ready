@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Painel",
+    "menu": "Cardápio",
+    "reservations": "Reservas",
+    "waitlist": "Lista de espera",
+    "staff": "Equipe",
+    "reports": "Relatórios",
+    "promotions": "Promoções",
+    "settings": "Configurações",
+    "kitchenDisplay": "Painel da cozinha",
+    "floorMap": "Mapa do salão",
+    "deliveryQueue": "Fila de entregas"
+  },
+  "roles": {
+    "manager": "Gerente",
+    "admin": "Administrador",
+    "assistant_manager": "Subgerente",
+    "kitchen": "Cozinha",
+    "waiter": "Garçom",
+    "delivery": "Entregador",
+    "other": "Equipe"
+  },
+  "layout": {
+    "viewingAs": "Visualizando como:",
+    "signOut": "Sair"
+  },
+  "login": {
+    "subtitle": "Acesso da equipe",
+    "username": "Usuário",
+    "usernamePlaceholder": "Digite seu usuário",
+    "password": "Senha",
+    "passwordPlaceholder": "Digite sua senha",
+    "signIn": "Entrar",
+    "signingIn": "Entrando...",
+    "loginFailed": "Falha no login",
+    "quickLogin": "Login rápido",
+    "manager": "Gerente",
+    "kitchen": "Cozinha",
+    "waiter": "Garçom",
+    "delivery": "Entregador"
+  },
+  "settings": {
+    "language": "Idioma",
+    "languageHint": "Escolha seu idioma de exibição. Isso afeta apenas sua conta, não o restante da equipe."
+  }
+}

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiClient } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
+import { LANGUAGES, setLanguage, type LanguageCode } from '../i18n'
 
 interface Branding {
   restaurant_name: string
@@ -27,7 +29,7 @@ const DEFAULT_BRANDING: Branding = {
   tagline: '',
   logo_url: '',
   logo_position: 'left',
-  primary_color: '#f97316',
+  primary_color: '#c2410c',
   secondary_color: '#2563eb',
   accent_color: '#10b981',
   text_color: '#111827',
@@ -51,6 +53,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const { theme } = useTheme()
+  const { t, i18n } = useTranslation()
 
   useEffect(() => {
     loadConfig()
@@ -156,6 +159,21 @@ export default function Settings() {
         )}
 
         <div className="space-y-6">
+          <div className={cardCls}>
+            <h2 className="text-xl font-semibold mb-4">{t('settings.language')}</h2>
+            <label className={labelCls}>{t('settings.language')}</label>
+            <select
+              value={i18n.language}
+              onChange={(e) => setLanguage(e.target.value as LanguageCode)}
+              className={inputCls}
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-[#6b7280] mt-2">{t('settings.languageHint')}</p>
+          </div>
+
           <div className={cardCls}>
             <h2 className="text-xl font-semibold mb-4">Identity</h2>
             <div className="space-y-4">
@@ -297,11 +315,11 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className={labelCls}>Delivery Radius (m)</label>
+                <label className={labelCls}>Delivery Radius (miles)</label>
                 <input
                   type="number"
-                  value={config.delivery_radius ?? 200}
-                  onChange={(e) => updateConfig('delivery_radius', parseInt(e.target.value))}
+                  value={config.delivery_radius?.max_miles ?? 10}
+                  onChange={(e) => updateConfig('delivery_radius', { max_miles: parseInt(e.target.value) })}
                   className={inputCls}
                 />
               </div>

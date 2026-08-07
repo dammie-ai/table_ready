@@ -4,6 +4,7 @@ import LocationCheckScreen from '../screens/LocationCheckScreen'
 import GroupChoiceScreen from '../screens/GroupChoiceScreen'
 import LoginScreen from '../screens/LoginScreen'
 import WelcomeScreen from '../screens/WelcomeScreen'
+import TablePinScreen from '../screens/TablePinScreen'
 import MenuScreen from '../screens/MenuScreen'
 import ItemDetailScreen from '../screens/ItemDetailScreen'
 import ModifierScreen from '../screens/ModifierScreen'
@@ -23,8 +24,9 @@ export type RootStackParamList = {
   GroupChoice: undefined
   Login: undefined
   Welcome: undefined
+  TablePin: undefined
   Main: undefined
-  Menu: { mode?: string; groupType?: string }
+  Menu: { mode?: string; groupType?: string; table_number?: number }
   ItemDetail: { item: any }
   Modifier: { item: any; modifiers: any[] }
   Combos: undefined
@@ -48,6 +50,7 @@ export default function Navigation() {
         <Stack.Screen name="GroupChoice" component={GroupChoiceScreen} options={{ title: 'Ordering Style' }} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ title: 'TableReady' }} />
+        <Stack.Screen name="TablePin" component={TablePinScreen} options={{ title: 'Table Check-In' }} />
         <Stack.Screen name="Main" component={TabNavigator} />
         <Stack.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
         <Stack.Screen name="ItemDetail" component={ItemDetailScreen} options={{ title: 'Item Detail' }} />

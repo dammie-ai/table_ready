@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 import { getComboMeals, getMenuItems, type ComboMeal, type MenuItem } from '@table-ready/shared';
 
 type Step = 1 | 2 | 3 | 4;
@@ -9,6 +11,8 @@ type Step = 1 | 2 | 3 | 4;
 const STEPS = ['Select Combo', 'Pick Main', 'Pick Sides', 'Review'];
 
 export default function ComboBuilderScreen({ navigation }: any) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [step, setStep] = useState<Step>(1);
   const [combos, setCombos] = useState<ComboMeal[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -77,7 +81,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => (step === 1 ? navigation.goBack() : setStep((s) => (s - 1) as Step))}
@@ -289,11 +293,11 @@ export default function ComboBuilderScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

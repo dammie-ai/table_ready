@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "대시보드",
+    "menu": "메뉴",
+    "reservations": "예약",
+    "waitlist": "대기 명단",
+    "staff": "직원",
+    "reports": "보고서",
+    "promotions": "프로모션",
+    "settings": "설정",
+    "kitchenDisplay": "주방 디스플레이",
+    "floorMap": "매장 배치도",
+    "deliveryQueue": "배달 대기열"
+  },
+  "roles": {
+    "manager": "매니저",
+    "admin": "관리자",
+    "assistant_manager": "부매니저",
+    "kitchen": "주방",
+    "waiter": "서버",
+    "delivery": "배달원",
+    "other": "직원"
+  },
+  "layout": {
+    "viewingAs": "보기 역할:",
+    "signOut": "로그아웃"
+  },
+  "login": {
+    "subtitle": "직원 로그인",
+    "username": "아이디",
+    "usernamePlaceholder": "아이디를 입력하세요",
+    "password": "비밀번호",
+    "passwordPlaceholder": "비밀번호를 입력하세요",
+    "signIn": "로그인",
+    "signingIn": "로그인 중...",
+    "loginFailed": "로그인에 실패했습니다",
+    "quickLogin": "빠른 로그인",
+    "manager": "매니저",
+    "kitchen": "주방",
+    "waiter": "서버",
+    "delivery": "배달원"
+  },
+  "settings": {
+    "language": "언어",
+    "languageHint": "표시 언어를 선택하세요. 이 설정은 본인 계정에만 적용되며 다른 직원에게는 영향을 주지 않습니다."
+  }
+}

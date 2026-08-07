@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "menu": "Menu",
+    "reservations": "Rezerwacje",
+    "waitlist": "Lista oczekujących",
+    "staff": "Personel",
+    "reports": "Raporty",
+    "promotions": "Promocje",
+    "settings": "Ustawienia",
+    "kitchenDisplay": "Ekran kuchenny",
+    "floorMap": "Plan sali",
+    "deliveryQueue": "Kolejka dostaw"
+  },
+  "roles": {
+    "manager": "Kierownik",
+    "admin": "Administrator",
+    "assistant_manager": "Zastępca kierownika",
+    "kitchen": "Kuchnia",
+    "waiter": "Kelner",
+    "delivery": "Dostawca",
+    "other": "Personel"
+  },
+  "layout": {
+    "viewingAs": "Wyświetlane jako:",
+    "signOut": "Wyloguj się"
+  },
+  "login": {
+    "subtitle": "Portal pracownika",
+    "username": "Nazwa użytkownika",
+    "usernamePlaceholder": "Wprowadź nazwę użytkownika",
+    "password": "Hasło",
+    "passwordPlaceholder": "Wprowadź hasło",
+    "signIn": "Zaloguj się",
+    "signingIn": "Logowanie...",
+    "loginFailed": "Logowanie nie powiodło się",
+    "quickLogin": "Szybkie logowanie",
+    "manager": "Kierownik",
+    "kitchen": "Kuchnia",
+    "waiter": "Kelner",
+    "delivery": "Dostawca"
+  },
+  "settings": {
+    "language": "Język",
+    "languageHint": "Wybierz język wyświetlania. Dotyczy to tylko Twojego konta, nie pozostałego personelu."
+  }
+}

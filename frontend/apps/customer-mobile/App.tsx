@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Platform } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import Navigation from './src/navigation/AppNavigator'
 import { useThemeStore } from './src/stores/themeStore'
 
@@ -19,5 +20,9 @@ export default function App() {
     fetchTheme()
   }, [fetchTheme])
 
-  return <Navigation />
+  return (
+    <SafeAreaProvider>
+      <Navigation />
+    </SafeAreaProvider>
+  )
 }

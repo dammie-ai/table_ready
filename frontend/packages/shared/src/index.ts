@@ -1,4 +1,5 @@
 export * from './types'
+export type { MenuItemModifier, MenuItemDetailResponse, ModifierResponse } from './api'
 export {
   api,
   getGeofenceConfig,
@@ -30,6 +31,7 @@ export {
   setUsual,
   reorderUsual,
   verifyTableCode,
+  getFloorLayout,
   checkLocation,
   verifyQRCode,
   joinWaitlist,

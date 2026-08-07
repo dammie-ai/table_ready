@@ -67,11 +67,15 @@ export interface GeofenceConfig {
 }
 
 export interface CartItem {
+  cartId: string
   menu_item_id?: number
   name: string
   base_price: number
   quantity: number
   custom_instructions?: string
+  type?: 'item' | 'combo'
+  image?: string
+  modifiers?: { modifier_id: number; quantity: number; name?: string; price_adjustment?: number }[]
   combo_id?: number
   combo_name?: string
   combo_main?: { menu_item_id: number; name: string; base_price: number }

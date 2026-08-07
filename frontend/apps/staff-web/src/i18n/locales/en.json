@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "menu": "Menu",
+    "reservations": "Reservations",
+    "waitlist": "Waitlist",
+    "staff": "Staff",
+    "reports": "Reports",
+    "promotions": "Promotions",
+    "settings": "Settings",
+    "kitchenDisplay": "Kitchen Display",
+    "floorMap": "Floor Map",
+    "deliveryQueue": "Delivery Queue"
+  },
+  "roles": {
+    "manager": "Manager",
+    "admin": "Admin",
+    "assistant_manager": "Assistant Manager",
+    "kitchen": "Kitchen",
+    "waiter": "Waiter",
+    "delivery": "Delivery",
+    "other": "Staff"
+  },
+  "layout": {
+    "viewingAs": "Viewing as:",
+    "signOut": "Sign Out"
+  },
+  "login": {
+    "subtitle": "Staff Gateway",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "loginFailed": "Login failed",
+    "quickLogin": "Quick Login",
+    "manager": "Manager",
+    "kitchen": "Kitchen",
+    "waiter": "Waiter",
+    "delivery": "Delivery"
+  },
+  "settings": {
+    "language": "Language",
+    "languageHint": "Choose your display language. This only affects your account, not other staff."
+  }
+}

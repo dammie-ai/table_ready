@@ -3,13 +3,16 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { CartItem } from './types'
 import { getStorageItem, setStorageItem, deleteStorageItem } from './storage'
 
+let cartIdCounter = 0
+const generateCartId = () => `cart-${Date.now()}-${cartIdCounter++}`
+
 interface CartState {
   items: CartItem[]
-  addItem: (item: Omit<CartItem, 'quantity'>) => void
-  removeItem: (menu_item_id: number) => void
-  updateQuantity: (menu_item_id: number, quantity: number) => void
-  updateInstructions: (menu_item_id: number, instructions: string) => void
-  addCombo: (combo: Omit<CartItem, 'quantity'>) => void
+  addItem: (item: Omit<CartItem, 'quantity' | 'cartId'>) => void
+  removeItem: (cartId: string) => void
+  updateQuantity: (cartId: string, quantity: number) => void
+  updateInstructions: (cartId: string, instructions: string) => void
+  addCombo: (combo: Omit<CartItem, 'quantity' | 'cartId'>) => void
   clearCart: () => void
   total: () => number
 }
@@ -20,40 +23,40 @@ export const useCartStore = create<CartState>()(
       items: [],
 
       addItem: (item) => set((state) => {
-        const existing = state.items.find(i => i.menu_item_id === item.menu_item_id && !i.combo_id)
+        // Combos and customized (modifier-bearing) items are never merged
+        // into an existing line — only plain, unmodified menu items stack
+        // their quantity.
+        const existing = state.items.find(i =>
+          i.menu_item_id === item.menu_item_id && !i.combo_id && !item.combo_id &&
+          !i.modifiers?.length && !item.modifiers?.length
+        )
         if (existing) {
           return {
             items: state.items.map(i =>
-              i.menu_item_id === item.menu_item_id && !i.combo_id
-                ? { ...i, quantity: i.quantity + 1 }
-                : i
+              i.cartId === existing.cartId ? { ...i, quantity: i.quantity + 1 } : i
             ),
           }
         }
-        return { items: [...state.items, { ...item, quantity: 1 }] }
+        return { items: [...state.items, { ...item, cartId: generateCartId(), quantity: 1 }] }
       }),
 
       addCombo: (combo) => set((state) => ({
-        items: [...state.items, { ...combo, quantity: 1 }]
+        items: [...state.items, { ...combo, cartId: generateCartId(), quantity: 1 }]
       })),
 
-      removeItem: (menu_item_id) => set((state) => ({
-        items: state.items.filter(i => i.menu_item_id !== menu_item_id && (!i.combo_id || i.combo_main?.menu_item_id !== menu_item_id)),
+      removeItem: (cartId) => set((state) => ({
+        items: state.items.filter(i => i.cartId !== cartId),
       })),
 
-      updateQuantity: (menu_item_id, quantity) => set((state) => ({
+      updateQuantity: (cartId, quantity) => set((state) => ({
         items: quantity <= 0
-          ? state.items.filter(i => i.menu_item_id !== menu_item_id && (!i.combo_id || i.combo_main?.menu_item_id !== menu_item_id))
-          : state.items.map(i => {
-              if (i.menu_item_id === menu_item_id && !i.combo_id) return { ...i, quantity }
-              if (i.combo_id && i.combo_main?.menu_item_id === menu_item_id) return { ...i, quantity }
-              return i
-            }),
+          ? state.items.filter(i => i.cartId !== cartId)
+          : state.items.map(i => i.cartId === cartId ? { ...i, quantity } : i),
       })),
 
-      updateInstructions: (menu_item_id, instructions) => set((state) => ({
+      updateInstructions: (cartId, instructions) => set((state) => ({
         items: state.items.map(i =>
-          i.menu_item_id === menu_item_id ? { ...i, custom_instructions: instructions } : i
+          i.cartId === cartId ? { ...i, custom_instructions: instructions } : i
         ),
       })),
 
@@ -73,6 +76,14 @@ export const useCartStore = create<CartState>()(
         setItem: setStorageItem,
         removeItem: deleteStorageItem,
       })),
+      // v0 carts (persisted before cartId existed) can have items with no
+      // cartId, which breaks list keys/updates on rehydrate — drop those
+      // instead of restoring a half-broken cart.
+      version: 1,
+      migrate: (persistedState) => {
+        const state = persistedState as CartState
+        return { ...state, items: (state.items || []).filter((i) => !!i.cartId) }
+      },
     }
   )
 )

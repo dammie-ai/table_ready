@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { apiClient } from '../lib/api'
 import { getSocket } from '../lib/socket'
 
 interface Delivery {
   master_order_id: number
   status: string
-  delivery_status?: string
+  delivery_status: string
   total_amount: number
   order_type: string
   table_number?: number
@@ -21,17 +21,58 @@ interface Delivery {
   driver_longitude?: number
 }
 
+// The delivery_status column (assigned/accepted/picked_up/out_for_delivery/
+// delivered/cancelled) is a separate state machine from the kitchen-prep
+// `status` column — this screen only ever cares about the former.
+const STATUS_META: Record<string, { label: string; color: string; next?: string; nextLabel?: string }> = {
+  assigned: { label: 'Assigned', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30', next: 'accepted', nextLabel: 'Accept' },
+  accepted: { label: 'Accepted', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30', next: 'picked_up', nextLabel: 'Picked Up' },
+  picked_up: { label: 'Picked Up', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30', next: 'out_for_delivery', nextLabel: 'Out for Delivery' },
+  out_for_delivery: { label: 'Out for Delivery', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30', next: 'delivered', nextLabel: 'Delivered' },
+  delivered: { label: 'Delivered', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+  cancelled: { label: 'Cancelled', color: 'text-red-400 bg-red-500/10 border-red-500/30' },
+}
+
 export default function DeliveryPortal() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'queue' | 'map'>('queue')
+  const watchIds = useRef<Record<number, number>>({})
+
+  const startTrackingLocation = (orderId: number) => {
+    if (!navigator.geolocation || watchIds.current[orderId] != null) return
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        apiClient.post(`/delivery/${orderId}/location`, {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        }).catch((err) => console.error('Failed to report driver location:', err))
+      },
+      (err) => console.error('Geolocation error:', err.message),
+      { enableHighAccuracy: true, maximumAge: 10000 }
+    )
+    watchIds.current[orderId] = id
+  }
+
+  const stopTrackingLocation = (orderId: number) => {
+    const id = watchIds.current[orderId]
+    if (id != null) {
+      navigator.geolocation.clearWatch(id)
+      delete watchIds.current[orderId]
+    }
+  }
 
   useEffect(() => {
     const loadDeliveries = async () => {
       try {
         const res = await apiClient.get<{ success: boolean; orders: Delivery[] }>('/orders/by-type/DELIVERY')
-        const active = (res.orders || []).filter((o) => !['COMPLETED', 'CANCELLED', 'CANCELLED_AND_REFUNDED', 'PICKED_UP'].includes(o.status))
+        const active = (res.orders || [])
+          .map((o) => ({ ...o, delivery_status: (o.delivery_status || 'assigned').toLowerCase() }))
+          .filter((o) => !['delivered', 'cancelled'].includes(o.delivery_status))
         setDeliveries(active)
+        active.forEach((d) => {
+          if (d.delivery_status === 'out_for_delivery') startTrackingLocation(d.master_order_id)
+        })
       } catch (err) {
         console.error('Failed to load deliveries:', err)
       } finally {
@@ -43,35 +84,31 @@ export default function DeliveryPortal() {
 
     const socket = getSocket()
     socket.on('delivery_status_updated', (data: { orderId: number; status: string }) => {
-      setDeliveries((prev) => prev.map((d) => d.master_order_id === data.orderId ? { ...d, status: data.status } : d))
+      setDeliveries((prev) => prev.map((d) => d.master_order_id === data.orderId ? { ...d, delivery_status: data.status.toLowerCase() } : d))
     })
 
     return () => {
       socket.off('delivery_status_updated')
+      Object.keys(watchIds.current).forEach((id) => stopTrackingLocation(parseInt(id)))
     }
   }, [])
 
   const updateStatus = async (orderId: number, status: string) => {
     try {
-      await apiClient.post(`/delivery/${orderId}/status`, {
-        status,
-      })
-      setDeliveries((prev) => prev.map((d) => d.master_order_id === orderId ? { ...d, status } : d))
+      await apiClient.post(`/delivery/${orderId}/status`, { status })
+      setDeliveries((prev) => prev.map((d) => d.master_order_id === orderId ? { ...d, delivery_status: status } : d))
+
+      if (status === 'out_for_delivery') {
+        startTrackingLocation(orderId)
+      } else if (status === 'delivered' || status === 'cancelled') {
+        stopTrackingLocation(orderId)
+      }
     } catch (err) {
       console.error('Failed to update delivery status:', err)
     }
   }
 
-  const statusMeta: Record<string, { label: string; color: string; next?: string }> = {
-    ASSIGNED: { label: 'Assigned', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30', next: 'Accept' },
-    PREPARING: { label: 'Preparing', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30', next: 'Picked Up' },
-    READY: { label: 'Ready', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30', next: 'Out for Delivery' },
-    OUT_FOR_DELIVERY: { label: 'Out for Delivery', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30', next: 'Delivered' },
-    DELIVERED: { label: 'Delivered', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
-    CANCELLED: { label: 'Cancelled', color: 'text-red-400 bg-red-500/10 border-red-500/30' },
-  }
-
-  const activeCount = deliveries.filter((d) => d.status !== 'DELIVERED' && d.status !== 'CANCELLED').length
+  const activeCount = deliveries.filter((d) => d.delivery_status !== 'delivered' && d.delivery_status !== 'cancelled').length
 
   if (loading) {
     return (
@@ -114,7 +151,7 @@ export default function DeliveryPortal() {
 
           <div className="space-y-3">
             {deliveries.map((delivery) => {
-              const meta = statusMeta[delivery.status] || statusMeta.ASSIGNED
+              const meta = STATUS_META[delivery.delivery_status] || STATUS_META.assigned
               return (
                 <div
                   key={delivery.master_order_id}
@@ -128,6 +165,9 @@ export default function DeliveryPortal() {
                         <span className={`text-[10px] border px-1.5 py-0.5 rounded font-mono font-bold ${meta.color}`}>
                           {meta.label}
                         </span>
+                        {delivery.delivery_status === 'out_for_delivery' && (
+                          <span className="text-[10px] text-emerald-400 font-mono">📍 sharing location</span>
+                        )}
                       </div>
                       <div className="text-sm font-medium mt-0.5">
                         {delivery.first_name && delivery.last_name ? `${delivery.first_name} ${delivery.last_name}` : `Order #${delivery.master_order_id}`}
@@ -139,13 +179,13 @@ export default function DeliveryPortal() {
                     </div>
                   </div>
 
-                  {delivery.status !== 'DELIVERED' && delivery.status !== 'CANCELLED' && meta.next && (
+                  {meta.next && meta.nextLabel && (
                     <div className="px-5 pb-4 pt-0">
                       <button
-                        onClick={() => updateStatus(delivery.master_order_id, meta.next === 'Accept' ? 'accepted' : meta.next === 'Picked Up' ? 'picked_up' : meta.next === 'Out for Delivery' ? 'out_for_delivery' : 'delivered')}
+                        onClick={() => updateStatus(delivery.master_order_id, meta.next!)}
                         className="w-full bg-[#f97316] hover:bg-[#f97316]/80 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
                       >
-                        {meta.next}
+                        {meta.nextLabel}
                       </button>
                     </div>
                   )}
@@ -197,6 +237,9 @@ export default function DeliveryPortal() {
               ))}
               <span className="ml-auto text-xs font-mono text-[#6b7280]">Live · {deliveries.length} orders</span>
             </div>
+            <p className="px-4 pb-4 text-[11px] text-[#6b7280]">
+              Note: pin positions on this grid are illustrative, not real GPS — see an individual order's tracking on the customer's Order Tracking screen for real driver location/ETA.
+            </p>
           </div>
         </div>
       )}
