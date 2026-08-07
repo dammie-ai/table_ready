@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Bảng điều khiển",
+    "menu": "Thực đơn",
+    "reservations": "Đặt bàn",
+    "waitlist": "Danh sách chờ",
+    "staff": "Nhân viên",
+    "reports": "Báo cáo",
+    "promotions": "Khuyến mãi",
+    "settings": "Cài đặt",
+    "kitchenDisplay": "Màn hình bếp",
+    "floorMap": "Sơ đồ bàn",
+    "deliveryQueue": "Hàng đợi giao hàng"
+  },
+  "roles": {
+    "manager": "Quản lý",
+    "admin": "Quản trị viên",
+    "assistant_manager": "Trợ lý quản lý",
+    "kitchen": "Bếp",
+    "waiter": "Phục vụ",
+    "delivery": "Giao hàng",
+    "other": "Nhân viên"
+  },
+  "layout": {
+    "viewingAs": "Đang xem với vai trò:",
+    "signOut": "Đăng xuất"
+  },
+  "login": {
+    "subtitle": "Cổng nhân viên",
+    "username": "Tên đăng nhập",
+    "usernamePlaceholder": "Nhập tên đăng nhập của bạn",
+    "password": "Mật khẩu",
+    "passwordPlaceholder": "Nhập mật khẩu của bạn",
+    "signIn": "Đăng nhập",
+    "signingIn": "Đang đăng nhập...",
+    "loginFailed": "Đăng nhập thất bại",
+    "quickLogin": "Đăng nhập nhanh",
+    "manager": "Quản lý",
+    "kitchen": "Bếp",
+    "waiter": "Phục vụ",
+    "delivery": "Giao hàng"
+  },
+  "settings": {
+    "language": "Ngôn ngữ",
+    "languageHint": "Chọn ngôn ngữ hiển thị của bạn. Điều này chỉ ảnh hưởng đến tài khoản của bạn, không ảnh hưởng đến nhân viên khác."
+  }
+}

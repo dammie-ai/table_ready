@@ -33,7 +33,7 @@ export function useTheme() {
       .then((res) => {
         const branding = res.config?.branding || {}
         setTheme({
-          primary_color: branding.primary_color || '#f97316',
+          primary_color: branding.primary_color || '#c2410c',
           secondary_color: branding.secondary_color || '#2563eb',
           accent_color: branding.accent_color || '#10b981',
           background_color: branding.background_color || '#ffffff',

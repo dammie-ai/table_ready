@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 import { getOrder, releaseOrderHold, cancelOrder, createServiceRequest, getSocket, type Order } from '@table-ready/shared';
 
 const STEPS = [
@@ -23,6 +25,8 @@ const SERVICE_TYPES = [
 ];
 
 export default function OrderTrackingScreen({ navigation, route }: any) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const orderId = route.params?.id;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,9 +37,11 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
   const [showServiceToast, setShowServiceToast] = useState('');
   const [toastError, setToastError] = useState('');
+  const [deliveryTracking, setDeliveryTracking] = useState<{ distance_miles: number | null; eta_minutes: number | null } | null>(null);
 
   const orderType = route.params?.orderType || 'dine-in';
   const isPickup = orderType === 'pickup';
+  const isDelivery = orderType === 'delivery' || order?.order_type === 'DELIVERY';
 
   const currentStep = order ? Math.max(STEPS.findIndex((s) => s.id === order.status), 0) : 0;
   const isOnHold = order?.status === 'ON_HOLD';
@@ -53,7 +59,10 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
 
     getOrder(Number(orderId))
       .then((res) => {
-        if (!cancelled) setOrder(res.order);
+        if (!cancelled) {
+          setOrder(res.order);
+          if ((res.order as any).delivery_tracking) setDeliveryTracking((res.order as any).delivery_tracking);
+        }
       })
       .catch((err) => {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load order');
@@ -70,9 +79,15 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
     };
     socket.on('order_status_updated', handleStatusUpdate);
 
+    const handleDeliveryLocation = (data: { distance_miles: number | null; eta_minutes: number | null }) => {
+      setDeliveryTracking({ distance_miles: data.distance_miles, eta_minutes: data.eta_minutes });
+    };
+    socket.on('delivery_location_updated', handleDeliveryLocation);
+
     return () => {
       cancelled = true;
       socket.off('order_status_updated', handleStatusUpdate);
+      socket.off('delivery_location_updated', handleDeliveryLocation);
     };
   }, [orderId]);
 
@@ -146,7 +161,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
@@ -208,6 +223,30 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
             <Text style={styles.pickupLabel}>Your Pickup Code</Text>
             <Text style={styles.pickupCode}>{order.pickup_code}</Text>
             <Text style={styles.pickupHint}>Show this at the counter</Text>
+          </View>
+        )}
+
+        {isDelivery && !isCancelled && deliveryTracking && deliveryTracking.distance_miles != null && (
+          <View style={styles.deliveryTrackingCard}>
+            <Text style={styles.sectionLabel}>🚗 Your Order Is On The Way</Text>
+            <View style={styles.deliveryStatsRow}>
+              <View>
+                <Text style={styles.deliveryStatValue}>{deliveryTracking.distance_miles} mi</Text>
+                <Text style={styles.deliveryStatLabel}>away</Text>
+              </View>
+              <View>
+                <Text style={styles.deliveryStatValue}>~{deliveryTracking.eta_minutes} min</Text>
+                <Text style={styles.deliveryStatLabel}>estimated arrival</Text>
+              </View>
+            </View>
+            <View style={styles.deliveryProgressTrack}>
+              <View
+                style={[
+                  styles.deliveryProgressFill,
+                  { width: `${Math.max(4, Math.min(100, 100 - (deliveryTracking.distance_miles / 10) * 100))}%` },
+                ]}
+              />
+            </View>
           </View>
         )}
 
@@ -345,11 +384,11 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           <Text style={styles.toastText}>{toastError}</Text>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -495,6 +534,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  deliveryTrackingCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.md,
+  },
+  deliveryStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  deliveryStatValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.primary,
+    textAlign: 'center',
+  },
+  deliveryStatLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  deliveryProgressTrack: {
+    height: 8,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  deliveryProgressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
   },
   progressCard: {
     backgroundColor: colors.surface,

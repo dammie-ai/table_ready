@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { getOrderHistory, type Order } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
 
@@ -52,7 +53,7 @@ export default function OrderHistoryScreen({ navigation }: any) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {orders.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.empty}>No orders yet</Text>
@@ -63,7 +64,7 @@ export default function OrderHistoryScreen({ navigation }: any) {
       ) : (
         <FlatList data={orders} renderItem={renderOrder} keyExtractor={(item) => item.master_order_id.toString()} />
       )}
-    </View>
+    </SafeAreaView>
   )
 }
 

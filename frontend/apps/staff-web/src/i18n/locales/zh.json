@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "仪表盘",
+    "menu": "菜单",
+    "reservations": "预订",
+    "waitlist": "候位名单",
+    "staff": "员工",
+    "reports": "报表",
+    "promotions": "促销",
+    "settings": "设置",
+    "kitchenDisplay": "厨房显示屏",
+    "floorMap": "餐厅平面图",
+    "deliveryQueue": "配送队列"
+  },
+  "roles": {
+    "manager": "经理",
+    "admin": "管理员",
+    "assistant_manager": "副经理",
+    "kitchen": "厨房",
+    "waiter": "服务员",
+    "delivery": "配送员",
+    "other": "员工"
+  },
+  "layout": {
+    "viewingAs": "当前身份：",
+    "signOut": "退出登录"
+  },
+  "login": {
+    "subtitle": "员工入口",
+    "username": "用户名",
+    "usernamePlaceholder": "请输入用户名",
+    "password": "密码",
+    "passwordPlaceholder": "请输入密码",
+    "signIn": "登录",
+    "signingIn": "正在登录...",
+    "loginFailed": "登录失败",
+    "quickLogin": "快速登录",
+    "manager": "经理",
+    "kitchen": "厨房",
+    "waiter": "服务员",
+    "delivery": "配送员"
+  },
+  "settings": {
+    "language": "语言",
+    "languageHint": "选择您的显示语言。此设置仅影响您的账户，不影响其他员工。"
+  }
+}

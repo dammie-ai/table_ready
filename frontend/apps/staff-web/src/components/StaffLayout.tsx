@@ -1,21 +1,12 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../stores/authStore'
 import { useTheme } from '../hooks/useTheme'
 import { LayoutDashboard, UtensilsCrossed, Users, Calendar, ClipboardList, Settings, BarChart3, Tag, LogOut, Menu, X, ChevronDown, Check } from 'lucide-react'
 
 interface StaffLayoutProps {
   children: React.ReactNode
-}
-
-const ROLE_LABELS: Record<string, string> = {
-  manager: 'Manager',
-  admin: 'Admin',
-  assistant_manager: 'Assistant Manager',
-  kitchen: 'Kitchen',
-  waiter: 'Waiter',
-  delivery: 'Delivery',
-  other: 'Staff',
 }
 
 const ROLE_HOME: Record<string, string> = {
@@ -38,6 +29,16 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   const user = useAuthStore((s) => s.user)
   const switchRole = useAuthStore((s) => s.switchRole)
   const { theme } = useTheme()
+  const { t } = useTranslation()
+  const ROLE_LABELS: Record<string, string> = {
+    manager: t('roles.manager'),
+    admin: t('roles.admin'),
+    assistant_manager: t('roles.assistant_manager'),
+    kitchen: t('roles.kitchen'),
+    waiter: t('roles.waiter'),
+    delivery: t('roles.delivery'),
+    other: t('roles.other'),
+  }
 
   const handleLogout = () => {
     logout()
@@ -53,28 +54,28 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   const isActive = (path: string) => location.pathname === path
 
   const managerNavItems = [
-    { path: '/staff', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/menu-management', label: 'Menu', icon: UtensilsCrossed },
-    { path: '/reservations', label: 'Reservations', icon: Calendar },
-    { path: '/waitlist', label: 'Waitlist', icon: ClipboardList },
-    { path: '/staff-management', label: 'Staff', icon: Users },
-    { path: '/reports', label: 'Reports', icon: BarChart3 },
-    { path: '/promotions', label: 'Promotions', icon: Tag },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/staff', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { path: '/menu-management', label: t('nav.menu'), icon: UtensilsCrossed },
+    { path: '/reservations', label: t('nav.reservations'), icon: Calendar },
+    { path: '/waitlist', label: t('nav.waitlist'), icon: ClipboardList },
+    { path: '/staff-management', label: t('nav.staff'), icon: Users },
+    { path: '/reports', label: t('nav.reports'), icon: BarChart3 },
+    { path: '/promotions', label: t('nav.promotions'), icon: Tag },
+    { path: '/settings', label: t('nav.settings'), icon: Settings },
   ]
 
   const kitchenNavItems = [
-    { path: '/kitchen', label: 'Kitchen Display', icon: UtensilsCrossed },
+    { path: '/kitchen', label: t('nav.kitchenDisplay'), icon: UtensilsCrossed },
   ]
 
   const waiterNavItems = [
-    { path: '/waiter', label: 'Floor Map', icon: LayoutDashboard },
-    { path: '/reservations', label: 'Reservations', icon: Calendar },
-    { path: '/waitlist', label: 'Waitlist', icon: ClipboardList },
+    { path: '/waiter', label: t('nav.floorMap'), icon: LayoutDashboard },
+    { path: '/reservations', label: t('nav.reservations'), icon: Calendar },
+    { path: '/waitlist', label: t('nav.waitlist'), icon: ClipboardList },
   ]
 
   const deliveryNavItems = [
-    { path: '/delivery', label: 'Delivery Queue', icon: ClipboardList },
+    { path: '/delivery', label: t('nav.deliveryQueue'), icon: ClipboardList },
   ]
 
   const getNavItems = () => {
@@ -125,7 +126,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
               onClick={() => setRoleMenuOpen((v) => !v)}
               className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-white/5 border border-white/8 text-sm font-medium text-[#f1f5f9] hover:bg-white/8 transition-colors"
             >
-              <span>Viewing as: <span className="text-[#f97316]">{ROLE_LABELS[primaryRole || ''] || primaryRole}</span></span>
+              <span>{t('layout.viewingAs')} <span className="text-[#f97316]">{ROLE_LABELS[primaryRole || ''] || primaryRole}</span></span>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${roleMenuOpen ? 'rotate-180' : ''}`} />
             </button>
             {roleMenuOpen && (
@@ -177,7 +178,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors w-full"
           >
             <LogOut className="w-4 h-4" />
-            Sign Out
+            {t('layout.signOut')}
           </button>
         </div>
       </aside>

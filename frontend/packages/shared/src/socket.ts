@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client'
 import { Platform } from 'react-native'
+import { getStorageItem } from './storage'
 
 let socket: Socket | null = null
 
@@ -14,11 +15,28 @@ const SOCKET_URL = Platform.OS === 'web'
 
 export function getSocket() {
   if (!socket) {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('tableready_token') : null
+    // Connect immediately as a guest (the backend accepts unauthenticated
+    // sockets), then upgrade to an authenticated connection once the real
+    // token — stored async under 'tableready_auth', same as api.ts — has
+    // been read. Same bug this fixed in api.ts: reading a bare
+    // 'tableready_token' localStorage key that nothing ever wrote to.
     socket = io(SOCKET_URL, {
-      auth: { token },
+      auth: { token: null },
       transports: ['websocket', 'polling'],
     })
+
+    const activeSocket = socket
+    getStorageItem('tableready_auth')
+      .then((stored) => {
+        if (!stored) return
+        const parsed = JSON.parse(stored)
+        const token = parsed.state?.token
+        if (token) {
+          activeSocket.auth = { token }
+          activeSocket.disconnect().connect()
+        }
+      })
+      .catch(() => {})
   }
   return socket
 }

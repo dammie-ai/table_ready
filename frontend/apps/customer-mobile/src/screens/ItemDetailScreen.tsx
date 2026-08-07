@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Alert } from 'react-native'
-import { getMenuItemDetail, useCartStore, type MenuItem, type MenuItemDetailResponse } from '@table-ready/shared'
+import { useState, useEffect, useMemo } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { getMenuItemDetail, useCartStore, type MenuItemDetailResponse } from '@table-ready/shared'
+import { useThemeStore } from '../stores/themeStore'
 
 export default function ItemDetailScreen({ route, navigation }: any) {
+  const colors = useThemeStore((s) => s.colors)
+  const styles = useMemo(() => createStyles(colors), [colors])
   const { item } = route.params || {}
   const [detail, setDetail] = useState<MenuItemDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -38,14 +42,14 @@ export default function ItemDetailScreen({ route, navigation }: any) {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <SafeAreaView style={styles.center} edges={['top']}>
         <Text>Loading...</Text>
-      </View>
+      </SafeAreaView>
     )
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <Text style={styles.backButtonText}>← Back</Text>
       </TouchableOpacity>
@@ -105,19 +109,20 @@ export default function ItemDetailScreen({ route, navigation }: any) {
           )}
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.background,
   },
   backButton: {
     padding: 16,
@@ -125,7 +130,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2563eb',
+    color: colors.primary,
   },
   image: {
     width: '100%',
@@ -137,18 +142,18 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 8,
   },
   price: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#2563eb',
+    color: colors.primary,
     marginBottom: 12,
   },
   description: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textSecondary,
     lineHeight: 22,
     marginBottom: 16,
   },
@@ -159,11 +164,11 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: 14,
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   trending: {
-    backgroundColor: '#f97316',
+    backgroundColor: colors.secondary,
     color: '#ffffff',
     fontSize: 12,
     paddingHorizontal: 10,
@@ -178,17 +183,17 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 8,
   },
   ingredient: {
     fontSize: 14,
-    color: '#374151',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   allergen: {
     fontSize: 14,
-    color: '#dc2626',
+    color: colors.error,
     fontWeight: '600',
     marginBottom: 4,
   },
@@ -197,7 +202,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   primaryButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -208,19 +213,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   secondaryButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2563eb',
+    borderColor: colors.primary,
   },
   secondaryButtonText: {
-    color: '#2563eb',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
   disabledButton: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: colors.disabled,
   },
 })

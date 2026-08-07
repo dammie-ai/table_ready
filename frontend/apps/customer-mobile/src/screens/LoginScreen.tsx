@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { colors, spacing, borderRadius, typography } from '../theme';
@@ -36,7 +37,7 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.hero}>
         <View style={styles.logoBox}>
           <Text style={styles.logoIcon}>🍽️</Text>
@@ -135,7 +136,7 @@ export default function LoginScreen({ navigation }: any) {
 
         <View style={{ height: spacing.lg }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

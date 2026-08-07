@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { getNotificationPreferences, updateNotificationPreferences, deleteAccount, deleteStorageItem } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
@@ -80,7 +81,7 @@ export default function SettingsScreen({ navigation }: any) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
 
       <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -116,7 +117,7 @@ export default function SettingsScreen({ navigation }: any) {
           <Text style={[styles.menuItemText, styles.dangerText]}>Delete Account</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 

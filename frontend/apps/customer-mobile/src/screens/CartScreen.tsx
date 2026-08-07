@@ -1,10 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 
 export default function CartScreen({ navigation, route }: any) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const cart = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
   const addCombo = useCartStore((s) => s.addCombo);
@@ -24,11 +28,9 @@ export default function CartScreen({ navigation, route }: any) {
     if (newCombo && !addedComboRef.current) {
       addedComboRef.current = true;
       addCombo({
-        cartId: `combo-${Date.now()}`,
         type: 'combo',
         name: newCombo.name,
         base_price: newCombo.price,
-        quantity: 1,
         image: newCombo.main?.image,
         combo_id: newCombo.comboId,
         combo_main: { menu_item_id: newCombo.main?.id, name: newCombo.main?.name, base_price: newCombo.main?.price },
@@ -64,19 +66,24 @@ export default function CartScreen({ navigation, route }: any) {
               Sides: {item.combo_sides.map((s: any) => s.name).join(', ')}
             </Text>
           )}
+          {item.modifiers && item.modifiers.length > 0 && (
+            <Text style={styles.comboDetail}>
+              {item.modifiers.map((m: any) => m.name).filter(Boolean).join(', ')}
+            </Text>
+          )}
           <Text style={styles.itemPrice}>${(item.base_price * item.quantity).toFixed(2)}</Text>
         </View>
         <View style={styles.qtyRow}>
           <TouchableOpacity
             style={styles.qtyButton}
-            onPress={() => updateQuantity(item.menu_item_id, item.quantity - 1)}
+            onPress={() => updateQuantity(item.cartId, item.quantity - 1)}
           >
             <Text style={styles.qtyButtonText}>−</Text>
           </TouchableOpacity>
           <Text style={styles.qtyText}>{item.quantity}</Text>
           <TouchableOpacity
             style={[styles.qtyButton, styles.qtyButtonAdd]}
-            onPress={() => updateQuantity(item.menu_item_id, item.quantity + 1)}
+            onPress={() => updateQuantity(item.cartId, item.quantity + 1)}
           >
             <Text style={styles.qtyButtonTextAdd}>+</Text>
           </TouchableOpacity>
@@ -87,19 +94,19 @@ export default function CartScreen({ navigation, route }: any) {
 
   if (isEmpty) {
     return (
-      <View style={styles.center}>
+      <SafeAreaView style={styles.center} edges={['top']}>
         <View style={styles.emptyIcon}>
           <Text style={styles.emptyEmoji}>🛒</Text>
         </View>
         <Text style={styles.emptyTitle}>Your cart is empty</Text>
         <Text style={styles.emptySubtitle}>Add items from the menu to get started</Text>
         <Button title="Browse Menu" onPress={() => navigation.navigate('Menu')} variant="secondary" style={styles.emptyButton} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
@@ -148,11 +155,11 @@ export default function CartScreen({ navigation, route }: any) {
           <Button title="Proceed to Checkout" onPress={handleCheckout} variant="primary" style={styles.checkoutButton} />
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

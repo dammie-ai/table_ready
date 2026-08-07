@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "menu": "القائمة",
+    "reservations": "الحجوزات",
+    "waitlist": "قائمة الانتظار",
+    "staff": "الموظفون",
+    "reports": "التقارير",
+    "promotions": "العروض",
+    "settings": "الإعدادات",
+    "kitchenDisplay": "شاشة المطبخ",
+    "floorMap": "مخطط الصالة",
+    "deliveryQueue": "طابور التوصيل"
+  },
+  "roles": {
+    "manager": "مدير",
+    "admin": "مسؤول",
+    "assistant_manager": "مساعد مدير",
+    "kitchen": "المطبخ",
+    "waiter": "نادل",
+    "delivery": "موصل",
+    "other": "موظف"
+  },
+  "layout": {
+    "viewingAs": "العرض بصفة:",
+    "signOut": "تسجيل الخروج"
+  },
+  "login": {
+    "subtitle": "بوابة الموظفين",
+    "username": "اسم المستخدم",
+    "usernamePlaceholder": "أدخل اسم المستخدم",
+    "password": "كلمة المرور",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "signIn": "تسجيل الدخول",
+    "signingIn": "جارٍ تسجيل الدخول...",
+    "loginFailed": "فشل تسجيل الدخول",
+    "quickLogin": "تسجيل دخول سريع",
+    "manager": "مدير",
+    "kitchen": "المطبخ",
+    "waiter": "نادل",
+    "delivery": "موصل"
+  },
+  "settings": {
+    "language": "اللغة",
+    "languageHint": "اختر لغة العرض الخاصة بك. يؤثر هذا على حسابك فقط، وليس على بقية الموظفين."
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Übersicht",
+    "menu": "Speisekarte",
+    "reservations": "Reservierungen",
+    "waitlist": "Warteliste",
+    "staff": "Personal",
+    "reports": "Berichte",
+    "promotions": "Aktionen",
+    "settings": "Einstellungen",
+    "kitchenDisplay": "Küchenanzeige",
+    "floorMap": "Tischplan",
+    "deliveryQueue": "Lieferwarteschlange"
+  },
+  "roles": {
+    "manager": "Manager",
+    "admin": "Administrator",
+    "assistant_manager": "Stellvertretender Manager",
+    "kitchen": "Küche",
+    "waiter": "Kellner",
+    "delivery": "Lieferung",
+    "other": "Personal"
+  },
+  "layout": {
+    "viewingAs": "Angezeigt als:",
+    "signOut": "Abmelden"
+  },
+  "login": {
+    "subtitle": "Mitarbeiterzugang",
+    "username": "Benutzername",
+    "usernamePlaceholder": "Benutzername eingeben",
+    "password": "Passwort",
+    "passwordPlaceholder": "Passwort eingeben",
+    "signIn": "Anmelden",
+    "signingIn": "Anmeldung läuft...",
+    "loginFailed": "Anmeldung fehlgeschlagen",
+    "quickLogin": "Schnellanmeldung",
+    "manager": "Manager",
+    "kitchen": "Küche",
+    "waiter": "Kellner",
+    "delivery": "Lieferung"
+  },
+  "settings": {
+    "language": "Sprache",
+    "languageHint": "Wähle deine Anzeigesprache. Dies betrifft nur dein Konto, nicht das übrige Personal."
+  }
+}

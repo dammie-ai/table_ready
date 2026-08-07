@@ -6,6 +6,7 @@ const { getTaxRate } = require('../services/configService');
 const { logAudit } = require('../utils/auditLogger');
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 const { validate, schemas } = require('../middleware/validation');
+const { calculateDistanceInMiles } = require('../utils/distance');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Safely handle both direct and destructured pool export patterns
@@ -13,6 +14,11 @@ const pool = db.pool || db;
 
 // Valid order status transitions
 const VALID_STATUSES = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'READY_FOR_PICKUP', 'PICKED_UP', 'SERVED', 'COMPLETED', 'CANCELLED'];
+
+// Rough average speed assumption for an in-town delivery ETA — there's no
+// routing/traffic API in this project, so this is a straight-line-distance
+// estimate rather than an actual driving-time prediction.
+const AVG_DELIVERY_MPH = 20;
 
 /**
  * POST /api/orders
@@ -31,7 +37,7 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
   }
 
   try {
-    const { order_type, is_held, items, table_number, notes, ordered_by_user_id, idempotency_key, payment_method = 'card' } = req.body;
+    const { order_type, is_held, items, table_number, notes, ordered_by_user_id, idempotency_key, payment_method = 'card', delivery_latitude, delivery_longitude } = req.body;
 
     if (idempotency_key) {
       const existingOrder = await pool.query(
@@ -198,8 +204,8 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
     const totalWithTax = parseFloat((calculatedTotal + taxAmount).toFixed(2));
 
     const insertOrderQuery = `
-      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation, payment_method, payment_status)
-      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10)
+      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation, payment_method, payment_status, delivery_latitude, delivery_longitude)
+      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10, $11, $12)
       RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at, payment_method, payment_status;
     `;
 
@@ -213,7 +219,9 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
       idempotency_key || null,
       taxAmount,
       payment_method,
-      'Pending'
+      'Pending',
+      order_type === 'DELIVERY' ? (delivery_latitude ?? null) : null,
+      order_type === 'DELIVERY' ? (delivery_longitude ?? null) : null,
     ]);
 
     const createdOrder = orderResult.rows[0];
@@ -435,7 +443,7 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
        FROM orders o
        LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
        LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
-       WHERE o.status NOT IN ('ON_HOLD', 'CANCELLED_AND_REFUNDED', 'COMPLETED', 'SERVED')
+       WHERE o.status NOT IN ('ON_HOLD', 'CANCELLED_AND_REFUNDED', 'CANCELLED', 'COMPLETED', 'SERVED', 'PICKED_UP')
        GROUP BY o.master_order_id
        ORDER BY o.created_at ASC`
     );
@@ -515,11 +523,25 @@ router.get('/:id', async (req, res) => {
       modifiers: typeof item.modifiers === 'string' ? JSON.parse(item.modifiers || '[]') : (item.modifiers || [])
     }));
 
+    const order = orderRes.rows[0];
+    let deliveryTracking = null;
+    if (order.driver_latitude != null && order.delivery_latitude != null) {
+      const distanceMiles = calculateDistanceInMiles(
+        parseFloat(order.driver_latitude), parseFloat(order.driver_longitude),
+        parseFloat(order.delivery_latitude), parseFloat(order.delivery_longitude)
+      );
+      deliveryTracking = {
+        distance_miles: parseFloat(distanceMiles.toFixed(2)),
+        eta_minutes: Math.max(1, Math.round((distanceMiles / AVG_DELIVERY_MPH) * 60)),
+      };
+    }
+
     return res.status(200).json({
       success: true,
       order: {
-        ...orderRes.rows[0],
-        items
+        ...order,
+        items,
+        delivery_tracking: deliveryTracking,
       }
     });
   } catch (err) {
@@ -839,6 +861,15 @@ router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager')
       ip_address: req.ip || req.connection.remoteAddress
     });
 
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('kitchen_order_updated', {
+        orderId: updatedOrder.rows[0].master_order_id,
+        status: updatedOrder.rows[0].status,
+        progressPercentage: updatedOrder.rows[0].progress_percentage
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: `Order #${id} successfully refunded and cancelled.`,
@@ -948,6 +979,15 @@ router.patch('/:id/cancel', async (req, res) => {
       new_value: JSON.stringify({ status: 'CANCELLED' }),
       ip_address: req.ip || req.connection.remoteAddress
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('kitchen_order_updated', {
+        orderId: updatedOrder.rows[0].master_order_id,
+        status: updatedOrder.rows[0].status,
+        progressPercentage: updatedOrder.rows[0].progress_percentage
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -1096,6 +1136,11 @@ router.post('/:id/complete-pickup', authenticateToken, authorizeRoles('admin', '
       io.to(`order_${id}`).emit('order_picked_up', {
         orderId: parseInt(id),
         message: `Order #${id} has been picked up.`,
+      });
+      io.emit('kitchen_order_updated', {
+        orderId: updated.rows[0].master_order_id,
+        status: updated.rows[0].status,
+        progressPercentage: updated.rows[0].progress_percentage
       });
     }
 

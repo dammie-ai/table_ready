@@ -74,12 +74,17 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 
     try {
       const res = await getConfig()
-      const cfg = res.config
+      // The manager's branding fields live nested under config.branding
+      // (matching the restaurant_config table's config_key rows) — reading
+      // them off the top-level config object directly always returned
+      // undefined, so a manager's saved brand colors never actually reached
+      // this app. staff-web's own useTheme.ts already reads this correctly.
+      const branding = res.config?.branding || {}
       const overrides = {
-        primary_color: cfg.primary_color,
-        secondary_color: cfg.secondary_color,
-        text_color: cfg.text_color,
-        background_color: cfg.background_color,
+        primary_color: branding.primary_color,
+        secondary_color: branding.secondary_color,
+        text_color: branding.text_color,
+        background_color: branding.background_color,
       }
       // Screens that still import `colors` directly from theme.ts (rather
       // than this store) only ever see the light palette — mutate that

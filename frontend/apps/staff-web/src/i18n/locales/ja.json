@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "menu": "メニュー",
+    "reservations": "予約",
+    "waitlist": "順番待ちリスト",
+    "staff": "スタッフ",
+    "reports": "レポート",
+    "promotions": "プロモーション",
+    "settings": "設定",
+    "kitchenDisplay": "キッチンディスプレイ",
+    "floorMap": "フロアマップ",
+    "deliveryQueue": "配達キュー"
+  },
+  "roles": {
+    "manager": "マネージャー",
+    "admin": "管理者",
+    "assistant_manager": "副マネージャー",
+    "kitchen": "キッチン",
+    "waiter": "ウェイター",
+    "delivery": "配達員",
+    "other": "スタッフ"
+  },
+  "layout": {
+    "viewingAs": "表示中の役割：",
+    "signOut": "サインアウト"
+  },
+  "login": {
+    "subtitle": "スタッフ用ログイン",
+    "username": "ユーザー名",
+    "usernamePlaceholder": "ユーザー名を入力",
+    "password": "パスワード",
+    "passwordPlaceholder": "パスワードを入力",
+    "signIn": "サインイン",
+    "signingIn": "サインイン中...",
+    "loginFailed": "ログインに失敗しました",
+    "quickLogin": "クイックログイン",
+    "manager": "マネージャー",
+    "kitchen": "キッチン",
+    "waiter": "ウェイター",
+    "delivery": "配達員"
+  },
+  "settings": {
+    "language": "言語",
+    "languageHint": "表示言語を選択してください。これはあなたのアカウントにのみ適用され、他のスタッフには影響しません。"
+  }
+}

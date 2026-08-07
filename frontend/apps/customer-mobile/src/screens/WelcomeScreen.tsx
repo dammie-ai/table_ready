@@ -1,22 +1,65 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Modal } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
+import { checkLocation } from '@table-ready/shared';
 import Button from '../components/Button';
-import Card from '../components/Card';
-import Input from '../components/Input';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 
 export default function WelcomeScreen({ navigation }: any) {
-  const [showJoinCode, setShowJoinCode] = useState(false);
-  const [sessionCode, setSessionCode] = useState('');
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [surgeActive] = useState(false);
   const [isOpen] = useState(true);
+  const [checkingDelivery, setCheckingDelivery] = useState(false);
 
   const handleOrder = (orderType: string) => {
     navigation.navigate('Menu', { mode: orderType });
   };
 
+  const handleDelivery = async () => {
+    setCheckingDelivery(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location needed',
+          'We need your location to confirm delivery is available in your area.'
+        );
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const res = await checkLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        check_type: 'delivery',
+      });
+      if (!res.allowed) {
+        Alert.alert(
+          "Sorry, we don't deliver there",
+          res.message || `You're outside our ${res.radius_miles}-mile delivery area. Try Pickup instead?`
+        );
+        return;
+      }
+      handleOrder('delivery');
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not verify your location.');
+    } finally {
+      setCheckingDelivery(false);
+    }
+  };
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Settings')}
+        style={styles.settingsButton}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Text style={styles.settingsIcon}>⚙️</Text>
+      </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.content}>
       {!isOpen && (
         <View style={styles.closedBanner}>
           <Text style={styles.closedText}>🔴 We're currently closed. Order ahead for later!</Text>
@@ -33,7 +76,7 @@ export default function WelcomeScreen({ navigation }: any) {
         <View style={styles.logoBox}>
           <Text style={styles.logoIcon}>🍽️</Text>
         </View>
-        <Text style={typography.h1}>TableReady</Text>
+        <Text style={styles.heroTitle}>TableReady</Text>
         <Text style={styles.subtitle}>Order from your table or on the go</Text>
         <View style={styles.dots}>
           {[0, 1, 2].map((i) => (
@@ -57,60 +100,31 @@ export default function WelcomeScreen({ navigation }: any) {
         />
 
         <Button title="🍽️ Combo Deals" onPress={() => navigation.navigate('Combos')} variant="primary" style={styles.button} />
-        <Button title="🪑 Dine In" onPress={() => handleOrder('dine-in')} variant="secondary" style={styles.button} />
+        <Button title="🪑 Dine In" onPress={() => navigation.navigate('TablePin')} variant="secondary" style={styles.button} />
         <Button title="📦 Pickup" onPress={() => handleOrder('pickup')} variant="secondary" style={styles.button} />
-        <Button title="🚗 Delivery" onPress={() => handleOrder('delivery')} variant="secondary" style={styles.button} />
+        <Button
+          title={checkingDelivery ? 'Checking your location...' : '🚗 Delivery'}
+          onPress={handleDelivery}
+          disabled={checkingDelivery}
+          variant="secondary"
+          style={styles.button}
+        />
         <Button title="🏠 Order From Home" onPress={() => handleOrder('order-from-home')} variant="secondary" style={styles.button} />
       </View>
 
       <View style={styles.secondaryRow}>
-        <Button title="🔑 Join Table" onPress={() => setShowJoinCode(true)} variant="tertiary" style={styles.secondaryButton} />
+        <Button title="🔑 Join Table" onPress={() => navigation.navigate('TablePin')} variant="tertiary" style={styles.secondaryButton} />
         <Button title="📋 Waitlist" onPress={() => navigation.navigate('Waitlist')} variant="tertiary" style={styles.secondaryButton} />
         <Button title="📅 Reserve" onPress={() => navigation.navigate('Reservations')} variant="tertiary" style={styles.secondaryButton} />
       </View>
 
       <Button title="Sign In / My Account" onPress={() => navigation.navigate('Login')} variant="tertiary" style={styles.button} />
-
-      <Modal visible={showJoinCode} transparent animationType="fade">
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowJoinCode(false)}
-        >
-          <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Join a Table</Text>
-              <TouchableOpacity onPress={() => setShowJoinCode(false)}>
-                <Text style={styles.modalClose}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.modalText}>
-              Enter the 4–6 digit session code shown at your table or shared by your group.
-            </Text>
-            <TextInput
-              style={styles.codeInput}
-              value={sessionCode}
-              onChangeText={setSessionCode}
-              placeholder="e.g. 4892"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="numeric"
-              maxLength={6}
-            />
-            <Button
-              title="Join Session"
-              onPress={() => { setShowJoinCode(false); navigation.navigate('TableCart'); }}
-              disabled={sessionCode.length < 4}
-              variant="primary"
-              style={styles.button}
-            />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.primary,
@@ -118,8 +132,22 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     padding: spacing.xxl,
-    paddingTop: 80,
     gap: spacing.lg,
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: {
+    fontSize: 18,
   },
   closedBanner: {
     backgroundColor: '#dc2626',
@@ -167,6 +195,10 @@ const styles = StyleSheet.create({
   logoIcon: {
     fontSize: 40,
   },
+  heroTitle: {
+    ...typography.h1,
+    color: '#ffffff',
+  },
   subtitle: {
     ...typography.body,
     color: '#dbeafe',
@@ -207,51 +239,5 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xxl,
-  },
-  modalCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.xxl,
-    width: '100%',
-    maxWidth: 320,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  modalTitle: {
-    ...typography.h3,
-  },
-  modalClose: {
-    fontSize: 18,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  modalText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-    lineHeight: 20,
-  },
-  codeInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: colors.text,
-    marginBottom: spacing.lg,
-    letterSpacing: 3,
   },
 });

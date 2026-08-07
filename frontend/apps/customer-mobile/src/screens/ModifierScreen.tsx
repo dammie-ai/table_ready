@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native'
-import type { MenuItem, MenuItemModifier } from '@table-ready/shared'
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useCartStore, type MenuItem, type MenuItemModifier } from '@table-ready/shared'
 
 export default function ModifierScreen({ route, navigation }: any) {
   const { item, modifiers } = route.params || {}
   const [selected, setSelected] = useState<{ modifier_id: number; quantity: number }[]>([])
+  const addItem = useCartStore((s) => s.addItem)
 
   const toggle = (modifier: MenuItemModifier) => {
     setSelected((prev) => {
@@ -22,12 +24,21 @@ export default function ModifierScreen({ route, navigation }: any) {
   }, 0)
 
   const handleAdd = () => {
-    Alert.alert('Added to cart', `${item.name} with ${selected.length} customizations`)
+    const chosenModifiers = selected.map((s) => {
+      const mod = modifiers.find((m: MenuItemModifier) => m.modifier_id === s.modifier_id)
+      return { modifier_id: s.modifier_id, quantity: s.quantity, name: mod?.name, price_adjustment: mod?.price_adjustment ?? 0 }
+    })
+    addItem({
+      menu_item_id: item.item_id,
+      name: item.name,
+      base_price: item.base_price + totalAdjustment,
+      modifiers: chosenModifiers,
+    })
     navigation.goBack()
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Text style={styles.title}>Customize {item?.name}</Text>
 
       <FlatList
@@ -61,7 +72,7 @@ export default function ModifierScreen({ route, navigation }: any) {
           <Text style={styles.addButtonText}>Add to Cart</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 

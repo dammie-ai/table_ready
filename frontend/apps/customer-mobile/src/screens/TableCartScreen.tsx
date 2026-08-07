@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
 import { colors, spacing, borderRadius, typography } from '../theme';
@@ -20,7 +21,7 @@ export default function TableCartScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
@@ -123,7 +124,7 @@ export default function TableCartScreen({ navigation }: any) {
           )}
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

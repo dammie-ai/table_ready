@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "menu": "Menü",
+    "reservations": "Rezervasyonlar",
+    "waitlist": "Bekleme listesi",
+    "staff": "Personel",
+    "reports": "Raporlar",
+    "promotions": "Promosyonlar",
+    "settings": "Ayarlar",
+    "kitchenDisplay": "Mutfak ekranı",
+    "floorMap": "Salon planı",
+    "deliveryQueue": "Teslimat kuyruğu"
+  },
+  "roles": {
+    "manager": "Müdür",
+    "admin": "Yönetici",
+    "assistant_manager": "Müdür yardımcısı",
+    "kitchen": "Mutfak",
+    "waiter": "Garson",
+    "delivery": "Kurye",
+    "other": "Personel"
+  },
+  "layout": {
+    "viewingAs": "Şu şekilde görüntüleniyor:",
+    "signOut": "Çıkış yap"
+  },
+  "login": {
+    "subtitle": "Personel Girişi",
+    "username": "Kullanıcı adı",
+    "usernamePlaceholder": "Kullanıcı adınızı girin",
+    "password": "Şifre",
+    "passwordPlaceholder": "Şifrenizi girin",
+    "signIn": "Giriş yap",
+    "signingIn": "Giriş yapılıyor...",
+    "loginFailed": "Giriş başarısız",
+    "quickLogin": "Hızlı giriş",
+    "manager": "Müdür",
+    "kitchen": "Mutfak",
+    "waiter": "Garson",
+    "delivery": "Kurye"
+  },
+  "settings": {
+    "language": "Dil",
+    "languageHint": "Görüntüleme dilinizi seçin. Bu yalnızca sizin hesabınızı etkiler, diğer personeli etkilemez."
+  }
+}

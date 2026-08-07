@@ -12,6 +12,10 @@ interface Order {
   items: any[]
 }
 
+const KITCHEN_HIDDEN_STATUSES = new Set([
+  'ON_HOLD', 'CANCELLED_AND_REFUNDED', 'CANCELLED', 'COMPLETED', 'SERVED', 'PICKED_UP',
+])
+
 export default function KitchenDisplay() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,7 +54,14 @@ export default function KitchenDisplay() {
     socket.on('new_kitchen_order', (order: Order) => {
       setOrders((prev) => [order, ...prev])
     })
-    socket.on('kitchen_order_updated', (data: { orderId: number }) => {
+    socket.on('kitchen_order_updated', (data: { orderId: number; status?: string }) => {
+      // Mirrors the exclusion list in GET /orders/kitchen-orders — once an
+      // order reaches one of these, it's done and should disappear from
+      // the live board instead of sitting there forever.
+      if (data.status && KITCHEN_HIDDEN_STATUSES.has(data.status)) {
+        setOrders((prev) => prev.filter((o) => o.master_order_id !== data.orderId))
+        return
+      }
       setOrders((prev) =>
         prev.map((o) =>
           o.master_order_id === data.orderId ? { ...o, ...data } : o

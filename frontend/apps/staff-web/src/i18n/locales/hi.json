@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "menu": "मेनू",
+    "reservations": "आरक्षण",
+    "waitlist": "प्रतीक्षा सूची",
+    "staff": "स्टाफ",
+    "reports": "रिपोर्ट",
+    "promotions": "प्रचार",
+    "settings": "सेटिंग्स",
+    "kitchenDisplay": "किचन डिस्प्ले",
+    "floorMap": "फ़्लोर मैप",
+    "deliveryQueue": "डिलीवरी कतार"
+  },
+  "roles": {
+    "manager": "मैनेजर",
+    "admin": "एडमिन",
+    "assistant_manager": "सहायक मैनेजर",
+    "kitchen": "किचन",
+    "waiter": "वेटर",
+    "delivery": "डिलीवरी",
+    "other": "स्टाफ"
+  },
+  "layout": {
+    "viewingAs": "इस रूप में देख रहे हैं:",
+    "signOut": "साइन आउट"
+  },
+  "login": {
+    "subtitle": "स्टाफ गेटवे",
+    "username": "यूज़रनेम",
+    "usernamePlaceholder": "अपना यूज़रनेम दर्ज करें",
+    "password": "पासवर्ड",
+    "passwordPlaceholder": "अपना पासवर्ड दर्ज करें",
+    "signIn": "साइन इन करें",
+    "signingIn": "साइन इन हो रहा है...",
+    "loginFailed": "लॉगिन विफल",
+    "quickLogin": "क्विक लॉगिन",
+    "manager": "मैनेजर",
+    "kitchen": "किचन",
+    "waiter": "वेटर",
+    "delivery": "डिलीवरी"
+  },
+  "settings": {
+    "language": "भाषा",
+    "languageHint": "अपनी डिस्प्ले भाषा चुनें। यह केवल आपके खाते को प्रभावित करता है, बाकी स्टाफ को नहीं।"
+  }
+}

@@ -16,7 +16,7 @@ export default function Waitlist() {
   const [entries, setEntries] = useState<WaitlistEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ customer_name: '', phone: '', party_size: 2, notes: '' })
+  const [form, setForm] = useState({ customer_name: '', phone: '', party_size: 2, table_id: '' })
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -25,8 +25,8 @@ export default function Waitlist() {
 
   const loadWaitlist = async () => {
     try {
-      const res = await apiClient.get<{ success: boolean; waitlist: WaitlistEntry[] }>('/waitlist')
-      setEntries(res.waitlist || [])
+      const res = await apiClient.get<{ success: boolean; entries: WaitlistEntry[] }>('/waitlist')
+      setEntries(res.entries || [])
     } catch (err) {
       console.error('Failed to load waitlist:', err)
     } finally {
@@ -38,11 +38,13 @@ export default function Waitlist() {
     e.preventDefault()
     try {
       await apiClient.post('/waitlist/join', {
-        ...form,
+        customer_name: form.customer_name,
+        phone: form.phone,
         party_size: Number(form.party_size),
+        table_id: Number(form.table_id),
       })
       setShowForm(false)
-      setForm({ customer_name: '', phone: '', party_size: 2, notes: '' })
+      setForm({ customer_name: '', phone: '', party_size: 2, table_id: '' })
       loadWaitlist()
     } catch (err) {
       console.error('Failed to join waitlist:', err)
@@ -127,16 +129,29 @@ export default function Waitlist() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Party Size</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.party_size}
-                  onChange={(e) => setForm({ ...form, party_size: Number(e.target.value) })}
-                  className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Party Size</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.party_size}
+                    onChange={(e) => setForm({ ...form, party_size: Number(e.target.value) })}
+                    className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Table</label>
+                  <input
+                    type="number"
+                    value={form.table_id}
+                    onChange={(e) => setForm({ ...form, table_id: e.target.value })}
+                    className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                    placeholder="Table ID"
+                    required
+                  />
+                </div>
               </div>
               <button
                 type="submit"
