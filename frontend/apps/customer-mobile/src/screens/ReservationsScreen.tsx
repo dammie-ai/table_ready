@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { createReservation } from '@table-ready/shared'
+import { useThemeStore } from '../stores/themeStore'
 
 export default function ReservationsScreen({ navigation }: any) {
+  const colors = useThemeStore((s) => s.colors)
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [myReservations, setMyReservations] = useState<any[]>([])
   const [creating, setCreating] = useState(false)
   const [partySize, setPartySize] = useState('2')
@@ -46,12 +49,12 @@ export default function ReservationsScreen({ navigation }: any) {
       <Text style={styles.title}>Reservations</Text>
 
       <View style={styles.form}>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Name" />
-        <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Phone" keyboardType="phone-pad" />
-        <TextInput style={styles.input} value={partySize} onChangeText={setPartySize} placeholder="Party Size" keyboardType="numeric" />
+        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Name" placeholderTextColor={colors.textSecondary} />
+        <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
+        <TextInput style={styles.input} value={partySize} onChangeText={setPartySize} placeholder="Party Size" placeholderTextColor={colors.textSecondary} keyboardType="numeric" />
 
         <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-          <Text>{date.toLocaleDateString()}</Text>
+          <Text style={styles.inputText}>{date.toLocaleDateString()}</Text>
         </TouchableOpacity>
         {showDatePicker && (
           <DateTimePicker
@@ -63,7 +66,7 @@ export default function ReservationsScreen({ navigation }: any) {
         )}
 
         <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
-          <Text>{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+          <Text style={styles.inputText}>{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
         </TouchableOpacity>
         {showTimePicker && (
           <DateTimePicker
@@ -96,38 +99,43 @@ export default function ReservationsScreen({ navigation }: any) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
     padding: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 16,
-    color: '#111827',
+    color: colors.text,
   },
   form: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#ffffff',
+    color: colors.text,
+    backgroundColor: colors.surface,
     marginBottom: 12,
     justifyContent: 'center',
   },
+  inputText: {
+    color: colors.text,
+    fontSize: 16,
+  },
   button: {
-    backgroundColor: '#c2410c',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -142,30 +150,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 12,
-    color: '#111827',
+    color: colors.text,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 4,
   },
   cardDetail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   cardHint: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
 })

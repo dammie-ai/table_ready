@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getOrderHistory, type Order } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
+import { useThemeStore } from '../stores/themeStore'
 
 export default function OrderHistoryScreen({ navigation }: any) {
+  const colors = useThemeStore((s) => s.colors)
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const user = useAuthStore((s) => s.user)
@@ -68,10 +71,10 @@ export default function OrderHistoryScreen({ navigation }: any) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
   },
   center: {
     flex: 1,
@@ -81,21 +84,21 @@ const styles = StyleSheet.create({
   },
   empty: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textSecondary,
   },
   link: {
-    color: '#2563eb',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   row: {
     flexDirection: 'row',
@@ -106,17 +109,17 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   status: {
     fontSize: 12,
-    color: '#2563eb',
+    color: colors.primary,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   date: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   footer: {
@@ -125,16 +128,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
   },
   type: {
     fontSize: 14,
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   total: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#2563eb',
+    color: colors.primary,
   },
 })

@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 
 export default function TableCartScreen({ navigation }: any) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [roomCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
   const [joinCode, setJoinCode] = useState('');
   const [mode, setMode] = useState<'create' | 'join'>('create');
@@ -26,7 +29,7 @@ export default function TableCartScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={typography.h2}>Table Cart</Text>
+        <Text style={[typography.h2, { color: colors.text }]}>Table Cart</Text>
       </View>
 
       <View style={styles.content}>
@@ -128,7 +131,7 @@ export default function TableCartScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -219,7 +222,7 @@ const styles = StyleSheet.create({
   },
   toggleRow: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.border,
     borderRadius: borderRadius.lg,
     padding: 4,
     gap: 4,

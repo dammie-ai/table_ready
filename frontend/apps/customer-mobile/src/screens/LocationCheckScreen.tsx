@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Modal, ScrollView } from 'react-native';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography } from '../theme';
+import { useThemeStore } from '../stores/themeStore';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import * as Location from 'expo-location';
 import { checkLocation, getConfig, getStorageItem, setStorageItem } from '@table-ready/shared';
 
 export default function LocationCheckScreen({ navigation }: any) {
+  const colors = useThemeStore((s) => s.colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [phase, setPhase] = useState<'loading' | 'success' | 'error' | 'manual'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [manualAddress, setManualAddress] = useState('');
@@ -97,7 +100,7 @@ export default function LocationCheckScreen({ navigation }: any) {
         <View style={styles.logoBox}>
           <Text style={styles.logoIcon}>🍽️</Text>
         </View>
-        <Text style={typography.h2}>TableReady</Text>
+        <Text style={[typography.h2, { color: colors.text }]}>TableReady</Text>
         <Text style={styles.logoSub}>Order from anywhere</Text>
       </View>
 
@@ -133,7 +136,7 @@ export default function LocationCheckScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
