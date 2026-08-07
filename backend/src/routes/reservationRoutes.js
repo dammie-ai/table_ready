@@ -4,7 +4,10 @@ const reservationController = require('../controllers/reservationController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 const { validate, schemas } = require('../middleware/validation');
 
-router.post('/', authenticateToken, validate(schemas.createReservation), reservationController.createReservation);
+// Guest-bookable, same as joining the waitlist or placing an order — no
+// account required. Cancelling stays staff-only below since there's no
+// ownership check to verify a caller cancelling is the one who booked.
+router.post('/', validate(schemas.createReservation), reservationController.createReservation);
 
 router.get('/', authenticateToken, reservationController.getReservations);
 

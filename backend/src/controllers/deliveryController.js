@@ -1,5 +1,8 @@
 const db = require('../config/db');
 const pool = db.pool || db;
+const { calculateDistanceInMiles } = require('../utils/distance');
+
+const AVG_DELIVERY_MPH = 20;
 
 /**
  * POST /api/delivery/assign
@@ -36,11 +39,36 @@ exports.updateDeliveryStatus = async (req, res) => {
 exports.updateDriverLocation = async (req, res) => {
   try {
     const { latitude, longitude } = req.body;
-    await pool.query(
-      'UPDATE orders SET driver_latitude = $1, driver_longitude = $2 WHERE master_order_id = $3',
-      [latitude, longitude, req.params.orderId]
+    const { orderId } = req.params;
+
+    const updated = await pool.query(
+      `UPDATE orders SET driver_latitude = $1, driver_longitude = $2 WHERE master_order_id = $3
+       RETURNING delivery_latitude, delivery_longitude`,
+      [latitude, longitude, orderId]
     );
-    return res.status(200).json({ success: true });
+
+    if (updated.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found.' });
+    }
+
+    const { delivery_latitude, delivery_longitude } = updated.rows[0];
+    let tracking = { driver_latitude: latitude, driver_longitude: longitude, distance_miles: null, eta_minutes: null };
+
+    if (delivery_latitude != null && delivery_longitude != null) {
+      const distanceMiles = calculateDistanceInMiles(
+        latitude, longitude,
+        parseFloat(delivery_latitude), parseFloat(delivery_longitude)
+      );
+      tracking.distance_miles = parseFloat(distanceMiles.toFixed(2));
+      tracking.eta_minutes = Math.max(1, Math.round((distanceMiles / AVG_DELIVERY_MPH) * 60));
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`order_${orderId}`).emit('delivery_location_updated', { orderId: parseInt(orderId), ...tracking });
+    }
+
+    return res.status(200).json({ success: true, ...tracking });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
