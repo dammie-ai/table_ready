@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { CameraView, useCameraPermissions } from 'expo-camera'
@@ -30,7 +30,51 @@ export default function TablePinScreen({ navigation }: any) {
   const [verifying, setVerifying] = useState(false)
   const [verified, setVerified] = useState<{ table: string; code: string } | null>(null)
   const [error, setError] = useState('')
+  const [cameraReady, setCameraReady] = useState(false)
+  const [cameraStalled, setCameraStalled] = useState(false)
+  // expo-camera on Android is well known for failing to activate the
+  // physical camera on a CameraView's very first mount, producing exactly
+  // a blank/black preview with no error — and working the moment the view
+  // unmounts and remounts. Bumping this forces React to fully recreate the
+  // <CameraView> (rather than just reload the JS), which reliably clears it.
+  const [cameraKey, setCameraKey] = useState(0)
   const scannedRef = useRef(false)
+  const autoRetriedRef = useRef(false)
+
+  useEffect(() => {
+    autoRetriedRef.current = false
+  }, [mode, permission?.granted])
+
+  useEffect(() => {
+    if (mode !== 'scan' || !permission?.granted) {
+      setCameraStalled(false)
+      return
+    }
+    setCameraReady(false)
+    setCameraStalled(false)
+    const timeout = setTimeout(() => {
+      setCameraReady((ready) => {
+        if (ready) return ready
+        // The known fix is remounting the view — try that once on our own
+        // before bothering the user with a "camera broken" message.
+        if (!autoRetriedRef.current) {
+          autoRetriedRef.current = true
+          setCameraKey((k) => k + 1)
+        } else {
+          setCameraStalled(true)
+        }
+        return ready
+      })
+    }, 4000)
+    return () => clearTimeout(timeout)
+  }, [mode, permission?.granted, cameraKey])
+
+  const retryCamera = () => {
+    setCameraStalled(false)
+    setCameraReady(false)
+    autoRetriedRef.current = true
+    setCameraKey((k) => k + 1)
+  }
 
   const verify = async (table: string, code: string) => {
     setVerifying(true)
@@ -115,16 +159,34 @@ export default function TablePinScreen({ navigation }: any) {
               </Text>
               <Button title="Grant Camera Access" onPress={requestPermission} variant="primary" style={styles.permissionButton} />
             </View>
+          ) : cameraStalled ? (
+            <View style={styles.permissionBox}>
+              <Text style={styles.permissionIcon}>📷</Text>
+              <Text style={styles.permissionTitle}>Camera preview didn't start</Text>
+              <Text style={styles.permissionText}>
+                This is a known Android quirk with the camera failing to activate on its first try
+                — retrying almost always fixes it.
+              </Text>
+              <Button title="Retry Camera" onPress={retryCamera} variant="primary" style={styles.permissionButton} />
+              <Button title="Enter Code Manually" onPress={() => setMode('manual')} variant="secondary" style={styles.permissionButton} />
+            </View>
           ) : (
             <View style={styles.cameraBox}>
               <CameraView
+                key={cameraKey}
                 style={StyleSheet.absoluteFillObject}
                 facing="back"
                 barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                 onBarcodeScanned={verifying ? undefined : handleBarcodeScanned}
+                onCameraReady={() => setCameraReady(true)}
               />
               <View style={styles.scanFrame} pointerEvents="none" />
-              {verifying && (
+              {!cameraReady && (
+                <View style={styles.scanOverlay}>
+                  <ActivityIndicator color="#ffffff" size="large" />
+                </View>
+              )}
+              {cameraReady && verifying && (
                 <View style={styles.scanOverlay}>
                   <ActivityIndicator color="#ffffff" size="large" />
                 </View>
