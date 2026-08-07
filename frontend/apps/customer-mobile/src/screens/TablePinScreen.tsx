@@ -32,13 +32,19 @@ export default function TablePinScreen({ navigation }: any) {
   const [error, setError] = useState('')
   const [cameraReady, setCameraReady] = useState(false)
   const [cameraStalled, setCameraStalled] = useState(false)
+  // expo-camera on Android is well known for failing to activate the
+  // physical camera on a CameraView's very first mount, producing exactly
+  // a blank/black preview with no error — and working the moment the view
+  // unmounts and remounts. Bumping this forces React to fully recreate the
+  // <CameraView> (rather than just reload the JS), which reliably clears it.
+  const [cameraKey, setCameraKey] = useState(0)
   const scannedRef = useRef(false)
+  const autoRetriedRef = useRef(false)
 
-  // A permission grant of `true` doesn't guarantee the native camera
-  // preview actually starts — most commonly seen in Expo Go right after a
-  // brand-new native module (like this one) was added, since Expo Go only
-  // picks up newly-linked native modules on a full cold start, not a JS
-  // reload. Surface that instead of leaving a blank box forever.
+  useEffect(() => {
+    autoRetriedRef.current = false
+  }, [mode, permission?.granted])
+
   useEffect(() => {
     if (mode !== 'scan' || !permission?.granted) {
       setCameraStalled(false)
@@ -48,12 +54,27 @@ export default function TablePinScreen({ navigation }: any) {
     setCameraStalled(false)
     const timeout = setTimeout(() => {
       setCameraReady((ready) => {
-        if (!ready) setCameraStalled(true)
+        if (ready) return ready
+        // The known fix is remounting the view — try that once on our own
+        // before bothering the user with a "camera broken" message.
+        if (!autoRetriedRef.current) {
+          autoRetriedRef.current = true
+          setCameraKey((k) => k + 1)
+        } else {
+          setCameraStalled(true)
+        }
         return ready
       })
     }, 4000)
     return () => clearTimeout(timeout)
-  }, [mode, permission?.granted])
+  }, [mode, permission?.granted, cameraKey])
+
+  const retryCamera = () => {
+    setCameraStalled(false)
+    setCameraReady(false)
+    autoRetriedRef.current = true
+    setCameraKey((k) => k + 1)
+  }
 
   const verify = async (table: string, code: string) => {
     setVerifying(true)
@@ -143,14 +164,16 @@ export default function TablePinScreen({ navigation }: any) {
               <Text style={styles.permissionIcon}>📷</Text>
               <Text style={styles.permissionTitle}>Camera preview didn't start</Text>
               <Text style={styles.permissionText}>
-                This can happen the first time a new camera feature loads in Expo Go — fully close
-                the app (not just reload) and reopen it, then try again.
+                This is a known Android quirk with the camera failing to activate on its first try
+                — retrying almost always fixes it.
               </Text>
-              <Button title="Enter Code Manually" onPress={() => setMode('manual')} variant="primary" style={styles.permissionButton} />
+              <Button title="Retry Camera" onPress={retryCamera} variant="primary" style={styles.permissionButton} />
+              <Button title="Enter Code Manually" onPress={() => setMode('manual')} variant="secondary" style={styles.permissionButton} />
             </View>
           ) : (
             <View style={styles.cameraBox}>
               <CameraView
+                key={cameraKey}
                 style={StyleSheet.absoluteFillObject}
                 facing="back"
                 barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
