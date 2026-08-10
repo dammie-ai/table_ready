@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
-import { spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
 export default function CartScreen({ navigation, route }: any) {
@@ -262,7 +262,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   qtyButtonTextAdd: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#ffffff',
+    color: contrastText(colors.primary),
   },
   qtyText: {
     fontSize: 15,

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
-import { spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 import { getComboMeals, getMenuItems, type ComboMeal, type MenuItem } from '@table-ready/shared';
 
@@ -491,7 +491,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     justifyContent: 'center',
   },
   checkText: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
     fontSize: 14,
     fontWeight: '700',
   },
@@ -554,7 +554,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     justifyContent: 'center',
   },
   sideCheckText: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
     fontSize: 14,
     fontWeight: '700',
   },

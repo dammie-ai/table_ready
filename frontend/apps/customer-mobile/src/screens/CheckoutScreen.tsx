@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { useCartStore, createOrder, getStorageItem } from '@table-ready/shared';
-import { spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
 const TIP_PRESETS = [0, 15, 18, 20];
@@ -484,7 +484,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: colors.text,
   },
   orderTypeTextActive: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
   },
   infoBox: {
     backgroundColor: '#eff6ff',
@@ -554,7 +554,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: colors.text,
   },
   tipButtonTextActive: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
   },
   customTipRow: {
     flexDirection: 'row',
@@ -746,7 +746,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   splitCounterTextAdd: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#ffffff',
+    color: contrastText(colors.primary),
   },
   splitCountText: {
     fontSize: 15,
@@ -797,7 +797,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     justifyContent: 'center',
   },
   cardBrandText: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
     fontSize: 10,
     fontWeight: '800',
   },

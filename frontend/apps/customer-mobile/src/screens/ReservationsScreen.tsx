@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { createReservation } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
+import { contrastText } from '../theme'
 
 export default function ReservationsScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors)
@@ -142,7 +143,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     marginTop: 8,
   },
   buttonText: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
     fontSize: 16,
     fontWeight: '600',
   },

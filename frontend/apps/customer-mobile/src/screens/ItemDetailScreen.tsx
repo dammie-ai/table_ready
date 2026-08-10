@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { getMenuItemDetail, useCartStore, type MenuItemDetailResponse } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
+import { contrastText } from '../theme'
 
 export default function ItemDetailScreen({ route, navigation }: any) {
   const colors = useThemeStore((s) => s.colors)
@@ -169,7 +170,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   trending: {
     backgroundColor: colors.secondary,
-    color: '#ffffff',
+    color: contrastText(colors.secondary),
     fontSize: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -208,7 +209,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
     fontSize: 16,
     fontWeight: '600',
   },

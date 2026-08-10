@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 import { login as apiLogin, register as apiRegister } from '@table-ready/shared';
 import { useAuthStore } from '@table-ready/shared';
@@ -171,11 +171,12 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   logoTitle: {
     ...typography.h2,
-    color: '#ffffff',
+    color: contrastText(colors.primary),
   },
   logoSubtitle: {
     ...typography.caption,
-    color: '#93c5fd',
+    color: contrastText(colors.primary),
+    opacity: 0.8,
   },
   toggleRow: {
     flexDirection: 'row',

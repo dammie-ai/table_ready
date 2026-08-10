@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { borderRadius, spacing } from '../theme';
+import { borderRadius, spacing, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
 type Props = {
@@ -22,7 +22,7 @@ export default function Badge({ label, variant = 'primary' }: Props) {
 
   return (
     <View style={[styles.badge, { backgroundColor }]}>
-      <Text style={styles.text}>{label}</Text>
+      <Text style={[styles.text, { color: contrastText(backgroundColor) }]}>{label}</Text>
     </View>
   );
 }
@@ -35,7 +35,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   text: {
-    color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
   },
