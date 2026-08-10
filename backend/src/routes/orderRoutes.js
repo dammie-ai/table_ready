@@ -4,9 +4,10 @@ const db = require('../config/db');
 const { getSurgeMultiplier, calculateAdjustedPrice } = require('../utils/surgePricing');
 const { getTaxRate } = require('../services/configService');
 const { logAudit } = require('../utils/auditLogger');
-const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
+const { authenticateToken, authenticateOptional, authorizeRoles } = require('../middleware/authGuard');
 const { validate, schemas } = require('../middleware/validation');
 const { calculateDistanceInMiles } = require('../utils/distance');
+const { generateOrderAccessToken, verifyOrderAccessToken } = require('../utils/orderAccess');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Safely handle both direct and destructured pool export patterns
@@ -317,7 +318,13 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
       message: shouldHold
         ? "Order received and placed ON_HOLD (hidden from kitchen display)."
         : "Order received and sent to kitchen.",
-      order: broadcastOrder,
+      order: {
+        ...broadcastOrder,
+        // Proves ownership for a guest customer managing their own order
+        // (tracking/cancelling) later — carried client-side the same way
+        // master_order_id already is, never stored server-side.
+        access_token: generateOrderAccessToken(broadcastOrder.master_order_id)
+      },
       appliedMultiplier: multiplier
     });
 
@@ -892,9 +899,19 @@ router.post('/:id/refund', authenticateToken, authorizeRoles('admin', 'manager')
  * PATCH /api/orders/:id/cancel
  * Cancel an order without refund
  */
-router.patch('/:id/cancel', async (req, res) => {
+router.patch('/:id/cancel', authenticateOptional, async (req, res) => {
   const { id } = req.params;
+  const { access_token } = req.body;
   let client;
+
+  const userRoles = req.user
+    ? (Array.isArray(req.user.roles) ? req.user.roles : (req.user.role ? [req.user.role] : []))
+    : [];
+  const isStaff = userRoles.some((r) => ['admin', 'manager', 'waiter'].includes(r));
+
+  if (!isStaff && !verifyOrderAccessToken(id, access_token)) {
+    return res.status(403).json({ success: false, error: 'You do not have permission to cancel this order.' });
+  }
 
   try {
     client = await pool.connect();
@@ -955,15 +972,23 @@ router.patch('/:id/cancel', async (req, res) => {
           );
         }
       } else {
-        await client.query(
-          `UPDATE inventory SET stock_quantity = stock_quantity + $1 WHERE id = $2`,
+        // No recipe row means this item has no known ingredient linkage —
+        // menu_item_id and inventory_id aren't the same ID space, so only
+        // touch inventory when a row actually exists under this ID.
+        // Previously this ran unconditionally, silently updating zero
+        // rows and then crashing the stock_logs insert on the resulting
+        // NULL — cancelling/refunding any item with no recipe 500'd.
+        const restored = await client.query(
+          `UPDATE inventory SET stock_quantity = stock_quantity + $1 WHERE id = $2 RETURNING stock_quantity`,
           [item.quantity, menuItemId]
         );
-        await client.query(
-          `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
-           VALUES ($1, (SELECT stock_quantity FROM inventory WHERE id = $1), $2, $3)`,
-          [menuItemId, item.quantity, `Order #${id} cancelled - stock restored`]
-        );
+        if (restored.rows.length > 0) {
+          await client.query(
+            `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+             VALUES ($1, $2, $3, $4)`,
+            [menuItemId, restored.rows[0].stock_quantity, item.quantity, `Order #${id} cancelled - stock restored`]
+          );
+        }
       }
     }
 
