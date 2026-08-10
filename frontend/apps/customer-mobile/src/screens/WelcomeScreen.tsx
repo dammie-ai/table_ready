@@ -124,7 +124,6 @@ export default function WelcomeScreen({ navigation }: any) {
         <Button title="📅 Reserve" onPress={() => navigation.navigate('Reservations')} variant="tertiary" style={styles.secondaryButton} />
       </View>
 
-      <Button title="Sign In / My Account" onPress={() => navigation.navigate('Login')} variant="tertiary" style={styles.button} />
       </ScrollView>
     </SafeAreaView>
   );

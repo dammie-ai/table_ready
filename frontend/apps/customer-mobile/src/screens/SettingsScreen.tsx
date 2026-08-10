@@ -105,12 +105,9 @@ export default function SettingsScreen({ navigation }: any) {
       {isGuest ? (
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
-          <Text style={[styles.rowLabel, { color: colors.textSecondary, marginBottom: 12 }]}>
-            You're browsing as a guest. Sign in to manage notification preferences and your account.
+          <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>
+            Accounts aren't available yet — ordering works fully as a guest, no sign-in needed.
           </Text>
-          <TouchableOpacity style={[styles.menuItem, styles.dangerItem]} onPress={() => navigation.navigate('Login')}>
-            <Text style={[styles.menuItemText, { color: colors.accent }]}>Sign In / My Account</Text>
-          </TouchableOpacity>
         </View>
       ) : (
         <>
