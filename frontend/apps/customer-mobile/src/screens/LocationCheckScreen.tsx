@@ -5,7 +5,7 @@ import { useThemeStore } from '../stores/themeStore';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import * as Location from 'expo-location';
-import { checkLocation, getConfig, getStorageItem, setStorageItem } from '@table-ready/shared';
+import { checkLocation } from '@table-ready/shared';
 
 export default function LocationCheckScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
@@ -16,23 +16,12 @@ export default function LocationCheckScreen({ navigation }: any) {
   const [withinGeofence, setWithinGeofence] = useState(true);
 
   useEffect(() => {
-    checkGeofence();
-  }, []);
-
-  const checkGeofence = async () => {
-    try {
-      const stored = await getStorageItem('tableready_within_geofence');
-      if (stored !== null) {
-        setWithinGeofence(stored !== 'false');
-        setPhase('success');
-        setTimeout(() => navigation.replace('GroupChoice'), 1500);
-        return;
-      }
-    } catch {
-      // ignore
-    }
+    // A customer's actual location can be completely different from one
+    // app open to the next (home yesterday, at the restaurant today) — the
+    // geofence needs to be asked fresh every launch, not just once ever
+    // and then trusted forever from a persisted flag.
     requestLocation();
-  };
+  }, []);
 
   const requestLocation = async () => {
     try {
@@ -47,18 +36,21 @@ export default function LocationCheckScreen({ navigation }: any) {
       const res = await checkLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
+        // This is the general "are you actually near the restaurant"
+        // gate, not the delivery-radius check — dine_in uses the tight
+        // geofence radius instead of falling through to the (much wider)
+        // delivery-mile default.
+        check_type: 'dine_in',
       });
 
       if (res.allowed) {
         setWithinGeofence(true);
         setPhase('success');
-        await setStorageItem('tableready_within_geofence', 'true');
         setTimeout(() => navigation.replace('GroupChoice'), 1500);
       } else {
         setWithinGeofence(false);
         setPhase('error');
         setErrorMsg('You are outside the restaurant geofence.');
-        await setStorageItem('tableready_within_geofence', 'false');
       }
     } catch (err) {
       setPhase('error');
@@ -66,8 +58,7 @@ export default function LocationCheckScreen({ navigation }: any) {
     }
   };
 
-  const handleContinueAnyway = async () => {
-    await setStorageItem('tableready_within_geofence', 'false');
+  const handleContinueAnyway = () => {
     setWithinGeofence(false);
     setPhase('manual');
   };

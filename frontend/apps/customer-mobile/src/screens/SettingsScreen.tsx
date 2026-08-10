@@ -13,13 +13,23 @@ export default function SettingsScreen({ navigation }: any) {
   })
   const [loading, setLoading] = useState(true)
   const logout = useAuthStore((s) => s.logout)
+  const user = useAuthStore((s) => s.user)
   const colors = useThemeStore((s) => s.colors)
   const mode = useThemeStore((s) => s.mode)
   const setMode = useThemeStore((s) => s.setMode)
+  const isGuest = !user
 
   useEffect(() => {
+    // Settings is reachable straight from Welcome without signing in — the
+    // notification-preferences endpoint requires a token, so there's
+    // nothing to load (or show) for a guest, and no point letting the
+    // request fail first.
+    if (isGuest) {
+      setLoading(false)
+      return
+    }
     loadPreferences()
-  }, [])
+  }, [isGuest])
 
   const loadPreferences = async () => {
     try {
@@ -92,31 +102,45 @@ export default function SettingsScreen({ navigation }: any) {
         </View>
       </View>
 
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
-        <View style={[styles.row, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.rowLabel, { color: colors.text }]}>Order Updates</Text>
-          <Switch value={prefs.order_updates} onValueChange={(v) => togglePref('order_updates', v)} />
+      {isGuest ? (
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+          <Text style={[styles.rowLabel, { color: colors.textSecondary, marginBottom: 12 }]}>
+            You're browsing as a guest. Sign in to manage notification preferences and your account.
+          </Text>
+          <TouchableOpacity style={[styles.menuItem, styles.dangerItem]} onPress={() => navigation.navigate('Login')}>
+            <Text style={[styles.menuItemText, { color: colors.primary }]}>Sign In / My Account</Text>
+          </TouchableOpacity>
         </View>
-        <View style={[styles.row, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.rowLabel, { color: colors.text }]}>Promotions</Text>
-          <Switch value={prefs.promotions} onValueChange={(v) => togglePref('promotions', v)} />
-        </View>
-        <View style={[styles.row, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.rowLabel, { color: colors.text }]}>Reminders</Text>
-          <Switch value={prefs.reminders} onValueChange={(v) => togglePref('reminders', v)} />
-        </View>
-      </View>
+      ) : (
+        <>
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
+            <View style={[styles.row, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.rowLabel, { color: colors.text }]}>Order Updates</Text>
+              <Switch value={prefs.order_updates} onValueChange={(v) => togglePref('order_updates', v)} />
+            </View>
+            <View style={[styles.row, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.rowLabel, { color: colors.text }]}>Promotions</Text>
+              <Switch value={prefs.promotions} onValueChange={(v) => togglePref('promotions', v)} />
+            </View>
+            <View style={[styles.row, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.rowLabel, { color: colors.text }]}>Reminders</Text>
+              <Switch value={prefs.reminders} onValueChange={(v) => togglePref('reminders', v)} />
+            </View>
+          </View>
 
-      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
-        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleLogout}>
-          <Text style={[styles.menuItemText, { color: colors.primary }]}>Log Out</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.menuItem, styles.dangerItem]} onPress={handleDeleteAccount}>
-          <Text style={[styles.menuItemText, styles.dangerText]}>Delete Account</Text>
-        </TouchableOpacity>
-      </View>
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+            <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleLogout}>
+              <Text style={[styles.menuItemText, { color: colors.primary }]}>Log Out</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.menuItem, styles.dangerItem]} onPress={handleDeleteAccount}>
+              <Text style={[styles.menuItemText, styles.dangerText]}>Delete Account</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </SafeAreaView>
   )
 }
