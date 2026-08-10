@@ -191,7 +191,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   logoSub: {
     ...typography.caption,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '600',
   },
   statusArea: {

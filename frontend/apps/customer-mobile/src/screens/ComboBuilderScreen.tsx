@@ -89,7 +89,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
         >
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={typography.h3}>Combo Builder</Text>
+        <Text style={[typography.h3, { color: colors.text }]}>Combo Builder</Text>
       </View>
 
       <View style={styles.stepIndicator}>
@@ -421,7 +421,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   comboPrice: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
   comboTags: {
     flexDirection: 'row',
@@ -436,6 +436,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   comboTagText: {
     fontSize: 12,
     fontWeight: '700',
+    // Sits on the hardcoded #eff6ff comboTag pill, not colors.background.
     color: colors.primary,
   },
   comboTagOrange: {
@@ -510,6 +511,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   counterText: {
     fontSize: 13,
     fontWeight: '700',
+    // Sits on the hardcoded #eff6ff counterBadge, not colors.background.
     color: colors.primary,
   },
   counterTextFull: {
@@ -570,7 +572,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   sidePrice: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.accent,
     marginTop: 2,
   },
   reviewCard: {
@@ -602,7 +604,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   reviewPrice: {
     fontSize: 17,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
   reviewDivider: {
     height: 1,

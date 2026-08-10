@@ -111,7 +111,7 @@ export default function CartScreen({ navigation, route }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={typography.h2}>Your Cart</Text>
+        <Text style={[typography.h2, { color: colors.text }]}>Your Cart</Text>
       </View>
 
       <FlatList
@@ -235,7 +235,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   itemPrice: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.accent,
     marginTop: 2,
   },
   qtyRow: {
@@ -301,6 +301,8 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   tableCartTitle: {
     fontSize: 14,
     fontWeight: '700',
+    // Sits on the hardcoded #eff6ff box below, not colors.background —
+    // safeAccent's fallback logic doesn't apply to this fixed backdrop.
     color: colors.primary,
   },
   tableCartSubtitle: {
@@ -347,7 +349,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   summaryTotalValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
   summaryButtons: {
     flexDirection: 'row',

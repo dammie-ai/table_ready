@@ -207,7 +207,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: colors.textSecondary,
   },
   toggleTextActive: {
-    color: colors.primary,
+    color: colors.accent,
   },
   form: {
     flex: 1,
@@ -223,7 +223,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   forgotText: {
     fontSize: 13,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '600',
   },
   errorBox: {

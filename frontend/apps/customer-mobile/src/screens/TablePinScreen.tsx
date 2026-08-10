@@ -135,7 +135,7 @@ export default function TablePinScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={typography.h3}>{mode === 'scan' ? 'Scan Table QR Code' : 'Enter Table Code'}</Text>
+        <Text style={[typography.h3, { color: colors.text }]}>{mode === 'scan' ? 'Scan Table QR Code' : 'Enter Table Code'}</Text>
       </View>
 
       {error ? (
@@ -390,7 +390,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     alignItems: 'center',
   },
   switchModeText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -424,7 +424,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   codeLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.xs,
@@ -432,7 +432,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   codeValue: {
     fontSize: 32,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
     letterSpacing: 6,
   },
   successHint: {

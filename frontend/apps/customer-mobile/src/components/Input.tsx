@@ -52,7 +52,7 @@ export default function Input({
         />
         {rightAction && (
           <TouchableOpacity onPress={rightAction.onPress} style={styles.rightAction}>
-            <Text style={[styles.rightActionText, { color: colors.primary }]}>{rightAction.label}</Text>
+            <Text style={[styles.rightActionText, { color: colors.accent }]}>{rightAction.label}</Text>
           </TouchableOpacity>
         )}
       </View>

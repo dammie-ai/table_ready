@@ -109,7 +109,7 @@ export default function SettingsScreen({ navigation }: any) {
             You're browsing as a guest. Sign in to manage notification preferences and your account.
           </Text>
           <TouchableOpacity style={[styles.menuItem, styles.dangerItem]} onPress={() => navigation.navigate('Login')}>
-            <Text style={[styles.menuItemText, { color: colors.primary }]}>Sign In / My Account</Text>
+            <Text style={[styles.menuItemText, { color: colors.accent }]}>Sign In / My Account</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -133,7 +133,7 @@ export default function SettingsScreen({ navigation }: any) {
           <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleLogout}>
-              <Text style={[styles.menuItemText, { color: colors.primary }]}>Log Out</Text>
+              <Text style={[styles.menuItemText, { color: colors.accent }]}>Log Out</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.menuItem, styles.dangerItem]} onPress={handleDeleteAccount}>
               <Text style={[styles.menuItemText, styles.dangerText]}>Delete Account</Text>

@@ -1,5 +1,8 @@
 export const colors = {
   primary: '#c2410c',
+  // Default fallback before themeStore's computeColors() runs its
+  // contrast check against the actual admin-configured background.
+  accent: '#c2410c',
   secondary: '#2563eb',
   background: '#f9fafb',
   surface: '#ffffff',
@@ -25,19 +28,33 @@ export const darkColors = {
   disabled: '#4b5563',
 };
 
+function relativeLuminance(hexColor: string): number {
+  const hex = hexColor.replace('#', '');
+  const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+  const r = parseInt(full.substring(0, 2), 16) || 0;
+  const g = parseInt(full.substring(2, 4), 16) || 0;
+  const b = parseInt(full.substring(4, 6), 16) || 0;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
 // Picks black or white for guaranteed-readable text on top of an
 // arbitrary background color. Needed anywhere text sits directly on
 // colors.primary — that's admin-configurable from the branding panel, so
 // a single hardcoded text color (white) breaks the moment someone picks
 // a light primary, no matter what the "right" brand color would be.
 export function contrastText(hexColor: string): string {
-  const hex = hexColor.replace('#', '');
-  const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
-  const r = parseInt(full.substring(0, 2), 16) || 0;
-  const g = parseInt(full.substring(2, 4), 16) || 0;
-  const b = parseInt(full.substring(4, 6), 16) || 0;
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.55 ? '#111827' : '#ffffff';
+  return relativeLuminance(hexColor) > 0.55 ? '#111827' : '#ffffff';
+}
+
+// For text that's colored with the brand accent (prices, links, active
+// states) sitting on the screen's own background/surface, not on a
+// primary-colored fill. Safe when Primary Color is vivid, but the moment
+// an admin picks one too close in luminance to the background (a dark
+// primary on a dark theme, a pale primary on a light one) the text
+// nearly disappears — falls back to `fallback` (normally colors.text,
+// already guaranteed to read against that same background) when so.
+export function safeAccent(accent: string, background: string, fallback: string): string {
+  return Math.abs(relativeLuminance(accent) - relativeLuminance(background)) > 0.3 ? accent : fallback;
 }
 
 export const typography = {
