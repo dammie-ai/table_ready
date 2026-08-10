@@ -127,7 +127,7 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
  * GET /api/inventory
  * Fetch full inventory list with active dynamic pricing applied
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM inventory ORDER BY id ASC');
     
@@ -224,25 +224,25 @@ router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager'
  * GET /api/inventory/alerts
  * Fetch all active low-stock alerts
  */
-router.get('/alerts', inventoryAlertController.getActiveAlerts);
+router.get('/alerts', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), inventoryAlertController.getActiveAlerts);
 
 /**
  * GET /api/inventory/alerts/history
  * Fetch all alerts including acknowledged and resolved
  */
-router.get('/alerts/history', inventoryAlertController.getAlertHistory);
+router.get('/alerts/history', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), inventoryAlertController.getAlertHistory);
 
 /**
  * POST /api/inventory/alerts/:id/acknowledge
  * Mark an alert as acknowledged
  */
-router.post('/alerts/:id/acknowledge', inventoryAlertController.acknowledgeAlert);
+router.post('/alerts/:id/acknowledge', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), inventoryAlertController.acknowledgeAlert);
 
 /**
  * POST /api/inventory/alerts/:id/resolve
  * Mark an alert as resolved
  */
-router.post('/alerts/:id/resolve', inventoryAlertController.resolveAlert);
+router.post('/alerts/:id/resolve', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), inventoryAlertController.resolveAlert);
 
 /**
  * POST /api/inventory/log-waste

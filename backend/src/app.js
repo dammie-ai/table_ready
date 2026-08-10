@@ -30,7 +30,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  // 1000/15min (~66/min) was no real brake on credential stuffing.
+  // 20/15min still comfortably covers a real user mistyping a password.
+  max: 20,
   message: { success: false, error: 'Too many login attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
