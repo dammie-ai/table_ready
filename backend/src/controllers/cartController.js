@@ -11,14 +11,18 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
  * Create a new cart (guest or customer)
  */
 exports.createCart = async (req, res) => {
-  const { customer_id, session_token } = req.body;
+  const { customer_id } = req.body;
+  // Generated server-side, never trusted from the client — this is the
+  // only thing proving a later request to this cart came from whoever
+  // created it, since cart IDs are sequential and guessable.
+  const session_token = require('crypto').randomBytes(16).toString('hex');
 
   try {
     const result = await pool.query(
       `INSERT INTO carts (customer_id, session_token, status)
        VALUES ($1, $2, 'active')
        RETURNING *`,
-      [customer_id || null, session_token || null]
+      [customer_id || null, session_token]
     );
 
     return res.status(201).json({
