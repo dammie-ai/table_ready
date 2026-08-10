@@ -133,8 +133,11 @@ export async function releaseOrderHold(id: number) {
   return request<{ success: boolean; message: string }>(`/orders/${id}/release-hold`, { method: 'POST', body: '{}' })
 }
 
-export async function cancelOrder(id: number) {
-  return request<{ success: boolean; message: string; order: Order }>(`/orders/${id}/cancel`, { method: 'PATCH', body: '{}' })
+export async function cancelOrder(id: number, accessToken?: string) {
+  return request<{ success: boolean; message: string; order: Order }>(`/orders/${id}/cancel`, {
+    method: 'PATCH',
+    body: JSON.stringify({ access_token: accessToken }),
+  })
 }
 
 export async function customerArrived(id: number, payload: { vehicle?: string; curbside_lane?: string }) {
@@ -428,6 +431,7 @@ export interface Order {
   items: OrderItem[]
   payment_status?: string
   pickup_code?: string
+  access_token?: string
 }
 
 export interface OrderItem {

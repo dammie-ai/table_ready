@@ -28,6 +28,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const orderId = route.params?.id;
+  const accessToken = route.params?.accessToken;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -111,7 +112,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
     if (!orderId) return;
     setCancelling(true);
     try {
-      const res = await cancelOrder(Number(orderId));
+      const res = await cancelOrder(Number(orderId), accessToken);
       setOrder(res.order);
     } catch (err) {
       setToastError(err instanceof Error ? err.message : 'This order can no longer be cancelled');
@@ -119,7 +120,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
     } finally {
       setCancelling(false);
     }
-  }, [orderId]);
+  }, [orderId, accessToken]);
 
   const handleServiceRequest = useCallback(async (label: string, type: string) => {
     setSentRequests((prev) => new Set(prev).add(label));
