@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useCartStore, type MenuItem, type MenuItemModifier } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
+import { contrastText } from '../theme'
 
 export default function ModifierScreen({ route, navigation }: any) {
   const colors = useThemeStore((s) => s.colors)
@@ -155,7 +156,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     alignItems: 'center',
   },
   addButtonText: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
     fontSize: 16,
     fontWeight: '600',
   },

@@ -4,7 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Location from 'expo-location';
 import { checkLocation } from '@table-ready/shared';
 import Button from '../components/Button';
-import { spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
 export default function WelcomeScreen({ navigation }: any) {
@@ -203,11 +203,12 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   heroTitle: {
     ...typography.h1,
-    color: '#ffffff',
+    color: contrastText(colors.primary),
   },
   subtitle: {
     ...typography.body,
-    color: '#dbeafe',
+    color: contrastText(colors.primary),
+    opacity: 0.8,
     textAlign: 'center',
   },
   dots: {

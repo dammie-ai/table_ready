@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMenuItems, getComboMeals, getDishOfWeek } from '@table-ready/shared';
 import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
-import { spacing, borderRadius, typography } from '../theme';
+import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 import type { MenuItem } from '@table-ready/shared';
 
@@ -250,7 +250,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     borderRadius: borderRadius.md,
   },
   comboButtonText: {
-    color: '#ffffff',
+    color: contrastText(colors.secondary),
     fontSize: 13,
     fontWeight: '700',
   },
@@ -273,7 +273,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: colors.text,
   },
   categoryTextActive: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
   },
   listContent: {
     padding: spacing.lg,
@@ -327,7 +327,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     gap: 4,
   },
   trendingText: {
-    color: '#ffffff',
+    color: contrastText(colors.secondary),
     fontSize: 11,
     fontWeight: '700',
   },
@@ -341,7 +341,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     borderRadius: borderRadius.sm,
   },
   dowText: {
-    color: '#ffffff',
+    color: contrastText(colors.secondary),
     fontSize: 11,
     fontWeight: '700',
   },
@@ -398,7 +398,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     borderRadius: borderRadius.md,
   },
   addButtonText: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
     fontSize: 13,
     fontWeight: '700',
   },

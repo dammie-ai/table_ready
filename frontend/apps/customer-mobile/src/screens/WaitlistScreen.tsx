@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView 
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { joinWaitlist, cancelWaitlistEntry, getFloorLayout } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
+import { contrastText } from '../theme'
 
 export default function WaitlistScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors)
@@ -174,7 +175,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: colors.text,
   },
   tableChipTextActive: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
   },
   form: {
     backgroundColor: colors.surface,
@@ -202,7 +203,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     marginTop: 8,
   },
   buttonText: {
-    color: '#ffffff',
+    color: contrastText(colors.primary),
     fontSize: 16,
     fontWeight: '600',
   },

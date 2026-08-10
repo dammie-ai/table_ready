@@ -1,5 +1,5 @@
 import { Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { borderRadius } from '../theme';
+import { borderRadius, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
 type Props = {
@@ -19,7 +19,11 @@ export default function Button({ title, onPress, variant = 'primary', disabled, 
   const variantStyle = disabled
     ? { backgroundColor: colors.disabled, borderColor: colors.disabled }
     : isPrimary
-    ? { backgroundColor: colors.primary }
+    // A translucent white ring keeps this visible even when it sits on a
+    // colors.primary-colored backdrop (e.g. WelcomeScreen's hero) — same
+    // fill on same fill would otherwise render as no button at all,
+    // regardless of which brand color is configured.
+    ? { backgroundColor: colors.primary, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }
     : isSecondary
     ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }
     // Used to be a hardcoded white tint (rgba(255,255,255,0.15) on white
@@ -29,7 +33,16 @@ export default function Button({ title, onPress, variant = 'primary', disabled, 
     // to both.
     : { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border };
 
-  const textColor = isPrimary ? '#ffffff' : isSecondary ? colors.primary : colors.text;
+  // Secondary/tertiary text used to read colors.primary — tying button
+  // legibility to whatever brand color is configured, which breaks the
+  // moment an admin picks a primary color too close in luminance to
+  // colors.surface (their border stays colors.primary as an accent, but
+  // the text needs the same guaranteed-readable-on-surface color as
+  // everything else, independently configurable via dark mode's Text field).
+  // Primary's own text used to be hardcoded white — wrong the moment
+  // Primary Color itself is light — so it's computed from Primary's
+  // luminance instead, same as the button fill it sits on.
+  const textColor = isPrimary ? contrastText(colors.primary) : colors.text;
 
   return (
     <TouchableOpacity
@@ -38,7 +51,7 @@ export default function Button({ title, onPress, variant = 'primary', disabled, 
       style={[styles.button, variantStyle, style]}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? '#ffffff' : colors.primary} />
+        <ActivityIndicator color={isPrimary ? contrastText(colors.primary) : colors.primary} />
       ) : (
         <Text style={[styles.text, { color: textColor }]}>{title}</Text>
       )}
