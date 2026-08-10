@@ -7,11 +7,9 @@ const { logAudit } = require('../utils/auditLogger');
 exports.register = async (req, res) => {
   const { username, password, role } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({ success: false, error: 'Username and password are required.' });
+  if (!username || !password || !role) {
+    return res.status(400).json({ success: false, error: 'Username, password, and role are required.' });
   }
-
-  const userRole = role || 'WAITER';
 
   try {
     const userCheck = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
@@ -23,7 +21,7 @@ exports.register = async (req, res) => {
 
     const newUser = await pool.query(
       'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role',
-      [username, passwordHash, userRole]
+      [username, passwordHash, role]
     );
 
     return res.status(201).json({
