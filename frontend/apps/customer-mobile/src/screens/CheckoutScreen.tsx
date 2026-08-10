@@ -126,7 +126,11 @@ export default function CheckoutScreen({ navigation }: any) {
       })
 
       clearCart()
-      navigation.replace('OrderTracking', { id: String(res.order.master_order_id), orderType: orderTypeLabel })
+      navigation.replace('OrderTracking', {
+        id: String(res.order.master_order_id),
+        orderType: orderTypeLabel,
+        accessToken: res.order.access_token,
+      })
     } catch (err) {
       Alert.alert('Order failed', err instanceof Error ? err.message : 'Please try again.')
     } finally {

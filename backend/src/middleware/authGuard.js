@@ -40,6 +40,28 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+// For routes a guest customer can legitimately hit (no token at all) but
+// staff can also hit with elevated access (e.g. cancelling an order on a
+// customer's behalf) — verifies a token if one is present, but never
+// rejects the request for lacking one. The route itself decides what
+// req.user being unset should mean.
+const authenticateOptional = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET || 'tableready_secret');
+  } catch (err) {
+    // Invalid/expired token on an optional-auth route — proceed as
+    // unauthenticated rather than blocking the request outright.
+  }
+  next();
+};
+
 const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -86,9 +108,10 @@ const requireMasterControl = (req, res, next) => {
   next();
 };
 
-module.exports = { 
-  authenticateToken, 
-  authorizeRoles, 
+module.exports = {
+  authenticateToken,
+  authenticateOptional,
+  authorizeRoles,
   requireMasterControl,
   hasMasterControl,
   hasMinimumRole,
