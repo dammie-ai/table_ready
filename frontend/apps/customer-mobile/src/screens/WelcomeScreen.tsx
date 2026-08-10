@@ -52,6 +52,17 @@ export default function WelcomeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Settings')}
+        style={styles.settingsButton}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Text style={styles.settingsIcon}>⚙️</Text>
+      </TouchableOpacity>
+      {/* TEMP DEBUG — remove once the washed-out rendering is diagnosed */}
+      <View style={{ position: 'absolute', top: 6, left: 6, zIndex: 20, backgroundColor: '#000', padding: 4, borderRadius: 4 }}>
+        <Text style={{ color: '#0f0', fontSize: 10, fontFamily: 'monospace' }}>primary={colors.primary}</Text>
+      </View>
       <ScrollView contentContainerStyle={styles.content}>
       {!isOpen && (
         <View style={styles.closedBanner}>
@@ -126,6 +137,21 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     alignItems: 'center',
     padding: spacing.xxl,
     gap: spacing.lg,
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: {
+    fontSize: 18,
   },
   closedBanner: {
     backgroundColor: '#dc2626',
@@ -202,9 +228,8 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     gap: spacing.md,
   },
   usualButton: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: colors.border,
   },
   button: {
     width: '100%',

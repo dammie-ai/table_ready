@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Modal, ScrollView } from 'react-native';
 import { spacing, borderRadius, typography } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
@@ -10,20 +10,17 @@ import { checkLocation } from '@table-ready/shared';
 export default function LocationCheckScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [phase, setPhase] = useState<'loading' | 'success' | 'error' | 'manual'>('loading');
+  // 'intro' explains *why* we're about to ask before the OS permission
+  // dialog fires — jumping straight to the system prompt with zero context
+  // (the previous behavior) is exactly what tanks grant rates and gives no
+  // recovery path if the user reflexively denies it.
+  const [phase, setPhase] = useState<'intro' | 'loading' | 'success' | 'error' | 'manual'>('intro');
   const [errorMsg, setErrorMsg] = useState('');
   const [manualAddress, setManualAddress] = useState('');
   const [withinGeofence, setWithinGeofence] = useState(true);
 
-  useEffect(() => {
-    // A customer's actual location can be completely different from one
-    // app open to the next (home yesterday, at the restaurant today) — the
-    // geofence needs to be asked fresh every launch, not just once ever
-    // and then trusted forever from a persisted flag.
-    requestLocation();
-  }, []);
-
   const requestLocation = async () => {
+    setPhase('loading');
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -66,6 +63,35 @@ export default function LocationCheckScreen({ navigation }: any) {
   const handleManualContinue = () => {
     navigation.replace('GroupChoice');
   };
+
+  if (phase === 'intro') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoBox}>
+            <Text style={styles.logoIcon}>🍽️</Text>
+          </View>
+          <Text style={[typography.h2, { color: colors.text }]}>TableReady</Text>
+          <Text style={styles.logoSub}>Order from anywhere</Text>
+        </View>
+
+        <View style={styles.statusArea}>
+          <View style={styles.iconCircle}>
+            <Text style={styles.mapIcon}>📍</Text>
+          </View>
+          <Text style={styles.message}>
+            We use your location to confirm you're near the restaurant and to check delivery
+            availability. You'll get an OS prompt next — allow it to skip straight to ordering.
+          </Text>
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <Button title="Allow Location Access" onPress={requestLocation} variant="primary" style={styles.button} />
+          <Button title="Continue Anyway" onPress={handleContinueAnyway} variant="tertiary" style={styles.button} />
+        </View>
+      </View>
+    );
+  }
 
   if (phase === 'loading') {
     return (

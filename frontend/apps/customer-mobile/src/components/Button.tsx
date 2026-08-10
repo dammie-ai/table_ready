@@ -22,9 +22,14 @@ export default function Button({ title, onPress, variant = 'primary', disabled, 
     ? { backgroundColor: colors.primary }
     : isSecondary
     ? { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }
-    : { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' };
+    // Used to be a hardcoded white tint (rgba(255,255,255,0.15) on white
+    // text) — only ever legible against a strongly saturated colored
+    // backdrop, and always wrong in dark mode or against a lighter
+    // primary color. colors.surface/border/text already adapt correctly
+    // to both.
+    : { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border };
 
-  const textColor = isSecondary ? colors.primary : '#ffffff';
+  const textColor = isPrimary ? '#ffffff' : isSecondary ? colors.primary : colors.text;
 
   return (
     <TouchableOpacity
