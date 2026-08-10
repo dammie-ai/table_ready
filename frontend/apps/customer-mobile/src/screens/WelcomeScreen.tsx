@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { checkLocation } from '@table-ready/shared';
 import Button from '../components/Button';
@@ -10,6 +10,12 @@ import { useThemeStore } from '../stores/themeStore';
 export default function WelcomeScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  // SafeAreaView's edges prop only insets its normal-flow children —
+  // absolutely-positioned ones (like the floating settings button below)
+  // aren't affected by it and need the inset applied by hand, or they can
+  // sit right under the status bar on devices with a shorter/taller one
+  // than the fixed offset assumed.
+  const insets = useSafeAreaInsets();
   const [surgeActive] = useState(false);
   const [isOpen] = useState(true);
   const [checkingDelivery, setCheckingDelivery] = useState(false);
@@ -54,15 +60,11 @@ export default function WelcomeScreen({ navigation }: any) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <TouchableOpacity
         onPress={() => navigation.navigate('Settings')}
-        style={styles.settingsButton}
+        style={[styles.settingsButton, { top: insets.top + spacing.lg }]}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <Text style={styles.settingsIcon}>⚙️</Text>
       </TouchableOpacity>
-      {/* TEMP DEBUG — remove once the washed-out rendering is diagnosed */}
-      <View style={{ position: 'absolute', top: 6, left: 6, zIndex: 20, backgroundColor: '#000', padding: 4, borderRadius: 4 }}>
-        <Text style={{ color: '#0f0', fontSize: 10, fontFamily: 'monospace' }}>primary={colors.primary}</Text>
-      </View>
       <ScrollView contentContainerStyle={styles.content}>
       {!isOpen && (
         <View style={styles.closedBanner}>
