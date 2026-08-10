@@ -16,6 +16,9 @@ interface Branding {
   background_mode: 'solid' | 'image'
   background_color: string
   background_image_url: string
+  dark_background_color: string
+  dark_surface_color: string
+  dark_text_color: string
   font_family: string
   font_size_base: 'sm' | 'md' | 'lg'
   border_radius: 'sharp' | 'rounded' | 'pill'
@@ -36,6 +39,12 @@ const DEFAULT_BRANDING: Branding = {
   background_mode: 'solid',
   background_color: '#ffffff',
   background_image_url: '',
+  // Same values customer-mobile's theme.ts hardcodes for dark mode —
+  // shown as the starting point in the color pickers below so "no
+  // override yet" and "the picker's current value" agree.
+  dark_background_color: '#0a0a0f',
+  dark_surface_color: '#16161d',
+  dark_text_color: '#f1f5f9',
   font_family: 'Inter',
   font_size_base: 'md',
   border_radius: 'rounded',
@@ -216,11 +225,22 @@ export default function Settings() {
 
           <div className={cardCls}>
             <h2 className="text-xl font-semibold mb-4">Theme Colors</h2>
+            <p className="text-xs text-[#6b7280] mb-4">Primary and secondary apply in both light and dark mode. Text/background below are light-mode only — set dark mode's separately underneath.</p>
             <div className="grid grid-cols-2 gap-4">
               <ColorField label="Primary Color" value={branding.primary_color} onChange={(v) => b('primary_color', v)} />
               <ColorField label="Secondary Color" value={branding.secondary_color} onChange={(v) => b('secondary_color', v)} />
               <ColorField label="Accent Color" value={branding.accent_color} onChange={(v) => b('accent_color', v)} />
-              <ColorField label="Text Color" value={branding.text_color} onChange={(v) => b('text_color', v)} />
+              <ColorField label="Text Color (light mode)" value={branding.text_color} onChange={(v) => b('text_color', v)} />
+            </div>
+          </div>
+
+          <div className={cardCls}>
+            <h2 className="text-xl font-semibold mb-4">Dark Mode Colors</h2>
+            <p className="text-xs text-[#6b7280] mb-4">What the customer app shows when a diner switches to dark mode in their Settings.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <ColorField label="Background" value={branding.dark_background_color} onChange={(v) => b('dark_background_color', v)} />
+              <ColorField label="Surface (cards/buttons)" value={branding.dark_surface_color} onChange={(v) => b('dark_surface_color', v)} />
+              <ColorField label="Text" value={branding.dark_text_color} onChange={(v) => b('dark_text_color', v)} />
             </div>
           </div>
 
