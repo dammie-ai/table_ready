@@ -140,7 +140,7 @@ export default function MenuScreen({ route, navigation }: any) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
-          <Text style={typography.h2}>Menu</Text>
+          <Text style={[typography.h2, { color: colors.text }]}>Menu</Text>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <TouchableOpacity onPress={() => navigation.navigate('Combos')} style={styles.comboButton}>
               <Text style={styles.comboButtonText}>🍽️ Combo Deals</Text>
@@ -384,7 +384,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   price: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
   originalPrice: {
     fontSize: 12,

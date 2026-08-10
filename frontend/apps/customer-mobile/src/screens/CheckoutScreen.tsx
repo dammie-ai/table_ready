@@ -140,7 +140,7 @@ export default function CheckoutScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={typography.h2}>Checkout</Text>
+        <Text style={[typography.h2, { color: colors.text }]}>Checkout</Text>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
@@ -496,6 +496,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   infoTitle: {
     fontSize: 14,
     fontWeight: '700',
+    // Sits on the hardcoded #eff6ff infoBox, not colors.background.
     color: colors.primary,
     marginBottom: spacing.xs,
   },
@@ -652,7 +653,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   summaryTotalValue: {
     fontSize: 17,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
   splitCard: {
     backgroundColor: colors.surface,
@@ -712,6 +713,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     textTransform: 'capitalize',
   },
   splitModeTextActive: {
+    // Sits on the hardcoded #eff6ff splitModeButtonActive, not colors.background.
     color: colors.primary,
   },
   splitEvenRow: {
@@ -763,6 +765,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   splitAmountValue: {
     fontSize: 17,
     fontWeight: '700',
+    // Sits on the hardcoded #f9fafb splitEvenRow, not colors.background.
     color: colors.primary,
   },
   splitInfoBox: {
@@ -772,6 +775,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   splitInfoText: {
     fontSize: 12,
+    // Sits on the hardcoded #eff6ff splitInfoBox, not colors.background.
     color: colors.primary,
     lineHeight: 18,
   },
@@ -815,7 +819,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   changeText: {
     fontSize: 13,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '600',
   },
   secureRow: {

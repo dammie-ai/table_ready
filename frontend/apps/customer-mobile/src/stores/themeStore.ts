@@ -1,11 +1,16 @@
 import { create } from 'zustand'
 import { Appearance } from 'react-native'
 import { getConfig, getStorageItem, setStorageItem } from '@table-ready/shared'
-import { colors as lightColors, darkColors } from '../theme'
+import { colors as lightColors, darkColors, safeAccent } from '../theme'
 
 interface ThemeColors {
   primary: string
   secondary: string
+  // Brand-colored text (prices, links, active states) sitting directly on
+  // `background`/`surface` — equal to `primary` when that reads clearly
+  // there, otherwise falls back to `text`. Screens should use this instead
+  // of `primary` for anything that's text rather than a filled shape.
+  accent: string
   background: string
   surface: string
   text: string
@@ -43,20 +48,19 @@ interface ThemeState {
 // secondary brand colors apply either way.
 function computeColors(mode: Mode, overrides: BrandOverrides): ThemeColors {
   const base = mode === 'dark' ? darkColors : lightColors
+  const primary = overrides.primary_color || base.primary
+  const secondary = overrides.secondary_color || base.secondary
+  const { text, background, surface } = mode === 'light'
+    ? { text: overrides.text_color || base.text, background: overrides.background_color || base.background, surface: base.surface }
+    : { text: overrides.dark_text_color || base.text, background: overrides.dark_background_color || base.background, surface: overrides.dark_surface_color || base.surface }
   return {
     ...base,
-    primary: overrides.primary_color || base.primary,
-    secondary: overrides.secondary_color || base.secondary,
-    ...(mode === 'light'
-      ? {
-          text: overrides.text_color || base.text,
-          background: overrides.background_color || base.background,
-        }
-      : {
-          text: overrides.dark_text_color || base.text,
-          background: overrides.dark_background_color || base.background,
-          surface: overrides.dark_surface_color || base.surface,
-        }),
+    primary,
+    secondary,
+    accent: safeAccent(primary, background, text),
+    text,
+    background,
+    surface,
   }
 }
 

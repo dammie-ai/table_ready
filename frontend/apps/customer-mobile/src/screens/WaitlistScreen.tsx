@@ -226,7 +226,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   confirmPin: {
     fontSize: 40,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
     letterSpacing: 4,
     marginVertical: 8,
   },

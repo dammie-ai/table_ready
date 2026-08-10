@@ -87,7 +87,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: colors.textSecondary,
   },
   link: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -113,7 +113,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   status: {
     fontSize: 12,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
@@ -138,6 +138,6 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   total: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
 })

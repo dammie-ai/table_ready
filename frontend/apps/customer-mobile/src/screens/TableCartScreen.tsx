@@ -247,7 +247,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: colors.textSecondary,
   },
   toggleTextActive: {
-    color: colors.primary,
+    color: colors.accent,
   },
   infoCard: {
     flexDirection: 'row',
@@ -315,6 +315,6 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   cartItemQty: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
 });

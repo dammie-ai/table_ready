@@ -147,7 +147,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   totalValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
   addButton: {
     backgroundColor: colors.primary,

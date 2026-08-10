@@ -183,7 +183,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: colors.textSecondary,
   },
   toggleTextActive: {
-    color: colors.primary,
+    color: colors.accent,
   },
   card: {
     backgroundColor: colors.surface,

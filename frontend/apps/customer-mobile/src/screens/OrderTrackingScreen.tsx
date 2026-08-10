@@ -167,7 +167,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={typography.h2}>Order #{order.master_order_id}</Text>
+          <Text style={[typography.h2, { color: colors.text }]}>Order #{order.master_order_id}</Text>
           <Text style={styles.headerSub}>
             {isCancelled
               ? 'Cancelled'
@@ -550,7 +550,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   deliveryStatValue: {
     fontSize: 22,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
     textAlign: 'center',
   },
   deliveryStatLabel: {

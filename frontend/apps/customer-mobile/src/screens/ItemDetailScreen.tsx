@@ -131,7 +131,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.accent,
   },
   image: {
     width: '100%',
@@ -149,7 +149,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   price: {
     fontSize: 22,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
     marginBottom: 12,
   },
   description: {
@@ -222,7 +222,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     borderColor: colors.primary,
   },
   secondaryButtonText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 16,
     fontWeight: '600',
   },
