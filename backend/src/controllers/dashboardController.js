@@ -231,6 +231,10 @@ exports.getDeliveryDashboard = async (req, res) => {
        LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
        LEFT JOIN customer_profiles cp ON o.customer_id = cp.customer_id
        WHERE o.order_type = 'DELIVERY' AND o.status NOT IN ('COMPLETED', 'CANCELLED', 'CANCELLED_AND_REFUNDED')
+         AND NOT EXISTS (
+           SELECT 1 FROM order_assignments oa
+           WHERE oa.order_id = o.master_order_id AND oa.status NOT IN ('delivered', 'cancelled')
+         )
        GROUP BY o.master_order_id, cp.first_name, cp.last_name, cp.phone
        ORDER BY o.created_at ASC`
     );

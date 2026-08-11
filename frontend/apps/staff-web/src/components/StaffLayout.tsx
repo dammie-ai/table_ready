@@ -58,6 +58,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     { path: '/menu-management', label: t('nav.menu'), icon: UtensilsCrossed },
     { path: '/reservations', label: t('nav.reservations'), icon: Calendar },
     { path: '/waitlist', label: t('nav.waitlist'), icon: ClipboardList },
+    { path: '/delivery', label: t('nav.deliveryQueue'), icon: ClipboardList },
     { path: '/staff-management', label: t('nav.staff'), icon: Users },
     { path: '/reports', label: t('nav.reports'), icon: BarChart3 },
     { path: '/promotions', label: t('nav.promotions'), icon: Tag },
