@@ -6,17 +6,15 @@ import { useThemeStore } from '../stores/themeStore';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import * as Location from 'expo-location';
-import { checkLocation, useAuthStore } from '@table-ready/shared';
+import { checkLocation } from '@table-ready/shared';
 
 export default function LocationCheckScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  const token = useAuthStore((s) => s.token);
-  // Location is checked before sign-in, for every visitor — an already-
-  // signed-in returning customer skips Login and goes straight to
-  // GroupChoice; anyone else lands on Login next.
-  const nextRoute = token ? 'GroupChoice' : 'Login';
+  // Sign-in always follows location confirmation, unconditionally — no
+  // skip-to-GroupChoice for an already-signed-in customer.
+  const nextRoute = 'Login';
   // 'intro' explains *why* we're about to ask before the OS permission
   // dialog fires — jumping straight to the system prompt with zero context
   // (the previous behavior) is exactly what tanks grant rates and gives no
