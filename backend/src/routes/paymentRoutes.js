@@ -9,7 +9,7 @@ const pool = db.pool || db;
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 const { validate, schemas } = require('../middleware/validation');
 
-const validateDeliveryRadius = (req, res, next) => {
+const validateDeliveryRadius = async (req, res, next) => {
   const { order_mode, latitude, longitude } = req.body;
 
   if (order_mode === 'delivery') {
@@ -20,7 +20,7 @@ const validateDeliveryRadius = (req, res, next) => {
       });
     }
 
-    const radiusCheck = isWithinDeliveryRadius(latitude, longitude);
+    const radiusCheck = await isWithinDeliveryRadius(latitude, longitude);
 
     if (!radiusCheck.isAllowed) {
       return res.status(400).json({
