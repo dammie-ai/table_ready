@@ -1,24 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
 import { apiClient } from '../lib/api'
 import { getSocket } from '../lib/socket'
+import { useAuthStore } from '../stores/authStore'
 
 interface Delivery {
   master_order_id: number
-  status: string
+  status?: string
   delivery_status: string
   total_amount: number
-  order_type: string
-  table_number?: number
-  notes?: string
+  order_type?: string
   created_at: string
   customer_id?: number
   items?: any[]
   first_name?: string
   last_name?: string
   phone?: string
-  address?: string
   driver_latitude?: number
   driver_longitude?: number
+}
+
+interface Driver {
+  id: number
+  username: string
 }
 
 // The delivery_status column (assigned/accepted/picked_up/out_for_delivery/
@@ -34,7 +37,16 @@ const STATUS_META: Record<string, { label: string; color: string; next?: string;
 }
 
 export default function DeliveryPortal() {
-  const [deliveries, setDeliveries] = useState<Delivery[]>([])
+  const primaryRole = useAuthStore((s) => s.primaryRole)
+  // Everyone who can reach this route besides an actual driver is here to
+  // assign, not deliver — they have no "my deliveries" of their own.
+  const isManager = primaryRole !== 'delivery'
+
+  const [myDeliveries, setMyDeliveries] = useState<Delivery[]>([])
+  const [unassigned, setUnassigned] = useState<Delivery[]>([])
+  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [selectedDriver, setSelectedDriver] = useState<Record<number, string>>({})
+  const [assigningId, setAssigningId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'queue' | 'map'>('queue')
   const watchIds = useRef<Record<number, number>>({})
@@ -62,41 +74,54 @@ export default function DeliveryPortal() {
     }
   }
 
-  useEffect(() => {
-    const loadDeliveries = async () => {
-      try {
-        const res = await apiClient.get<{ success: boolean; orders: Delivery[] }>('/orders/by-type/DELIVERY')
-        const active = (res.orders || [])
-          .map((o) => ({ ...o, delivery_status: (o.delivery_status || 'assigned').toLowerCase() }))
-          .filter((o) => !['delivered', 'cancelled'].includes(o.delivery_status))
-        setDeliveries(active)
-        active.forEach((d) => {
-          if (d.delivery_status === 'out_for_delivery') startTrackingLocation(d.master_order_id)
-        })
-      } catch (err) {
-        console.error('Failed to load deliveries:', err)
-      } finally {
-        setLoading(false)
-      }
+  const loadDeliveries = async () => {
+    try {
+      const res = await apiClient.get<{ success: boolean; available_deliveries: Delivery[]; my_deliveries: Delivery[] }>('/dashboard/delivery')
+      const mine = (res.my_deliveries || [])
+        .map((o) => ({ ...o, delivery_status: (o.delivery_status || 'assigned').toLowerCase() }))
+        .filter((o) => !['delivered', 'cancelled'].includes(o.delivery_status))
+      setMyDeliveries(mine)
+      setUnassigned(res.available_deliveries || [])
+      mine.forEach((d) => {
+        if (d.delivery_status === 'out_for_delivery') startTrackingLocation(d.master_order_id)
+      })
+    } catch (err) {
+      console.error('Failed to load deliveries:', err)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadDeliveries()
+    if (isManager) {
+      apiClient.get<{ success: boolean; drivers: Driver[] }>('/delivery/drivers')
+        .then((res) => setDrivers(res.drivers || []))
+        .catch((err) => console.error('Failed to load drivers:', err))
+    }
 
     const socket = getSocket()
     socket.on('delivery_status_updated', (data: { orderId: number; status: string }) => {
-      setDeliveries((prev) => prev.map((d) => d.master_order_id === data.orderId ? { ...d, delivery_status: data.status.toLowerCase() } : d))
+      setMyDeliveries((prev) => prev.map((d) => d.master_order_id === data.orderId ? { ...d, delivery_status: data.status.toLowerCase() } : d))
+    })
+    // Someone else's assignment can pull an order out of (or into) this
+    // device's view — simplest correct thing is to just refetch both lists.
+    socket.on('delivery_assigned', () => {
+      loadDeliveries()
     })
 
     return () => {
       socket.off('delivery_status_updated')
+      socket.off('delivery_assigned')
       Object.keys(watchIds.current).forEach((id) => stopTrackingLocation(parseInt(id)))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const updateStatus = async (orderId: number, status: string) => {
     try {
       await apiClient.post(`/delivery/${orderId}/status`, { status })
-      setDeliveries((prev) => prev.map((d) => d.master_order_id === orderId ? { ...d, delivery_status: status } : d))
+      setMyDeliveries((prev) => prev.map((d) => d.master_order_id === orderId ? { ...d, delivery_status: status } : d))
 
       if (status === 'out_for_delivery') {
         startTrackingLocation(orderId)
@@ -108,7 +133,22 @@ export default function DeliveryPortal() {
     }
   }
 
-  const activeCount = deliveries.filter((d) => d.delivery_status !== 'delivered' && d.delivery_status !== 'cancelled').length
+  const assignDriver = async (orderId: number) => {
+    const driverId = selectedDriver[orderId]
+    if (!driverId) return
+    setAssigningId(orderId)
+    try {
+      await apiClient.post('/delivery/assign', { order_id: orderId, driver_id: Number(driverId) })
+      setUnassigned((prev) => prev.filter((o) => o.master_order_id !== orderId))
+    } catch (err) {
+      console.error('Failed to assign driver:', err)
+    } finally {
+      setAssigningId(null)
+    }
+  }
+
+  const deliveries = isManager ? unassigned : myDeliveries
+  const activeCount = myDeliveries.filter((d) => d.delivery_status !== 'delivered' && d.delivery_status !== 'cancelled').length
 
   if (loading) {
     return (
@@ -143,13 +183,20 @@ export default function DeliveryPortal() {
       {view === 'queue' ? (
         <div className="p-4 md:p-6 max-w-2xl">
           <div className="flex items-center gap-3 mb-5">
-            <h2 className="font-display font-bold text-xl">Delivery Queue</h2>
+            <h2 className="font-display font-bold text-xl">{isManager ? 'Unassigned Deliveries' : 'Delivery Queue'}</h2>
             <span className="text-xs font-mono bg-[#f97316]/15 text-[#f97316] border border-[#f97316]/30 px-2 py-0.5 rounded">
-              {activeCount} active
+              {isManager ? `${unassigned.length} unassigned` : `${activeCount} active`}
             </span>
           </div>
 
           <div className="space-y-3">
+            {isManager && unassigned.length === 0 && (
+              <p className="text-sm text-[#6b7280]">No unassigned deliveries right now.</p>
+            )}
+            {!isManager && myDeliveries.length === 0 && (
+              <p className="text-sm text-[#6b7280]">No deliveries assigned to you right now.</p>
+            )}
+
             {deliveries.map((delivery) => {
               const meta = STATUS_META[delivery.delivery_status] || STATUS_META.assigned
               return (
@@ -162,9 +209,11 @@ export default function DeliveryPortal() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-sm">#{delivery.master_order_id}</span>
-                        <span className={`text-[10px] border px-1.5 py-0.5 rounded font-mono font-bold ${meta.color}`}>
-                          {meta.label}
-                        </span>
+                        {!isManager && (
+                          <span className={`text-[10px] border px-1.5 py-0.5 rounded font-mono font-bold ${meta.color}`}>
+                            {meta.label}
+                          </span>
+                        )}
                         {delivery.delivery_status === 'out_for_delivery' && (
                           <span className="text-[10px] text-emerald-400 font-mono">📍 sharing location</span>
                         )}
@@ -172,14 +221,33 @@ export default function DeliveryPortal() {
                       <div className="text-sm font-medium mt-0.5">
                         {delivery.first_name && delivery.last_name ? `${delivery.first_name} ${delivery.last_name}` : `Order #${delivery.master_order_id}`}
                       </div>
-                      {delivery.address && <div className="text-xs text-[#6b7280] truncate">{delivery.address}</div>}
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-sm font-semibold text-[#f97316]">${delivery.total_amount.toFixed(2)}</div>
                     </div>
                   </div>
 
-                  {meta.next && meta.nextLabel && (
+                  {isManager ? (
+                    <div className="px-5 pb-4 pt-0 flex gap-2">
+                      <select
+                        value={selectedDriver[delivery.master_order_id] || ''}
+                        onChange={(e) => setSelectedDriver((prev) => ({ ...prev, [delivery.master_order_id]: e.target.value }))}
+                        className="flex-1 bg-[#1c1c27] border border-white/8 rounded-xl px-3 py-2 text-sm text-[#f1f5f9] outline-none"
+                      >
+                        <option value="">Select driver…</option>
+                        {drivers.map((d) => (
+                          <option key={d.id} value={d.id}>{d.username}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => assignDriver(delivery.master_order_id)}
+                        disabled={!selectedDriver[delivery.master_order_id] || assigningId === delivery.master_order_id}
+                        className="bg-[#f97316] hover:bg-[#f97316]/80 disabled:opacity-40 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                      >
+                        {assigningId === delivery.master_order_id ? '…' : 'Assign'}
+                      </button>
+                    </div>
+                  ) : meta.next && meta.nextLabel && (
                     <div className="px-5 pb-4 pt-0">
                       <button
                         onClick={() => updateStatus(delivery.master_order_id, meta.next!)}
@@ -216,7 +284,7 @@ export default function DeliveryPortal() {
               </div>
 
               {deliveries.map((d, i) => {
-                const angle = (i / deliveries.length) * Math.PI * 2
+                const angle = (i / Math.max(deliveries.length, 1)) * Math.PI * 2
                 const x = 15 + Math.cos(angle) * 30
                 const y = 50 + Math.sin(angle) * 30
                 return (

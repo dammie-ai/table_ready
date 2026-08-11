@@ -74,7 +74,7 @@ export default function App() {
       } />
       
       <Route path="/delivery" element={
-        <ProtectedRoute allowedRoles={['delivery']}>
+        <ProtectedRoute allowedRoles={['delivery', 'admin', 'manager', 'assistant_manager']}>
           <StaffLayout><DeliveryPortal /></StaffLayout>
         </ProtectedRoute>
       } />
