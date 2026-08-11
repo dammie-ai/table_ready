@@ -248,6 +248,75 @@ router.post('/alerts/:id/resolve', authenticateToken, authorizeRoles('admin', 'm
  * POST /api/inventory/log-waste
  * Log waste/spoilage for inventory items
  */
+/**
+ * POST /api/inventory/:id/restock
+ * Add stock (e.g. a delivery arrived) — the only write endpoint that
+ * increases stock_quantity; POST / and /log-waste both only ever decrease
+ * it (order fulfillment and waste respectively), so there was previously
+ * no way to restock an item at all short of editing the database directly.
+ */
+router.post('/:id/restock', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+  const { id } = req.params;
+  const { quantity } = req.body;
+
+  if (!quantity || quantity <= 0) {
+    return res.status(400).json({ success: false, error: 'A positive quantity is required.' });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const itemRes = await client.query(
+      `SELECT id, item_name, stock_quantity FROM inventory WHERE id = $1 FOR UPDATE`,
+      [id]
+    );
+
+    if (itemRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Inventory item not found.' });
+    }
+
+    const newStock = itemRes.rows[0].stock_quantity + quantity;
+
+    const updated = await client.query(
+      `UPDATE inventory SET stock_quantity = $1, is_active = true, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [newStock, id]
+    );
+
+    await client.query(
+      `INSERT INTO stock_logs (inventory_id, new_quantity, change_amount, reason)
+       VALUES ($1, $2, $3, $4)`,
+      [id, newStock, quantity, 'Restocked']
+    );
+
+    await client.query('COMMIT');
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'INVENTORY_RESTOCKED',
+      entity_type: 'inventory',
+      entity_id: parseInt(id),
+      old_value: String(itemRes.rows[0].stock_quantity),
+      new_value: String(newStock),
+      ip_address: req.ip || req.connection.remoteAddress
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${itemRes.rows[0].item_name} restocked to ${newStock}.`,
+      item: updated.rows[0],
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 router.post('/log-waste', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), validate(schemas.logWaste), async (req, res) => {
   const { inventory_id, quantity, reason } = req.body;
 
