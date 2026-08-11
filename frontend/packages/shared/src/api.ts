@@ -409,6 +409,9 @@ export interface CheckoutPayload {
   idempotency_key?: string
   delivery_latitude?: number
   delivery_longitude?: number
+  // Declared intent, not a charge — collected in person at pay-at-counter,
+  // stored so staff/the receipt know what the customer meant to leave.
+  tip_amount?: number
 }
 
 export interface CreateOrderPayload extends CheckoutPayload {
@@ -436,6 +439,7 @@ export interface Order {
   payment_status?: string
   pickup_code?: string
   access_token?: string
+  tip_value?: number
 }
 
 export interface OrderItem {

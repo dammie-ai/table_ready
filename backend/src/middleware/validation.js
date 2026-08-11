@@ -70,6 +70,7 @@ const schemas = {
     notes: z.string().optional(),
     ordered_by_user_id: z.number().int().positive().optional(),
     idempotency_key: z.string().optional(),
+    tip_amount: z.number().nonnegative().optional(),
     items: z.array(z.object({
       menu_item_id: z.number().int().positive().optional(),
       item_id: z.number().int().positive().optional(),
