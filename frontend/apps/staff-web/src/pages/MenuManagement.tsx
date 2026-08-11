@@ -17,6 +17,7 @@ export default function MenuManagement() {
     base_price: '',
     prep_time_minutes: '10',
     is_active: true,
+    image_url: '',
   })
 
   const loadItems = async () => {
@@ -42,6 +43,7 @@ export default function MenuManagement() {
       base_price: '',
       prep_time_minutes: '10',
       is_active: true,
+      image_url: '',
     })
     setEditingItem(null)
     setShowForm(false)
@@ -56,8 +58,21 @@ export default function MenuManagement() {
       base_price: item.base_price.toString(),
       prep_time_minutes: item.prep_time_minutes.toString(),
       is_active: item.is_active,
+      image_url: item.image_url || '',
     })
     setShowForm(true)
+  }
+
+  // No cloud file storage in this deployment (matches Settings.tsx's
+  // branding logo/background upload) — inlined as a data URI and stored
+  // directly on the menu item, no backend changes needed.
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setForm((prev) => ({ ...prev, image_url: reader.result as string }))
+    reader.readAsDataURL(file)
+    e.target.value = ''
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,6 +88,7 @@ export default function MenuManagement() {
         base_price: parseFloat(form.base_price),
         prep_time_minutes: parseInt(form.prep_time_minutes),
         is_active: form.is_active,
+        image_url: form.image_url || undefined,
       }
 
       if (editingItem) {
@@ -148,10 +164,10 @@ export default function MenuManagement() {
                   className="w-full border rounded-lg px-3 py-2"
                 >
                   <option value="Entree">Entree</option>
-                  <option value="Side">Side</option>
-                  <option value="Dessert">Dessert</option>
-                  <option value="Drink">Drink</option>
                   <option value="Meat">Meat</option>
+                  <option value="Fish">Fish</option>
+                  <option value="Dessert">Dessert</option>
+                  <option value="Combo">Combo</option>
                 </select>
               </div>
 
@@ -163,6 +179,24 @@ export default function MenuManagement() {
                   className="w-full border rounded-lg px-3 py-2"
                   rows={3}
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Photo</label>
+                {form.image_url && (
+                  <img src={form.image_url} alt="" className="w-full h-32 object-cover rounded-lg mb-2 border" />
+                )}
+                <input
+                  type="text"
+                  value={form.image_url}
+                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                  placeholder="https://... or upload"
+                  className="w-full border rounded-lg px-3 py-2"
+                />
+                <label className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+                  Upload a photo
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </label>
               </div>
 
               <div>
@@ -226,6 +260,7 @@ export default function MenuManagement() {
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
@@ -236,6 +271,13 @@ export default function MenuManagement() {
           <tbody className="divide-y divide-gray-200">
             {items.map((item) => (
               <tr key={item.item_id} className={item.is_active ? '' : 'bg-gray-50'}>
+                <td className="px-6 py-4">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt="" className="w-12 h-12 object-cover rounded-lg" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs">—</div>
+                  )}
+                </td>
                 <td className="px-6 py-4">
                   <div>
                     <p className="font-medium">{item.name}</p>
