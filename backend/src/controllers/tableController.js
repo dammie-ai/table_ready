@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const pool = db.pool || db;
-const { getDeliveryRadius } = require('../services/configService');
+const { getDeliveryRadius, getGeofenceRadius } = require('../services/configService');
 const { isWithinDeliveryRadius } = require('../utils/distance');
 const QRCode = require('qrcode');
 
@@ -253,21 +253,25 @@ exports.verifyLocation = async (req, res) => {
   }
 
   try {
-    const radiusMiles = await getDeliveryRadius();
-    const radiusCheck = isWithinDeliveryRadius(latitude, longitude, radiusMiles);
-
     if (check_type === 'dine_in' || check_type === 'qr_scan') {
-      const DINE_IN_RADIUS = 0.5;
-      const dineInCheck = isWithinDeliveryRadius(latitude, longitude, DINE_IN_RADIUS);
+      // Settings' "Geofence Radius (m)" field, not the (much wider)
+      // delivery radius — this used to be a hardcoded 0.5mi regardless of
+      // what a manager configured.
+      const radiusMeters = await getGeofenceRadius();
+      const dineInRadiusMiles = radiusMeters / 1609.34;
+      const dineInCheck = await isWithinDeliveryRadius(latitude, longitude, dineInRadiusMiles);
       return res.status(200).json({
         success: true,
         allowed: dineInCheck.isAllowed,
         distance_miles: dineInCheck.distanceMiles,
-        radius_miles: DINE_IN_RADIUS,
+        radius_miles: parseFloat(dineInRadiusMiles.toFixed(2)),
         check_type,
-        message: dineInCheck.isAllowed ? 'Location verified for dine-in/QR access.' : `You must be within ${DINE_IN_RADIUS} mile(s) of the restaurant to access this feature.`,
+        message: dineInCheck.isAllowed ? 'Location verified for dine-in/QR access.' : `You must be within ${radiusMeters}m of the restaurant to access this feature.`,
       });
     }
+
+    const radiusMiles = await getDeliveryRadius();
+    const radiusCheck = await isWithinDeliveryRadius(latitude, longitude, radiusMiles);
 
     return res.status(200).json({
       success: true,
@@ -369,7 +373,7 @@ exports.verifyQRCode = async (req, res) => {
 
     if (latitude && longitude) {
       const radiusMiles = await getDeliveryRadius();
-      const locationCheck = isWithinDeliveryRadius(latitude, longitude, radiusMiles);
+      const locationCheck = await isWithinDeliveryRadius(latitude, longitude, radiusMiles);
       if (!locationCheck.isAllowed) {
         return res.status(403).json({
           success: false,

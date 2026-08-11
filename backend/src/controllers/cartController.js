@@ -283,7 +283,7 @@ exports.checkout = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Delivery orders require latitude and longitude coordinates.' });
     }
 
-    const radiusCheck = isWithinDeliveryRadius(latitude, longitude);
+    const radiusCheck = await isWithinDeliveryRadius(latitude, longitude);
     if (!radiusCheck.isAllowed) {
       return res.status(400).json({
         success: false,
