@@ -126,7 +126,7 @@ export default function MenuManagement() {
   return (
     <div className="max-w-6xl mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Menu Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
         <button
           onClick={() => setShowForm(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -140,28 +140,28 @@ export default function MenuManagement() {
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">
               {editingItem ? 'Edit Item' : 'New Item'}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">Name</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">Category</label>
                 <select
                   value={form.category_type}
                   onChange={(e) => setForm({ ...form, category_type: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
                 >
                   <option value="Entree">Entree</option>
                   <option value="Meat">Meat</option>
@@ -172,17 +172,17 @@ export default function MenuManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">Description</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Photo</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">Photo</label>
                 {form.image_url && (
                   <img src={form.image_url} alt="" className="w-full h-32 object-cover rounded-lg mb-2 border" />
                 )}
@@ -191,7 +191,7 @@ export default function MenuManagement() {
                   value={form.image_url}
                   onChange={(e) => setForm({ ...form, image_url: e.target.value })}
                   placeholder="https://... or upload"
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
                 />
                 <label className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
                   Upload a photo
@@ -200,24 +200,24 @@ export default function MenuManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Price ($)</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">Price ($)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={form.base_price}
                   onChange={(e) => setForm({ ...form, base_price: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Prep Time (minutes)</label>
+                <label className="block text-sm font-medium mb-1 text-gray-900">Prep Time (minutes)</label>
                 <input
                   type="number"
                   value={form.prep_time_minutes}
                   onChange={(e) => setForm({ ...form, prep_time_minutes: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
                   required
                 />
               </div>
@@ -280,12 +280,12 @@ export default function MenuManagement() {
                 </td>
                 <td className="px-6 py-4">
                   <div>
-                    <p className="font-medium">{item.name}</p>
+                    <p className="font-medium text-gray-900">{item.name}</p>
                     <p className="text-sm text-gray-500">{item.description}</p>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm">{item.category_type}</td>
-                <td className="px-6 py-4 text-sm font-medium">${item.base_price.toFixed(2)}</td>
+                <td className="px-6 py-4 text-sm text-gray-900">{item.category_type}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">${item.base_price.toFixed(2)}</td>
                 <td className="px-6 py-4">
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
