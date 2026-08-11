@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
+import { useAuthStore } from '../stores/authStore'
 
 interface Reservation {
   reservation_id: number
@@ -17,12 +18,22 @@ interface Reservation {
   created_at: string
 }
 
+const emptyForm = { customer_name: '', customer_phone: '', customer_email: '', table_id: '', reservation_date: '', reservation_time: '', party_size: 2, notes: '' }
+
 export default function Reservations() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ customer_name: '', customer_phone: '', customer_email: '', table_id: '', reservation_date: '', reservation_time: '', party_size: 2, notes: '' })
+  const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState(emptyForm)
+  const [busyId, setBusyId] = useState<number | null>(null)
   const { theme } = useTheme()
+  const primaryRole = useAuthStore((s) => s.primaryRole)
+  // Mirrors the backend's own role gates on PUT/PATCH /reservations/:id —
+  // a waiter can see this page (to seat parties) but can't edit or cancel.
+  const canManage = primaryRole === 'manager' || primaryRole === 'admin' || primaryRole === 'assistant_manager'
+  const canSeat = canManage || primaryRole === 'waiter'
 
   useEffect(() => {
     loadReservations()
@@ -48,10 +59,66 @@ export default function Reservations() {
         party_size: Number(form.party_size),
       })
       setShowForm(false)
-      setForm({ customer_name: '', customer_phone: '', customer_email: '', table_id: '', reservation_date: '', reservation_time: '', party_size: 2, notes: '' })
+      setForm(emptyForm)
       loadReservations()
     } catch (err) {
       console.error('Failed to create reservation:', err)
+    }
+  }
+
+  const startEdit = (r: Reservation) => {
+    setEditingId(r.reservation_id)
+    setEditForm({
+      customer_name: r.customer_name,
+      customer_phone: r.customer_phone || '',
+      customer_email: r.customer_email || '',
+      table_id: r.table_id ? String(r.table_id) : '',
+      reservation_date: r.reservation_date,
+      reservation_time: r.reservation_time,
+      party_size: r.party_size,
+      notes: r.notes || '',
+    })
+  }
+
+  const handleUpdateSubmit = async (e: React.FormEvent, id: number) => {
+    e.preventDefault()
+    setBusyId(id)
+    try {
+      await apiClient.put(`/reservations/${id}`, {
+        ...editForm,
+        table_id: editForm.table_id ? Number(editForm.table_id) : undefined,
+        party_size: Number(editForm.party_size),
+      })
+      setEditingId(null)
+      loadReservations()
+    } catch (err) {
+      console.error('Failed to update reservation:', err)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const handleCancel = async (id: number) => {
+    setBusyId(id)
+    try {
+      await apiClient.patch(`/reservations/${id}/cancel`, {})
+      loadReservations()
+    } catch (err) {
+      console.error('Failed to cancel reservation:', err)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const handleSeat = async (id: number) => {
+    setBusyId(id)
+    try {
+      await apiClient.post(`/reservations/${id}/seat`, {})
+      loadReservations()
+    } catch (err) {
+      console.error('Failed to seat reservation:', err)
+    } finally {
+      setBusyId(null)
     }
   }
 
@@ -184,35 +251,162 @@ export default function Reservations() {
           ) : (
             reservations.map((r) => (
               <div key={r.reservation_id} className="bg-[#111118] border border-white/8 rounded-2xl p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-lg" style={{ color: theme?.text_color }}>{r.customer_name}</h3>
-                    <p className="text-sm text-[#6b7280]">{r.customer_phone}</p>
-                  </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full border ${statusColor(r.status)}`}>
-                    {r.status}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                  <div>
-                    <span className="text-[#6b7280]">Date</span>
-                    <p className="font-medium" style={{ color: theme?.text_color }}>{r.reservation_date}</p>
-                  </div>
-                  <div>
-                    <span className="text-[#6b7280]">Time</span>
-                    <p className="font-medium" style={{ color: theme?.text_color }}>{r.reservation_time}</p>
-                  </div>
-                  <div>
-                    <span className="text-[#6b7280]">Party Size</span>
-                    <p className="font-medium" style={{ color: theme?.text_color }}>{r.party_size}</p>
-                  </div>
-                  <div>
-                    <span className="text-[#6b7280]">Table</span>
-                    <p className="font-medium" style={{ color: theme?.text_color }}>{r.table_number || 'Unassigned'}</p>
-                  </div>
-                </div>
-                {r.notes && (
-                  <p className="text-sm text-[#6b7280] mt-3 italic">{r.notes}</p>
+                {editingId === r.reservation_id ? (
+                  <form onSubmit={(e) => handleUpdateSubmit(e, r.reservation_id)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Customer Name</label>
+                        <input
+                          type="text"
+                          value={editForm.customer_name}
+                          onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
+                          className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Phone</label>
+                        <input
+                          type="tel"
+                          value={editForm.customer_phone}
+                          onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
+                          className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Date</label>
+                        <input
+                          type="date"
+                          value={editForm.reservation_date}
+                          onChange={(e) => setEditForm({ ...editForm, reservation_date: e.target.value })}
+                          className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Time</label>
+                        <input
+                          type="time"
+                          value={editForm.reservation_time}
+                          onChange={(e) => setEditForm({ ...editForm, reservation_time: e.target.value })}
+                          className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Party Size</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editForm.party_size}
+                          onChange={(e) => setEditForm({ ...editForm, party_size: Number(e.target.value) })}
+                          className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Table (optional)</label>
+                        <input
+                          type="number"
+                          value={editForm.table_id}
+                          onChange={(e) => setEditForm({ ...editForm, table_id: e.target.value })}
+                          className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Notes</label>
+                      <textarea
+                        value={editForm.notes}
+                        onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                        className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        disabled={busyId === r.reservation_id}
+                        className="flex-1 bg-[#f97316] text-white py-2.5 rounded-xl font-semibold hover:bg-[#f97316]/85 disabled:opacity-50"
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="flex-1 bg-[#1c1c27] border border-white/8 text-[#f1f5f9] py-2.5 rounded-xl font-semibold hover:bg-[#1c1c27]/70"
+                      >
+                        Cancel Edit
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg" style={{ color: theme?.text_color }}>{r.customer_name}</h3>
+                        <p className="text-sm text-[#6b7280]">{r.customer_phone}</p>
+                      </div>
+                      <span className={`text-xs px-2.5 py-1 rounded-full border ${statusColor(r.status)}`}>
+                        {r.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <span className="text-[#6b7280]">Date</span>
+                        <p className="font-medium" style={{ color: theme?.text_color }}>{r.reservation_date}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#6b7280]">Time</span>
+                        <p className="font-medium" style={{ color: theme?.text_color }}>{r.reservation_time}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#6b7280]">Party Size</span>
+                        <p className="font-medium" style={{ color: theme?.text_color }}>{r.party_size}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#6b7280]">Table</span>
+                        <p className="font-medium" style={{ color: theme?.text_color }}>{r.table_number || 'Unassigned'}</p>
+                      </div>
+                    </div>
+                    {r.notes && (
+                      <p className="text-sm text-[#6b7280] mt-3 italic">{r.notes}</p>
+                    )}
+                    {(canSeat || canManage) && (
+                      <div className="flex gap-2 mt-4 pt-4 border-t border-white/8">
+                        {canSeat && r.status === 'confirmed' && (
+                          <button
+                            onClick={() => handleSeat(r.reservation_id)}
+                            disabled={busyId === r.reservation_id}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 disabled:opacity-50"
+                          >
+                            Mark Seated
+                          </button>
+                        )}
+                        {canManage && (
+                          <button
+                            onClick={() => startEdit(r)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 text-[#f1f5f9] border border-white/8 hover:bg-white/10"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {canManage && (r.status === 'confirmed' || r.status === 'seated') && (
+                          <button
+                            onClick={() => handleCancel(r.reservation_id)}
+                            disabled={busyId === r.reservation_id}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 disabled:opacity-50"
+                          >
+                            Cancel Reservation
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ))

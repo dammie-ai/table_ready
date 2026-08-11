@@ -16,7 +16,7 @@ export default function CartScreen({ navigation, route }: any) {
   const addCombo = useCartStore((s) => s.addCombo);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const clearCart = useCartStore((s) => s.clearCart);
-  const groupType = route.params?.groupType || 'solo';
+  const groupRoom = useCartStore((s) => s.groupRoom);
   const newCombo = route.params?.newCombo;
   const addedComboRef = useRef(false);
 
@@ -123,7 +123,7 @@ export default function CartScreen({ navigation, route }: any) {
         contentContainerStyle={styles.listContent}
       />
 
-      {groupType === 'group' && (
+      {groupRoom && (
         <TouchableOpacity
           style={styles.tableCartLink}
           onPress={() => navigation.navigate('TableCart')}

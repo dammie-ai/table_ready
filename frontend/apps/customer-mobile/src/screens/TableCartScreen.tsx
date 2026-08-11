@@ -1,27 +1,116 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCartStore } from '@table-ready/shared';
+import { useCartStore, type RemoteCartItem } from '@table-ready/shared';
 import Button from '../components/Button';
 import { spacing, borderRadius, typography } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
+function generateRoomCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 export default function TableCartScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [roomCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
+  const [newRoomCode] = useState(generateRoomCode);
   const [joinCode, setJoinCode] = useState('');
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const cart = useCartStore((s) => s.items);
+  const groupRoom = useCartStore((s) => s.groupRoom);
+  const remoteItems = useCartStore((s) => s.remoteItems);
+  const setGroupRoom = useCartStore((s) => s.setGroupRoom);
+  const leaveGroupRoom = useCartStore((s) => s.leaveGroupRoom);
 
   const handleJoin = () => {
     if (joinCode.length < 4) return;
-    navigation.navigate('Cart', { groupType: 'group' });
+    setGroupRoom(joinCode);
   };
 
   const handleCreate = () => {
-    navigation.navigate('Cart', { groupType: 'group' });
+    setGroupRoom(newRoomCode);
   };
+
+  // Local items merge into the same list as remote ones so the table sees
+  // one running total — combos stay local-only (see cartStore) and always
+  // show as their own line.
+  const merged = useMemo(() => {
+    const rows: { key: string; name: string; quantity: number }[] = []
+    const localNonCombo = cart.filter((i) => !i.combo_id)
+    localNonCombo.forEach((item) => {
+      const key = `item-${item.menu_item_id}`
+      const existing = rows.find((r) => r.key === key)
+      if (existing) existing.quantity += item.quantity
+      else rows.push({ key, name: item.name, quantity: item.quantity })
+    })
+    remoteItems.forEach((item: RemoteCartItem) => {
+      const existing = rows.find((r) => r.key === item.key)
+      if (existing) existing.quantity += item.quantity
+      else rows.push({ key: item.key, name: item.name, quantity: item.quantity })
+    })
+    cart.filter((i) => i.combo_id).forEach((item) => {
+      rows.push({ key: `combo-${item.cartId}`, name: item.name, quantity: item.quantity })
+    })
+    return rows
+  }, [cart, remoteItems]);
+
+  if (groupRoom) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={[typography.h2, { color: colors.text }]}>Table Cart</Text>
+        </View>
+
+        <View style={styles.content}>
+          <View style={styles.card}>
+            <View style={styles.codeSection}>
+              <Text style={styles.codeLabel}>Room Code</Text>
+              <View style={styles.codeBox}>
+                <Text style={styles.codeText}>{groupRoom}</Text>
+              </View>
+              <Text style={styles.codeHint}>Share this code so others can join</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoCard}>
+            <View style={styles.infoIcon}>
+              <Text style={styles.infoIconText}>ℹ️</Text>
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>Live group cart</Text>
+              <Text style={styles.infoText}>
+                Items anyone in the room adds from the menu show up here in real time.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.cartPreview}>
+            <Text style={styles.cartPreviewTitle}>Table Cart ({merged.length} items)</Text>
+            {merged.length === 0 ? (
+              <Text style={styles.cartPreviewEmpty}>No items yet. Add something from the menu.</Text>
+            ) : (
+              <FlatList
+                data={merged}
+                keyExtractor={(item) => item.key}
+                renderItem={({ item }) => (
+                  <View style={styles.cartItem}>
+                    <Text style={styles.cartItemName}>{item.name}</Text>
+                    <Text style={styles.cartItemQty}>x{item.quantity}</Text>
+                  </View>
+                )}
+              />
+            )}
+          </View>
+
+          <Button title="Browse Menu" onPress={() => navigation.navigate('Menu')} variant="primary" style={styles.button} />
+          <Button title="Leave Group" onPress={() => leaveGroupRoom()} variant="secondary" style={styles.button} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -38,7 +127,7 @@ export default function TableCartScreen({ navigation }: any) {
             <View style={styles.codeSection}>
               <Text style={styles.codeLabel}>Your Room Code</Text>
               <View style={styles.codeBox}>
-                <Text style={styles.codeText}>{roomCode}</Text>
+                <Text style={styles.codeText}>{newRoomCode}</Text>
               </View>
               <Text style={styles.codeHint}>Share this code with your table</Text>
             </View>

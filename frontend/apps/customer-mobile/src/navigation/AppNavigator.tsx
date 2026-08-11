@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { NavigationContainer } from '@react-navigation/native'
+import { useGroupCartSync } from '@table-ready/shared'
 import LocationCheckScreen from '../screens/LocationCheckScreen'
 import GroupChoiceScreen from '../screens/GroupChoiceScreen'
 import LoginScreen from '../screens/LoginScreen'
@@ -26,11 +27,11 @@ export type RootStackParamList = {
   Welcome: undefined
   TablePin: undefined
   Main: undefined
-  Menu: { mode?: string; groupType?: string; table_number?: number }
+  Menu: { mode?: string; table_number?: number }
   ItemDetail: { item: any }
   Modifier: { item: any; modifiers: any[] }
   Combos: undefined
-  Cart: { groupType?: string; newCombo?: any }
+  Cart: { newCombo?: any }
   TableCart: undefined
   Checkout: undefined
   OrderTracking: { id: string; orderType?: string }
@@ -43,6 +44,10 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
 export default function Navigation({ isAuthenticated }: { isAuthenticated: boolean }) {
+  // Kept mounted app-wide (not per-screen) so a teammate's item lands here
+  // even while this device is browsing the menu, not the table-cart screen.
+  useGroupCartSync()
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={isAuthenticated ? 'LocationCheck' : 'Login'} screenOptions={{ headerShown: false }}>
