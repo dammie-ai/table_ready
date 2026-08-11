@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { joinWaitlist, cancelWaitlistEntry, getFloorLayout } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
 import { contrastText } from '../theme'
+import BackButton from '../components/BackButton'
 
 export default function WaitlistScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors)
@@ -70,6 +71,7 @@ export default function WaitlistScreen({ navigation }: any) {
   if (myEntry) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <BackButton navigation={navigation} />
         <Text style={styles.title}>You're on the Waitlist</Text>
         <View style={styles.confirmCard}>
           <Text style={styles.confirmLabel}>Your PIN</Text>
@@ -86,6 +88,7 @@ export default function WaitlistScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <BackButton navigation={navigation} />
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
       <Text style={styles.title}>Join the Waitlist</Text>
 

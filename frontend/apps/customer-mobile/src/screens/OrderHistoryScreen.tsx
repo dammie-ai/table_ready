@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { getOrderHistory, type Order } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
+import BackButton from '../components/BackButton'
 
 export default function OrderHistoryScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors)
@@ -57,6 +58,7 @@ export default function OrderHistoryScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <BackButton navigation={navigation} />
       {orders.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.empty}>No orders yet</Text>

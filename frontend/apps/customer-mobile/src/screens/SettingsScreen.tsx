@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { getNotificationPreferences, updateNotificationPreferences, deleteAccount, deleteStorageItem } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
+import BackButton from '../components/BackButton'
 
 export default function SettingsScreen({ navigation }: any) {
   const [prefs, setPrefs] = useState({
@@ -92,6 +93,7 @@ export default function SettingsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <BackButton navigation={navigation} />
       <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
 
       <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>

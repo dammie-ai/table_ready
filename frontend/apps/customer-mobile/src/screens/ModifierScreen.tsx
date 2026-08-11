@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useCartStore, type MenuItem, type MenuItemModifier } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
 import { contrastText } from '../theme'
+import BackButton from '../components/BackButton'
 
 export default function ModifierScreen({ route, navigation }: any) {
   const colors = useThemeStore((s) => s.colors)
@@ -43,6 +44,7 @@ export default function ModifierScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <BackButton navigation={navigation} />
       <Text style={styles.title}>Customize {item?.name}</Text>
 
       <FlatList
