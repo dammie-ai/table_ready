@@ -1,39 +1,41 @@
 import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Input from '../components/Input';
 import { spacing, typography, borderRadius } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
-type GroupType = 'solo' | 'group';
 type SubMode = 'create' | 'join';
 
 function generateRoomCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export default function GroupChoiceScreen({ navigation, onSelect }: any) {
+export default function GroupChoiceScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [groupSubMode, setGroupSubMode] = useState<SubMode | null>(null);
   const [roomCode] = useState(generateRoomCode);
   const [joinCode, setJoinCode] = useState('');
+  const setGroupRoom = useCartStore((s) => s.setGroupRoom);
+  const leaveGroupRoom = useCartStore((s) => s.leaveGroupRoom);
 
   const handleSolo = () => {
-    onSelect?.('solo');
+    leaveGroupRoom();
     navigation.replace('Welcome');
   };
 
   const handleCreateGroup = () => {
-    onSelect?.('group');
+    setGroupRoom(roomCode);
     navigation.replace('TableCart');
   };
 
   const handleJoinGroup = () => {
     if (joinCode.length < 4) return;
-    onSelect?.('group');
+    setGroupRoom(joinCode);
     navigation.replace('TableCart');
   };
 

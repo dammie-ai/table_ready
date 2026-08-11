@@ -2,12 +2,27 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { CartItem } from './types'
 import { getStorageItem, setStorageItem, deleteStorageItem } from './storage'
+import { broadcastCartUpdate } from './sharedCart'
 
 let cartIdCounter = 0
 const generateCartId = () => `cart-${Date.now()}-${cartIdCounter++}`
 
+export interface RemoteCartItem {
+  key: string
+  menu_item_id?: number
+  name: string
+  base_price: number
+  quantity: number
+  combo_id?: number
+}
+
 interface CartState {
   items: CartItem[]
+  // The active shared-cart room code, or null when ordering solo. Combos
+  // are never broadcast (no stable per-instance id to reconcile a remote
+  // update/remove against) — only plain, non-combo items sync.
+  groupRoom: string | null
+  remoteItems: RemoteCartItem[]
   addItem: (item: Omit<CartItem, 'quantity' | 'cartId'>) => void
   removeItem: (cartId: string) => void
   updateQuantity: (cartId: string, quantity: number) => void
@@ -15,12 +30,17 @@ interface CartState {
   addCombo: (combo: Omit<CartItem, 'quantity' | 'cartId'>) => void
   clearCart: () => void
   total: () => number
+  setGroupRoom: (room: string) => void
+  leaveGroupRoom: () => void
+  applyRemoteUpdate: (payload: { type: 'add' | 'remove' | 'update' | 'sync'; item?: any; menu_item_id?: number; quantity?: number }) => void
 }
 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      groupRoom: null,
+      remoteItems: [],
 
       addItem: (item) => set((state) => {
         // Combos and customized (modifier-bearing) items are never merged
@@ -30,6 +50,13 @@ export const useCartStore = create<CartState>()(
           i.menu_item_id === item.menu_item_id && !i.combo_id && !item.combo_id &&
           !i.modifiers?.length && !item.modifiers?.length
         )
+        if (state.groupRoom && !item.combo_id) {
+          broadcastCartUpdate(state.groupRoom, {
+            type: 'add',
+            item: { menu_item_id: item.menu_item_id, name: item.name, base_price: item.base_price, quantity: 1 },
+            timestamp: Date.now(),
+          })
+        }
         if (existing) {
           return {
             items: state.items.map(i =>
@@ -44,15 +71,27 @@ export const useCartStore = create<CartState>()(
         items: [...state.items, { ...combo, cartId: generateCartId(), quantity: 1 }]
       })),
 
-      removeItem: (cartId) => set((state) => ({
-        items: state.items.filter(i => i.cartId !== cartId),
-      })),
+      removeItem: (cartId) => set((state) => {
+        const removed = state.items.find(i => i.cartId === cartId)
+        if (state.groupRoom && removed && !removed.combo_id && removed.menu_item_id) {
+          broadcastCartUpdate(state.groupRoom, { type: 'remove', menu_item_id: removed.menu_item_id, timestamp: Date.now() })
+        }
+        return { items: state.items.filter(i => i.cartId !== cartId) }
+      }),
 
-      updateQuantity: (cartId, quantity) => set((state) => ({
-        items: quantity <= 0
-          ? state.items.filter(i => i.cartId !== cartId)
-          : state.items.map(i => i.cartId === cartId ? { ...i, quantity } : i),
-      })),
+      updateQuantity: (cartId, quantity) => set((state) => {
+        const target = state.items.find(i => i.cartId === cartId)
+        if (state.groupRoom && target && !target.combo_id && target.menu_item_id) {
+          broadcastCartUpdate(state.groupRoom, quantity <= 0
+            ? { type: 'remove', menu_item_id: target.menu_item_id, timestamp: Date.now() }
+            : { type: 'update', menu_item_id: target.menu_item_id, quantity, timestamp: Date.now() })
+        }
+        return {
+          items: quantity <= 0
+            ? state.items.filter(i => i.cartId !== cartId)
+            : state.items.map(i => i.cartId === cartId ? { ...i, quantity } : i),
+        }
+      }),
 
       updateInstructions: (cartId, instructions) => set((state) => ({
         items: state.items.map(i =>
@@ -63,9 +102,52 @@ export const useCartStore = create<CartState>()(
       clearCart: () => set({ items: [] }),
 
       total: () => get().items.reduce((sum, i) => sum + i.base_price * i.quantity, 0),
+
+      setGroupRoom: (room) => set({ groupRoom: room, remoteItems: [] }),
+
+      leaveGroupRoom: () => set({ groupRoom: null, remoteItems: [] }),
+
+      // Folds an incoming broadcast from another device into remoteItems —
+      // never touches the local `items` list, so a flaky connection can't
+      // corrupt this device's own authoritative cart.
+      applyRemoteUpdate: (payload) => set((state) => {
+        if (payload.type === 'sync') return { remoteItems: [] }
+        if (payload.type === 'add' && payload.item) {
+          const key = `item-${payload.item.menu_item_id}`
+          const existing = state.remoteItems.find(r => r.key === key)
+          if (existing) {
+            return {
+              remoteItems: state.remoteItems.map(r =>
+                r.key === key ? { ...r, quantity: r.quantity + (payload.item.quantity || 1) } : r
+              ),
+            }
+          }
+          return {
+            remoteItems: [...state.remoteItems, {
+              key,
+              menu_item_id: payload.item.menu_item_id,
+              name: payload.item.name,
+              base_price: payload.item.base_price,
+              quantity: payload.item.quantity || 1,
+            }],
+          }
+        }
+        if (payload.type === 'remove' && payload.menu_item_id) {
+          return { remoteItems: state.remoteItems.filter(r => r.menu_item_id !== payload.menu_item_id) }
+        }
+        if (payload.type === 'update' && payload.menu_item_id && payload.quantity !== undefined) {
+          return {
+            remoteItems: state.remoteItems.map(r =>
+              r.menu_item_id === payload.menu_item_id ? { ...r, quantity: payload.quantity! } : r
+            ),
+          }
+        }
+        return {}
+      }),
     }),
     {
       name: 'tableready_cart',
+      partialize: (state) => ({ items: state.items, groupRoom: state.groupRoom }),
       // No storage option here defaults to the global localStorage, which
       // doesn't exist on native — and by the time any App.tsx-level polyfill
       // for it would run, this module (imported transitively by every

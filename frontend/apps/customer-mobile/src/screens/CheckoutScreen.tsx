@@ -310,10 +310,10 @@ export default function CheckoutScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* Split-bill removed: it depended on group ordering, which isn't
-            functional yet (the "shared cart" doesn't actually sync between
-            devices) — this was unreachable dead code either way, since
-            nothing ever set groupType to 'group'. */}
+        {/* Split-bill still removed: the group cart now actually syncs
+            (see cartStore's groupRoom/remoteItems), but there's still no
+            flow for dividing one order's total across multiple payers —
+            that's a separate, not-yet-built feature. */}
 
         <View style={styles.paymentCard}>
           <Text style={styles.sectionLabel}>Payment Method</Text>

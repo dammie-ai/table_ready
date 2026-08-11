@@ -53,6 +53,8 @@ export {
 } from './api'
 export { getSocket, disconnectSocket } from './socket'
 export { useCartStore } from './cartStore'
+export type { RemoteCartItem } from './cartStore'
 export { useAuthStore } from './authStore'
 export { broadcastCartUpdate, listenForCartUpdates } from './sharedCart'
+export { useGroupCartSync } from './groupCartSync'
 export { getStorageItem, setStorageItem, deleteStorageItem } from './storage'
