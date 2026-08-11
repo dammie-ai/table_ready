@@ -18,7 +18,13 @@ export default function OrderHistoryScreen({ navigation }: any) {
   }, [])
 
   const loadHistory = async () => {
-    if (!user) return
+    // Guest checkout is fully supported, but a guest has no user.id to look
+    // up history with — this used to return before setLoading(false) ran,
+    // leaving one of only four bottom tabs spinning forever for a guest.
+    if (!user) {
+      setLoading(false)
+      return
+    }
     try {
       const res = await getOrderHistory(user.id)
       setOrders(res.orders)
