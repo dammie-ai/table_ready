@@ -1,3 +1,18 @@
+// Must run before the JWT_SECRET check below — app.js also calls this,
+// but only as a side effect of being required, which happens after the
+// check otherwise (a no-op in production, where Render sets real env vars
+// directly rather than through a .env file).
+require('dotenv').config();
+
+// Every token in this app is signed/verified with this secret. Previously
+// every call site fell back to a hardcoded, publicly-visible value
+// ('tableready_secret') if this env var was ever missing — silently
+// letting anyone forge a manager-role token instead of the server simply
+// refusing to start. Failing loudly here is the actual fix.
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET is not set — refusing to start. Set it in the environment before running the server.');
+}
+
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
@@ -33,7 +48,7 @@ const socketAuthMiddleware = (socket, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'tableready_secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     socket.user = decoded;
     console.log(`⚡ Authenticated WebSocket connection: ${socket.id} (user ${decoded.id}, role ${decoded.role})`);
     next();

@@ -32,7 +32,7 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET || 'tableready_secret');
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = verified;
     next();
   } catch (err) {
@@ -54,7 +54,7 @@ const authenticateOptional = (req, res, next) => {
   }
 
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET || 'tableready_secret');
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
     // Invalid/expired token on an optional-auth route — proceed as
     // unauthenticated rather than blocking the request outright.
