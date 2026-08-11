@@ -31,14 +31,7 @@ export default function CheckoutScreen({ navigation }: any) {
   const [instructions, setInstructions] = useState('');
   const [tipPercent, setTipPercent] = useState(18);
   const [customTip, setCustomTip] = useState('');
-  const [splitBill, setSplitBill] = useState(false);
-  const [splitMode, setSplitMode] = useState<'even' | 'itemized'>('even');
-  const [splitCount, setSplitCount] = useState(2);
   const [placingOrder, setPlacingOrder] = useState(false);
-  // Group ordering isn't wired through navigation params yet — no route
-  // currently passes a group type into Checkout, so this always renders as
-  // an individual order rather than referencing an undefined variable.
-  const groupType = 'individual';
 
   const cart = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
@@ -48,7 +41,6 @@ export default function CheckoutScreen({ navigation }: any) {
   const tax = subtotal * taxRate;
   const tipAmount = customTip !== '' ? parseFloat(customTip) || 0 : (subtotal * tipPercent) / 100;
   const grandTotal = subtotal + tax + tipAmount;
-  const splitAmount = splitBill ? grandTotal / splitCount : grandTotal;
 
   const ORDER_TYPES = [
     { value: 'pickup', label: 'PICKUP', emoji: '📦' },
@@ -130,6 +122,7 @@ export default function CheckoutScreen({ navigation }: any) {
         table_number: orderType === 'dine-in' && tableNumber ? Number(tableNumber) : undefined,
         notes,
         idempotency_key: `mobile-checkout-${Date.now()}`,
+        tip_amount: tipAmount > 0 ? parseFloat(tipAmount.toFixed(2)) : undefined,
         payment_method: 'cash',
         ...deliveryCoords,
       })
@@ -317,75 +310,10 @@ export default function CheckoutScreen({ navigation }: any) {
           </View>
         </View>
 
-        {groupType === 'group' && (
-          <View style={styles.splitCard}>
-            <View style={styles.splitHeader}>
-              <Text style={styles.sectionLabel}>Split Bill</Text>
-              <TouchableOpacity
-                onPress={() => setSplitBill((v) => !v)}
-                style={[styles.toggle, splitBill && styles.toggleActive]}
-              >
-                <View style={[styles.toggleDot, splitBill && styles.toggleDotActive]} />
-              </TouchableOpacity>
-            </View>
-
-            {splitBill && (
-              <View style={styles.splitOptions}>
-                <View style={styles.splitModeRow}>
-                  {(['even', 'itemized'] as const).map((m) => (
-                    <TouchableOpacity
-                      key={m}
-                      onPress={() => setSplitMode(m)}
-                      style={[
-                        styles.splitModeButton,
-                        splitMode === m && styles.splitModeButtonActive,
-                      ]}
-                    >
-                      <Text style={[
-                        styles.splitModeText,
-                        splitMode === m && styles.splitModeTextActive,
-                      ]}>
-                        {m === 'even' ? 'Split Evenly' : 'Itemized'}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {splitMode === 'even' && (
-                  <View style={styles.splitEvenRow}>
-                    <View style={styles.splitCounter}>
-                      <TouchableOpacity
-                        onPress={() => setSplitCount((c) => Math.max(2, c - 1))}
-                        style={styles.splitCounterButton}
-                      >
-                        <Text style={styles.splitCounterText}>−</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.splitCountText}>{splitCount} people</Text>
-                      <TouchableOpacity
-                        onPress={() => setSplitCount((c) => Math.min(10, c + 1))}
-                        style={[styles.splitCounterButton, styles.splitCounterButtonAdd]}
-                      >
-                        <Text style={styles.splitCounterTextAdd}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.splitAmountBox}>
-                      <Text style={styles.splitAmountLabel}>Each pays</Text>
-                      <Text style={styles.splitAmountValue}>${splitAmount.toFixed(2)}</Text>
-                    </View>
-                  </View>
-                )}
-
-                {splitMode === 'itemized' && (
-                  <View style={styles.splitInfoBox}>
-                    <Text style={styles.splitInfoText}>
-                      Itemized split lets each person pay for their own items. Each payer gets a unique payment link.
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        )}
+        {/* Split-bill removed: it depended on group ordering, which isn't
+            functional yet (the "shared cart" doesn't actually sync between
+            devices) — this was unreachable dead code either way, since
+            nothing ever set groupType to 'group'. */}
 
         <View style={styles.paymentCard}>
           <Text style={styles.sectionLabel}>Payment Method</Text>
@@ -417,7 +345,7 @@ export default function CheckoutScreen({ navigation }: any) {
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.payButtonText}>
-              Place Order — {splitBill ? `$${splitAmount.toFixed(2)} each` : `$${grandTotal.toFixed(2)}`}
+              Place Order — ${grandTotal.toFixed(2)}
             </Text>
           )}
         </TouchableOpacity>
@@ -667,130 +595,6 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     fontSize: 17,
     fontWeight: '700',
     color: colors.accent,
-  },
-  splitCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
-  },
-  splitHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  toggle: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#e5e7eb',
-    padding: 2,
-  },
-  toggleActive: {
-    backgroundColor: colors.primary,
-  },
-  toggleDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
-  },
-  toggleDotActive: {
-    marginLeft: 20,
-  },
-  splitOptions: {
-    gap: spacing.md,
-  },
-  splitModeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  splitModeButton: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-  },
-  splitModeButtonActive: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-  },
-  splitModeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text,
-    textTransform: 'capitalize',
-  },
-  splitModeTextActive: {
-    // Sits on the hardcoded #eff6ff splitModeButtonActive, not colors.background.
-    color: colors.primary,
-  },
-  splitEvenRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f9fafb',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-  },
-  splitCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  splitCounterButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  splitCounterButtonAdd: {
-    backgroundColor: colors.primary,
-  },
-  splitCounterText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  splitCounterTextAdd: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: contrastText(colors.primary),
-  },
-  splitCountText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  splitAmountBox: {
-    alignItems: 'flex-end',
-  },
-  splitAmountLabel: {
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  splitAmountValue: {
-    fontSize: 17,
-    fontWeight: '700',
-    // Sits on the hardcoded #f9fafb splitEvenRow, not colors.background.
-    color: colors.primary,
-  },
-  splitInfoBox: {
-    backgroundColor: '#eff6ff',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-  },
-  splitInfoText: {
-    fontSize: 12,
-    // Sits on the hardcoded #eff6ff splitInfoBox, not colors.background.
-    color: colors.primary,
-    lineHeight: 18,
   },
   paymentCard: {
     backgroundColor: colors.surface,
