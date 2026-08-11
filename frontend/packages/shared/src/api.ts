@@ -240,12 +240,16 @@ export async function updateNotificationPreferences(prefs: any) {
   return request<{ success: boolean }>('/notifications/preferences', { method: 'PATCH', body: JSON.stringify(prefs) })
 }
 
-export async function register(payload: { username: string; email: string; password: string }) {
-  return request<{ success: boolean; token: string; user: User }>('/auth/register', { method: 'POST', body: JSON.stringify(payload) })
+// /auth/register and /auth/login are the staff (users table) endpoints —
+// not for customers at all, and /auth/register requires an already-
+// authenticated admin/manager. Customers get their own separate identity
+// space, tied to customer_profiles, not the staff table.
+export async function customerRegister(payload: { email: string; password: string; first_name?: string; last_name?: string; phone?: string }) {
+  return request<{ success: boolean; token: string; user: User }>('/customer/register', { method: 'POST', body: JSON.stringify(payload) })
 }
 
-export async function login(payload: { email: string; password: string }) {
-  return request<{ success: boolean; token: string; user: User }>('/auth/login', { method: 'POST', body: JSON.stringify(payload) })
+export async function customerLogin(payload: { email: string; password: string }) {
+  return request<{ success: boolean; token: string; user: User }>('/customer/login', { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export async function deleteAccount() {
@@ -260,11 +264,16 @@ export async function getOrderHistory(userId: number) {
   return request<{ success: boolean; orders: any[] }>(`/orders/history/${userId}`)
 }
 
+// Shared by both staff (username/role, no email) and customer (email/name,
+// no role at all — a customer token carries type: 'customer' instead)
+// identities, which are entirely separate account systems.
 export interface User {
   id: number
-  username: string
-  email: string
-  role: string
+  username?: string
+  email?: string
+  first_name?: string
+  last_name?: string
+  role?: string
 }
 
 export interface MenuResponse {

@@ -198,9 +198,12 @@ exports.updateNotificationPreferences = async (req, res) => {
 
 exports.getNotificationPreferences = async (req, res) => {
   try {
-    const { customer_id, session_token } = req.query;
+    const { session_token } = req.query;
+    // Matches updateNotificationPreferences' fallback — otherwise a logged-in
+    // customer's saved preferences would never load, since the frontend
+    // calls this with no query params at all and relies on the token.
+    const customer_id = req.query.customer_id || req.user?.customer_id || null;
 
-    // If no customer_id or session_token provided, return empty preferences
     if (!customer_id && !session_token) {
       return res.status(200).json({ success: true, preferences: [] });
     }
