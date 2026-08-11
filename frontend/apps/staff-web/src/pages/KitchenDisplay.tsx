@@ -216,6 +216,22 @@ export default function KitchenDisplay() {
                         {item.quantity}x {item.name || `Item #${item.item_id}`}
                       </span>
                     </div>
+                    {item.modifiers && item.modifiers.length > 0 && (
+                      <ul className="mt-1 space-y-0.5">
+                        {item.modifiers.map((mod: any, idx: number) => (
+                          <li
+                            key={idx}
+                            className={`text-lg font-medium ${
+                              mod.modifier_type === 'removal' ? 'text-red-400 font-bold' : 'text-cyan-300'
+                            }`}
+                          >
+                            {mod.modifier_type === 'removal' ? '⚠ NO ' : '+ '}
+                            {mod.quantity > 1 ? `${mod.quantity}x ` : ''}
+                            {mod.name || `Modifier #${mod.modifier_id}`}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {item.custom_instructions && (
                       <p className="text-yellow-400 mt-1 italic">
                         {item.custom_instructions}
