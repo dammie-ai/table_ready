@@ -61,8 +61,20 @@ exports.getStaffPerformance = async (req, res) => {
   const { start_date, end_date } = req.query;
 
   try {
+    // orders.customer_id identifies the CUSTOMER who placed the order —
+    // customer accounts and staff (users) are separate id spaces, so
+    // joining orders to staff on o.customer_id = u.id (the old query)
+    // matched staff to orders by numeric coincidence, not by who actually
+    // handled anything. The only real staff-to-order link the schema has
+    // is indirect: a waiter is assigned to a table (restaurant_tables.
+    // waiter_id), and dine-in orders carry that table_number. That means
+    // this can only attribute dine-in orders to waiters — kitchen/
+    // delivery/manager/admin/other roles have no per-order attribution
+    // anywhere in the schema, so they correctly show 0 rather than a
+    // fabricated number. It also reflects the table's *current* waiter,
+    // not necessarily who was serving it when an older order was placed.
     let query = `
-      SELECT 
+      SELECT
         u.id,
         u.username,
         u.role,
@@ -72,7 +84,8 @@ exports.getStaffPerformance = async (req, res) => {
         COUNT(DISTINCT CASE WHEN o.status = 'COMPLETED' THEN o.master_order_id END) as completed_orders,
         COUNT(DISTINCT CASE WHEN o.status = 'CANCELLED' THEN o.master_order_id END) as cancelled_orders
       FROM users u
-      LEFT JOIN orders o ON o.customer_id = u.id
+      LEFT JOIN restaurant_tables rt ON rt.waiter_id = u.id
+      LEFT JOIN orders o ON o.table_number = rt.table_number AND o.order_type IN ('DINE_IN', 'IN_HOUSE')
       WHERE 1=1
     `;
     const params = [];
