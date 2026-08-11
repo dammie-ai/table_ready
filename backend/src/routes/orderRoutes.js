@@ -38,7 +38,7 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
   }
 
   try {
-    const { order_type, is_held, items, table_number, notes, ordered_by_user_id, idempotency_key, payment_method = 'card', delivery_latitude, delivery_longitude } = req.body;
+    const { order_type, is_held, items, table_number, notes, ordered_by_user_id, idempotency_key, payment_method = 'card', delivery_latitude, delivery_longitude, tip_amount } = req.body;
 
     if (idempotency_key) {
       const existingOrder = await pool.query(
@@ -236,10 +236,16 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
     const totalWithTax = parseFloat((calculatedTotal + taxAmount).toFixed(2));
 
     const insertOrderQuery = `
-      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation, payment_method, payment_status, delivery_latitude, delivery_longitude)
-      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10, $11, $12)
-      RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at, payment_method, payment_status;
+      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation, payment_method, payment_status, delivery_latitude, delivery_longitude, tip_value)
+      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at, payment_method, payment_status, tip_value;
     `;
+
+    // Declared intent only, not a charge — this is a pay-at-counter flow
+    // (see payment_status: 'Pending' below), so the tip isn't collected
+    // here. Stored so staff/the receipt can see what the customer meant
+    // to leave when payment actually happens in person.
+    const tipValue = Math.max(0, parseFloat(tip_amount) || 0);
 
     const orderResult = await client.query(insertOrderQuery, [
       initialStatus,
@@ -254,6 +260,7 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
       'Pending',
       order_type === 'DELIVERY' ? (delivery_latitude ?? null) : null,
       order_type === 'DELIVERY' ? (delivery_longitude ?? null) : null,
+      tipValue,
     ]);
 
     const createdOrder = orderResult.rows[0];
