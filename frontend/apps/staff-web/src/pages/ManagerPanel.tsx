@@ -22,6 +22,7 @@ interface StaffPerf {
 }
 
 interface InventoryItem {
+  id: number
   item_name: string
   stock_quantity: number
   reorder_threshold: number
@@ -45,6 +46,13 @@ export default function ManagerPanel() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [serviceRatings, setServiceRatings] = useState<ServiceRating[]>([])
   const [loading, setLoading] = useState(true)
+  const [restockAmounts, setRestockAmounts] = useState<Record<number, string>>({})
+  const [restockingId, setRestockingId] = useState<number | null>(null)
+
+  const loadInventory = async () => {
+    const res = await apiClient.get<any>('/inventory')
+    setInventory(res.inventory || res.items || [])
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -69,6 +77,21 @@ export default function ManagerPanel() {
     }
     loadData()
   }, [])
+
+  const handleRestock = async (id: number) => {
+    const amount = parseInt(restockAmounts[id])
+    if (!amount || amount <= 0) return
+    setRestockingId(id)
+    try {
+      await apiClient.post(`/inventory/${id}/restock`, { quantity: amount })
+      setRestockAmounts((prev) => ({ ...prev, [id]: '' }))
+      await loadInventory()
+    } catch (err) {
+      console.error('Failed to restock:', err)
+    } finally {
+      setRestockingId(null)
+    }
+  }
 
   const totalRevenue = categoryData.reduce((s, d) => s + (d.revenue || 0), 0)
   const totalOrders = categoryData.reduce((s, d) => s + (d.order_count || 0), 0)
@@ -259,7 +282,7 @@ export default function ManagerPanel() {
 
           {fulfillmentTotals.length > 0 && (
             <div className="grid gap-3 mt-4" style={{ gridTemplateColumns: `repeat(${fulfillmentTotals.length}, minmax(0, 1fr))` }}>
-              {fulfillmentTotals.map((seg, i) => {
+              {fulfillmentTotals.map((seg) => {
                 const pct = Math.round((seg.revenue / fulfillmentTotal) * 100)
                 const color = FULFILLMENT_COLORS[seg.order_type] || 'bg-gray-500'
                 return (
@@ -277,16 +300,29 @@ export default function ManagerPanel() {
         </div>
       )}
 
+      {view === 'menu' && (
+        <div className="p-4 md:p-6">
+          <h2 className="font-display font-bold text-xl mb-2">Menu Management</h2>
+          <p className="text-sm text-[#6b7280] mb-6">Add, edit, price, and photograph menu items.</p>
+          <Link
+            to="/menu-management"
+            className="inline-block bg-[#f97316] text-white px-5 py-3 rounded-xl font-semibold hover:bg-[#f97316]/85 transition-colors"
+          >
+            Open Menu Management →
+          </Link>
+        </div>
+      )}
+
       {view === 'inventory' && (
         <div className="p-4 md:p-6 max-w-lg">
           <h2 className="font-display font-bold text-xl mb-4">Inventory Levels</h2>
           <div className="space-y-3">
-            {inventory.map((item, i) => {
+            {inventory.map((item) => {
               const pct = item.stock_quantity > 0 ? (item.stock_quantity / item.reorder_threshold) * 100 : 0
               const isLow = pct < 30
               const isCritical = pct < 15
               return (
-                <div key={i} className={`bg-[#111118] border rounded-xl p-4 ${isCritical ? 'border-red-500/50' : isLow ? 'border-orange-500/40' : 'border-white/8'}`}>
+                <div key={item.id} className={`bg-[#111118] border rounded-xl p-4 ${isCritical ? 'border-red-500/50' : isLow ? 'border-orange-500/40' : 'border-white/8'}`}>
                   <div className="flex items-center justify-between mb-2.5">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{item.item_name}</span>
@@ -295,8 +331,25 @@ export default function ManagerPanel() {
                     </div>
                     <span className="font-mono text-sm font-semibold">{item.stock_quantity}<span className="text-[#6b7280]">/{item.reorder_threshold}</span></span>
                   </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mb-3">
                     <div className={`h-full rounded-full transition-all ${isCritical ? 'bg-red-500' : isLow ? 'bg-orange-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Add stock"
+                      value={restockAmounts[item.id] || ''}
+                      onChange={(e) => setRestockAmounts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                      className="w-24 bg-[#1c1c27] border border-white/8 rounded-lg px-2.5 py-1.5 text-sm text-[#f1f5f9] placeholder:text-[#6b7280]/50 outline-none focus:border-[#f97316]/50"
+                    />
+                    <button
+                      onClick={() => handleRestock(item.id)}
+                      disabled={restockingId === item.id || !restockAmounts[item.id]}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#f97316] text-white hover:bg-[#f97316]/85 disabled:opacity-40 transition-colors"
+                    >
+                      {restockingId === item.id ? 'Adding…' : 'Restock'}
+                    </button>
                   </div>
                 </div>
               )
