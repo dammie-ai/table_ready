@@ -94,16 +94,30 @@ export default function KitchenDisplay() {
     }
   }
 
-  const advanceStatus = async (orderId: number, currentStatus: string) => {
-    const statusFlow: Record<string, string> = {
+  // READY_FOR_PICKUP/PICKED_UP describe a takeout customer or driver
+  // physically collecting the order — meaningless for a table order,
+  // which a waiter delivers instead. Kitchen's chain stops at READY for
+  // DINE_IN; a waiter owns the READY -> SERVED handoff from there
+  // (WaiterDashboard's "Mark Served"), so the kitchen can no longer walk
+  // a table order straight to a "picked up" state with no one having
+  // confirmed the food actually reached the table.
+  const nextStatusFor = (currentStatus: string, orderType?: string) => {
+    const dineInFlow: Record<string, string> = {
       RECEIVED: 'IN_PREPARATION',
       IN_PREPARATION: 'COOKING',
       COOKING: 'READY',
+    }
+    const takeoutFlow: Record<string, string> = {
+      ...dineInFlow,
       READY: 'READY_FOR_PICKUP',
       READY_FOR_PICKUP: 'PICKED_UP',
     }
+    const flow = orderType === 'DINE_IN' || orderType === 'IN_HOUSE' ? dineInFlow : takeoutFlow
+    return flow[currentStatus]
+  }
 
-    const nextStatus = statusFlow[currentStatus]
+  const advanceStatus = async (orderId: number, currentStatus: string, orderType?: string) => {
+    const nextStatus = nextStatusFor(currentStatus, orderType)
     if (!nextStatus) return
 
     try {
@@ -197,7 +211,7 @@ export default function KitchenDisplay() {
                 </div>
                 <span
                   className={`px-4 py-2 rounded-lg text-lg font-bold ${
-                    order.status === 'READY'
+                    order.status === 'READY' || order.status === 'READY_FOR_PICKUP'
                       ? 'bg-green-600 text-white'
                       : order.status === 'COOKING'
                       ? 'bg-yellow-600 text-white'
@@ -242,12 +256,27 @@ export default function KitchenDisplay() {
               </div>
 
               <div className="border-t border-gray-700 pt-4">
-                <button
-                  onClick={() => advanceStatus(order.master_order_id, order.status)}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-4 rounded-lg"
-                >
-                  {order.status === 'READY' ? 'COMPLETE' : 'ADVANCE'}
-                </button>
+                {(() => {
+                  const next = nextStatusFor(order.status, order.order_type)
+                  if (!next) {
+                    // DINE_IN order sitting at READY — kitchen's part is
+                    // done; a waiter marks it Served from their dashboard,
+                    // not this button.
+                    return (
+                      <div className="w-full text-center text-yellow-400 text-lg font-bold py-4 rounded-lg border-2 border-dashed border-yellow-500/40">
+                        Waiting for waiter
+                      </div>
+                    )
+                  }
+                  return (
+                    <button
+                      onClick={() => advanceStatus(order.master_order_id, order.status, order.order_type)}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-4 rounded-lg"
+                    >
+                      {next === 'PICKED_UP' ? 'COMPLETE' : 'ADVANCE'}
+                    </button>
+                  )
+                })()}
               </div>
             </div>
           ))}
