@@ -4,6 +4,8 @@ const deliveryController = require('../controllers/deliveryController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authGuard');
 const { validate, schemas } = require('../middleware/validation');
 
+router.get('/drivers', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), deliveryController.getDrivers);
+
 router.post('/assign', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), validate(schemas.assignDriver), deliveryController.assignDriver);
 
 router.post('/:orderId/status', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'delivery'), validate(schemas.updateDeliveryStatus), deliveryController.updateDeliveryStatus);

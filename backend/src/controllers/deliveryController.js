@@ -5,16 +5,65 @@ const { calculateDistanceInMiles } = require('../utils/distance');
 const AVG_DELIVERY_MPH = 20;
 
 /**
- * POST /api/delivery/assign
- * Assign driver to order
+ * GET /api/delivery/drivers
+ * List delivery-role staff, for the assign-driver dropdown — no roster
+ * endpoint of any kind existed anywhere in the backend before this.
  */
-exports.assignDriver = async (req, res) => {
+exports.getDrivers = async (req, res) => {
   try {
-    const { orderId, driverId } = req.body;
-    await pool.query('UPDATE orders SET driver_id = $1 WHERE master_order_id = $2', [driverId, orderId]);
-    return res.status(200).json({ success: true });
+    const result = await pool.query(
+      `SELECT id, username FROM users WHERE role = 'delivery' ORDER BY username ASC`
+    );
+    return res.status(200).json({ success: true, drivers: result.rows });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * POST /api/delivery/assign
+ * Assign a driver to an order via order_assignments — orders.driver_id
+ * doesn't exist as a column, and req.body.orderId/driverId never matched
+ * the validated order_id/driver_id fields, so this previously either threw
+ * or silently no-opped on every call; nothing ever populated
+ * order_assignments, which getDeliveryDashboard's "my deliveries" query
+ * has depended on reading all along.
+ */
+exports.assignDriver = async (req, res) => {
+  const { order_id, driver_id } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Superseding any prior active assignment (rather than a unique
+    // constraint + upsert) keeps a real history and lets a manager
+    // reassign a delivery without a schema change.
+    await client.query(
+      `UPDATE order_assignments SET status = 'cancelled', updated_at = NOW()
+       WHERE order_id = $1 AND status NOT IN ('delivered', 'cancelled')`,
+      [order_id]
+    );
+
+    const result = await client.query(
+      `INSERT INTO order_assignments (order_id, assigned_to, assigned_by, status)
+       VALUES ($1, $2, $3, 'assigned')
+       RETURNING assignment_id, order_id, assigned_to, status`,
+      [order_id, driver_id, req.user.id]
+    );
+
+    await client.query('COMMIT');
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('delivery_assigned', { order_id, driver_id });
+    }
+
+    return res.status(200).json({ success: true, assignment: result.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
   }
 };
 
