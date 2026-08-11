@@ -485,7 +485,7 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
                     'quantity', oi.quantity,
                     'item_status', oi.item_status,
                     'custom_instructions', oi.custom_instructions,
-                    'modifiers', oi.modifiers
+                    'modifiers', COALESCE(mod_names.modifiers, '[]'::json)
                   )
                 ) FILTER (WHERE oi.order_item_id IS NOT NULL),
                 '[]'
@@ -493,6 +493,23 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
        FROM orders o
        LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
        LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
+       -- oi.modifiers only ever stored {modifier_id, quantity} — never a
+       -- name, so the kitchen board had nothing to render even for orders
+       -- that DID have modifiers. Resolves names/type live from
+       -- menu_modifiers on every read instead of relying on anything
+       -- being denormalized at order-creation time.
+       LEFT JOIN LATERAL (
+         SELECT json_agg(
+                  json_build_object(
+                    'modifier_id', (elem->>'modifier_id')::int,
+                    'quantity', COALESCE((elem->>'quantity')::int, 1),
+                    'name', mm.name,
+                    'modifier_type', mm.modifier_type
+                  )
+                ) AS modifiers
+         FROM jsonb_array_elements(COALESCE(oi.modifiers, '[]'::jsonb)) AS elem
+         LEFT JOIN menu_modifiers mm ON mm.modifier_id = (elem->>'modifier_id')::int
+       ) mod_names ON true
        WHERE o.status NOT IN ('ON_HOLD', 'CANCELLED_AND_REFUNDED', 'CANCELLED', 'COMPLETED', 'SERVED', 'PICKED_UP')
        GROUP BY o.master_order_id
        ORDER BY o.created_at ASC`
@@ -561,9 +578,23 @@ router.get('/:id', async (req, res) => {
     }
 
     const itemsRes = await pool.query(
-      `SELECT oi.quantity, oi.custom_instructions, oi.item_status, oi.modifiers, COALESCE(mi.name, 'Item #' || oi.item_id) AS name, COALESCE(mi.base_price, 0) AS base_price
+      `SELECT oi.quantity, oi.custom_instructions, oi.item_status,
+              COALESCE(mod_names.modifiers, '[]'::json) AS modifiers,
+              COALESCE(mi.name, 'Item #' || oi.item_id) AS name, COALESCE(mi.base_price, 0) AS base_price
        FROM order_items oi
        LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
+       LEFT JOIN LATERAL (
+         SELECT json_agg(
+                  json_build_object(
+                    'modifier_id', (elem->>'modifier_id')::int,
+                    'quantity', COALESCE((elem->>'quantity')::int, 1),
+                    'name', mm.name,
+                    'modifier_type', mm.modifier_type
+                  )
+                ) AS modifiers
+         FROM jsonb_array_elements(COALESCE(oi.modifiers, '[]'::jsonb)) AS elem
+         LEFT JOIN menu_modifiers mm ON mm.modifier_id = (elem->>'modifier_id')::int
+       ) mod_names ON true
        WHERE oi.master_order_id = $1`,
       [id]
     );
