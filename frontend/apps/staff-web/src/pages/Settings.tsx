@@ -329,8 +329,15 @@ export default function Settings() {
                 <input
                   type="number"
                   step="0.1"
-                  value={config.tax_rate ?? 0}
-                  onChange={(e) => updateConfig('tax_rate', parseFloat(e.target.value))}
+                  // Stored (and used at checkout) as a fraction of the
+                  // subtotal (0.085), not a percentage — getTaxRate()'s
+                  // caller does calculatedTotal * taxRate directly, so a
+                  // raw "8.5" stored here would charge 850% tax. This
+                  // field shows/accepts percentage points for a manager
+                  // to type naturally; the /100 conversion happens right
+                  // at the boundary in both directions.
+                  value={((config.tax_rate?.rate ?? 0) * 100).toFixed(2)}
+                  onChange={(e) => updateConfig('tax_rate', { rate: (parseFloat(e.target.value) || 0) / 100 })}
                   className={inputCls}
                 />
               </div>

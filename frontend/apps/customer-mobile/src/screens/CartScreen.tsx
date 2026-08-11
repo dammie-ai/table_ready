@@ -5,10 +5,12 @@ import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
 import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
+import { useConfigStore } from '../stores/configStore';
 
 export default function CartScreen({ navigation, route }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const taxRate = useConfigStore((s) => s.taxRate);
   const cart = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
   const addCombo = useCartStore((s) => s.addCombo);
@@ -41,7 +43,7 @@ export default function CartScreen({ navigation, route }: any) {
   }, []);
 
   const subtotal = cart.reduce((sum, item) => sum + item.base_price * item.quantity, 0);
-  const tax = subtotal * 0.08;
+  const tax = subtotal * taxRate;
   const total = subtotal + tax;
   const isEmpty = cart.length === 0;
 
@@ -142,7 +144,7 @@ export default function CartScreen({ navigation, route }: any) {
           <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
         </View>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Tax (8%)</Text>
+          <Text style={styles.summaryLabel}>Tax ({(taxRate * 100).toFixed(1)}%)</Text>
           <Text style={styles.summaryValue}>${tax.toFixed(2)}</Text>
         </View>
         <View style={[styles.summaryRow, styles.summaryTotal]}>

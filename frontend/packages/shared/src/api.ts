@@ -360,11 +360,10 @@ export interface GeofenceConfig {
 export interface ConfigResponse {
   success: boolean
   config: {
-    restaurant_name: string
-    tax_rate: number
-    delivery_radius_miles: number
-    surge_pricing_enabled: boolean
-    is_open: boolean
+    // Every config_key row comes back as whatever shape it was saved
+    // with — tax_rate is { rate: <fraction, e.g. 0.085> }, matching
+    // configService.js's getTaxRate() on the backend.
+    tax_rate?: { rate: number }
     [key: string]: any
   }
 }
@@ -393,6 +392,11 @@ export interface CartItemPayload {
   price?: number
   custom_instructions?: string
   modifiers?: { modifier_id: number; quantity: number }[]
+  // Ties combo components (main + sides) flattened from one cart entry
+  // back together so the backend charges the combo's bundle price once
+  // instead of summing each component's own à la carte price.
+  combo_id?: number
+  combo_group?: string
 }
 
 export interface CheckoutPayload {
