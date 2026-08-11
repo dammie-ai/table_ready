@@ -14,7 +14,7 @@ function signCustomerToken(customer) {
   // anticipation of exactly this token shape.
   return jwt.sign(
     { customer_id: customer.customer_id, email: customer.email, type: 'customer' },
-    process.env.JWT_SECRET || 'tableready_secret',
+    process.env.JWT_SECRET,
     { expiresIn: '30d' }
   );
 }
