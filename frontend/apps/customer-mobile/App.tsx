@@ -3,6 +3,7 @@ import { Platform } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import Navigation from './src/navigation/AppNavigator'
 import { useThemeStore } from './src/stores/themeStore'
+import { useConfigStore } from './src/stores/configStore'
 
 if (Platform.OS !== 'web') {
   const storage = {
@@ -15,10 +16,12 @@ if (Platform.OS !== 'web') {
 
 export default function App() {
   const fetchTheme = useThemeStore((s) => s.fetchTheme)
+  const fetchConfig = useConfigStore((s) => s.fetchConfig)
 
   useEffect(() => {
     fetchTheme()
-  }, [fetchTheme])
+    fetchConfig()
+  }, [fetchTheme, fetchConfig])
 
   return (
     <SafeAreaProvider>

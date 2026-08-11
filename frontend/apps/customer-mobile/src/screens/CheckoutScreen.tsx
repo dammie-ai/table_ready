@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { useCartStore, createOrder, getStorageItem } from '@table-ready/shared';
 import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
+import { useConfigStore } from '../stores/configStore';
 
 const TIP_PRESETS = [0, 15, 18, 20];
 
@@ -41,9 +42,10 @@ export default function CheckoutScreen({ navigation }: any) {
 
   const cart = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
+  const taxRate = useConfigStore((s) => s.taxRate);
 
   const subtotal = cart.reduce((sum, item) => sum + item.base_price * item.quantity, 0);
-  const tax = subtotal * 0.08;
+  const tax = subtotal * taxRate;
   const tipAmount = customTip !== '' ? parseFloat(customTip) || 0 : (subtotal * tipPercent) / 100;
   const grandTotal = subtotal + tax + tipAmount;
   const splitAmount = splitBill ? grandTotal / splitCount : grandTotal;
@@ -63,8 +65,11 @@ export default function CheckoutScreen({ navigation }: any) {
       // The backend has no concept of combo items at all — nothing in
       // orderRoutes.js handles combo_main/combo_sides, so sending a combo
       // cart entry as-is (no menu_item_id) would silently drop it from the
-      // order. Flatten each combo into its real constituent menu items
-      // instead, so the kitchen/order actually reflects what was ordered.
+      // order. Flatten each combo into its real constituent menu items so
+      // the kitchen sees each one by name, but tag every component with
+      // combo_id/combo_group so the backend still charges the discounted
+      // combo bundle price once per instance instead of summing each
+      // component's own à la carte price.
       const items = cart.flatMap((item) => {
         if (item.combo_main) {
           const noteSuffix = item.name ? ` (from ${item.name} combo)` : ''
@@ -74,12 +79,16 @@ export default function CheckoutScreen({ navigation }: any) {
               quantity: item.quantity,
               custom_instructions: (item.custom_instructions || '') + noteSuffix,
               modifiers: undefined as { modifier_id: number; quantity: number }[] | undefined,
+              combo_id: item.combo_id,
+              combo_group: item.cartId,
             },
             ...(item.combo_sides || []).map((side) => ({
               menu_item_id: side.menu_item_id,
               quantity: item.quantity,
               custom_instructions: noteSuffix,
               modifiers: undefined as { modifier_id: number; quantity: number }[] | undefined,
+              combo_id: item.combo_id,
+              combo_group: item.cartId,
             })),
           ]
         }
@@ -291,7 +300,7 @@ export default function CheckoutScreen({ navigation }: any) {
             <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tax (8%)</Text>
+            <Text style={styles.summaryLabel}>Tax ({(taxRate * 100).toFixed(1)}%)</Text>
             <Text style={styles.summaryValue}>${tax.toFixed(2)}</Text>
           </View>
           {tipAmount > 0 && (
