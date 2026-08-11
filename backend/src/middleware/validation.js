@@ -80,7 +80,13 @@ const schemas = {
       modifiers: z.array(z.object({
         modifier_id: z.number().int().positive(),
         quantity: z.number().int().positive().optional()
-      })).optional()
+      })).optional(),
+      // Present when this item is one component (main or side) of a combo
+      // that was flattened into individual menu items for kitchen display —
+      // combo_group ties components of the same combo instance together so
+      // the price is charged once as a bundle, not summed per component.
+      combo_id: z.number().int().positive().optional(),
+      combo_group: z.string().optional()
     })).min(1, 'At least one item is required').optional(),
     pickup_scheduled_time: z.string().optional(),
     customer_vehicle: z.string().optional(),

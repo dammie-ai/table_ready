@@ -85,6 +85,26 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
     let calculatedTotal = 0;
     const resolvedDeductions = []; // Stores resolved inventory deductions for Step 4
 
+    // Combo items arrive pre-flattened into their individual components
+    // (main + sides) for kitchen display, but priced individually that
+    // would sum to full à la carte total instead of the discounted combo
+    // price shown throughout the app. Look up each distinct combo's bundle
+    // price once up front, keyed by combo_group (one per combo instance in
+    // the cart, not per combo type — the same combo ordered twice needs two
+    // separate charges) — each group's price is charged exactly once below,
+    // regardless of how many component items carry that combo_group.
+    const comboGroupPrices = {};
+    if (items && items.length > 0) {
+      const comboGroups = [...new Set(items.filter((i) => i.combo_group && i.combo_id).map((i) => i.combo_group))];
+      for (const group of comboGroups) {
+        const comboId = items.find((i) => i.combo_group === group).combo_id;
+        const comboRes = await client.query('SELECT base_price FROM combo_meals WHERE combo_id = $1', [comboId]);
+        if (comboRes.rows.length > 0) {
+          comboGroupPrices[group] = { price: parseFloat(comboRes.rows[0].base_price), charged: false };
+        }
+      }
+    }
+
     if (items && items.length > 0) {
       for (const item of items) {
         const menuItemId = item.menu_item_id || item.item_id || item.inventory_id;
@@ -195,7 +215,18 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
           }
         }
 
-        calculatedTotal += (dynamicUnitPrice + modifierTotal) * orderQty;
+        // Combo components are priced as one bundle charge (this group's
+        // combo_meals.base_price, surge-adjusted, charged once) rather than
+        // each component's own à la carte price — dynamicUnitPrice above
+        // still gets computed for them but isn't used, harmless overhead.
+        const comboGroup = item.combo_group && comboGroupPrices[item.combo_group];
+        if (comboGroup) {
+          const bundleCharge = comboGroup.charged ? 0 : calculateAdjustedPrice(comboGroup.price, multiplier) * orderQty;
+          comboGroup.charged = true;
+          calculatedTotal += bundleCharge + modifierTotal * orderQty;
+        } else {
+          calculatedTotal += (dynamicUnitPrice + modifierTotal) * orderQty;
+        }
       }
     }
 

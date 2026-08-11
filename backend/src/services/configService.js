@@ -48,7 +48,7 @@ async function getBusinessHours() {
 async function isWithinBusinessHours() {
   const hours = await getBusinessHours();
   const now = new Date();
-  const dayName = now.toLocaleLowerCaseString('en-US', { weekday: 'long' });
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const dayHours = hours[dayName];
   if (!dayHours) return false;
