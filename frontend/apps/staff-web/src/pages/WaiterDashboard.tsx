@@ -71,16 +71,52 @@ export default function WaiterDashboard() {
     socket.on('service_request_created', (req: ServiceRequest) => {
       setRequests((prev) => [req, ...prev])
     })
+    // Acknowledge/complete/cancel all broadcast this — without it, a
+    // second waiter's Alerts tab kept showing a request as pending after
+    // someone else had already handled it.
+    socket.on('service_request_updated', (req: ServiceRequest) => {
+      setRequests((prev) =>
+        req.status === 'pending'
+          ? prev.map((r) => (r.request_id === req.request_id ? req : r))
+          : prev.filter((r) => r.request_id !== req.request_id)
+      )
+    })
     socket.on('table_status_updated', ({ table_id, status_state }: { table_id: number; status_state: string }) => {
       setTables((prev) => prev.map((t) => t.table_id === table_id ? { ...t, status_state } : t))
       setMyTables((prev) => prev.map((t) => t.table_id === table_id ? { ...t, status_state } : t))
     })
+    // The backend broadcasts this on every kitchen status change — without
+    // it, a waiter's own dashboard never learned food was ready until they
+    // manually refreshed.
+    socket.on('kitchen_order_updated', ({ orderId, status }: { orderId: number; status: string }) => {
+      setMyTables((prev) => prev.map((t) => t.master_order_id === orderId ? { ...t, order_status: status } : t))
+    })
 
     return () => {
       socket.off('service_request_created')
+      socket.off('service_request_updated')
       socket.off('table_status_updated')
+      socket.off('kitchen_order_updated')
     }
   }, [])
+
+  const [servingId, setServingId] = useState<number | null>(null)
+
+  // The kitchen's own advance chain stops at READY for dine-in orders now
+  // (see KitchenDisplay.tsx) — this is the actual hand-off confirmation
+  // that food reached the table, which previously didn't exist anywhere;
+  // kitchen could walk an order straight to a terminal state alone.
+  const markServed = async (orderId: number) => {
+    setServingId(orderId)
+    try {
+      await apiClient.patch(`/orders/${orderId}/status`, { status: 'SERVED' })
+      setMyTables((prev) => prev.map((t) => t.master_order_id === orderId ? { ...t, order_status: 'SERVED' } : t))
+    } catch (err) {
+      console.error('Failed to mark order served:', err)
+    } finally {
+      setServingId(null)
+    }
+  }
 
   const updateTableStatus = async (tableId: number, status: string) => {
     try {
@@ -192,6 +228,15 @@ export default function WaiterDashboard() {
                       </div>
                       {table.total_amount !== null && (
                         <div className="text-xs opacity-60 mt-1">${Number(table.total_amount).toFixed(2)}</div>
+                      )}
+                      {table.order_status === 'READY' && (
+                        <button
+                          onClick={() => markServed(table.master_order_id!)}
+                          disabled={servingId === table.master_order_id}
+                          className="w-full mt-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-lg disabled:opacity-50 transition-colors"
+                        >
+                          {servingId === table.master_order_id ? 'Marking served…' : '✓ Mark Served'}
+                        </button>
                       )}
                     </div>
                   ) : (
