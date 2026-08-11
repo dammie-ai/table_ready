@@ -19,16 +19,16 @@ export default function App() {
   const fetchTheme = useThemeStore((s) => s.fetchTheme)
   const fetchConfig = useConfigStore((s) => s.fetchConfig)
   const hasHydrated = useAuthStore((s) => s.hasHydrated)
-  const token = useAuthStore((s) => s.token)
 
   useEffect(() => {
     fetchTheme()
     fetchConfig()
   }, [fetchTheme, fetchConfig])
 
-  // Reading the persisted session from secure storage is async — deciding
-  // the initial route before this resolves would flash the Login screen
-  // at every already-signed-in returning customer for a frame or two.
+  // Reading the persisted session from secure storage is async —
+  // LocationCheckScreen decides whether a signed-in customer skips Login,
+  // and doing that before this resolves would send every already-signed-in
+  // returning customer to Login anyway for a frame or two.
   if (!hasHydrated) {
     return (
       <View style={{ flex: 1, backgroundColor: '#0a0a0f', alignItems: 'center', justifyContent: 'center' }}>
@@ -39,7 +39,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <Navigation isAuthenticated={!!token} />
+      <Navigation />
     </SafeAreaProvider>
   )
 }
