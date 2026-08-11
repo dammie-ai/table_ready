@@ -101,8 +101,15 @@ export default function TablePinScreen({ navigation }: any) {
   const handleBarcodeScanned = ({ data }: { data: string }) => {
     if (scannedRef.current || verifying) return
     const parsed = parseTableQr(data)
-    if (!parsed) return
+    if (!parsed) {
+      // Previously silent — a misread or a QR code that isn't one of ours
+      // looked identical to a fully broken scanner, with zero indication
+      // why nothing happened.
+      setError("That doesn't look like a TableReady table code — try again or enter it manually.")
+      return
+    }
     scannedRef.current = true
+    setError('')
     verify(parsed.table, parsed.code)
   }
 
