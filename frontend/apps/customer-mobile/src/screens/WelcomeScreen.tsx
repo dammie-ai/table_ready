@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { checkLocation } from '@table-ready/shared';
 import Button from '../components/Button';
+import BackButton from '../components/BackButton';
 import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
@@ -52,6 +53,7 @@ export default function WelcomeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <BackButton navigation={navigation} />
       <ScrollView contentContainerStyle={styles.content}>
       {!isOpen && (
         <View style={styles.closedBanner}>

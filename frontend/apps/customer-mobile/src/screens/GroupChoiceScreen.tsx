@@ -5,6 +5,7 @@ import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Input from '../components/Input';
+import BackButton from '../components/BackButton';
 import { spacing, typography, borderRadius } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 
@@ -25,22 +26,23 @@ export default function GroupChoiceScreen({ navigation }: any) {
 
   const handleSolo = () => {
     leaveGroupRoom();
-    navigation.replace('Welcome');
+    navigation.navigate('Welcome');
   };
 
   const handleCreateGroup = () => {
     setGroupRoom(roomCode);
-    navigation.replace('TableCart');
+    navigation.navigate('TableCart');
   };
 
   const handleJoinGroup = () => {
     if (joinCode.length < 4) return;
     setGroupRoom(joinCode);
-    navigation.replace('TableCart');
+    navigation.navigate('TableCart');
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <BackButton navigation={navigation} />
       <View style={styles.header}>
         <Text style={[typography.h2, { color: colors.text }]}>How are you ordering?</Text>
         <Text style={styles.subtitle}>Choose your dining style to get started</Text>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import BackButton from '../components/BackButton';
 import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 import { customerLogin, customerRegister, useAuthStore } from '@table-ready/shared';
@@ -35,7 +36,7 @@ export default function LoginScreen({ navigation }: any) {
         : await customerRegister({ email, password, first_name: firstName || undefined });
       setAuth(res.token, res.user);
       // Location is checked before Login now, not after — see LocationCheckScreen.
-      navigation.replace('GroupChoice');
+      navigation.navigate('GroupChoice');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -45,6 +46,7 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <BackButton navigation={navigation} />
       <View style={styles.hero}>
         <View style={styles.logoBox}>
           <Text style={styles.logoIcon}>🍽️</Text>

@@ -50,7 +50,7 @@ export default function LocationCheckScreen({ navigation }: any) {
       if (res.allowed) {
         setWithinGeofence(true);
         setPhase('success');
-        setTimeout(() => navigation.replace(nextRoute), 1500);
+        setTimeout(() => navigation.navigate(nextRoute), 1500);
       } else {
         setWithinGeofence(false);
         setPhase('error');
@@ -68,7 +68,7 @@ export default function LocationCheckScreen({ navigation }: any) {
   };
 
   const handleManualContinue = () => {
-    navigation.replace(nextRoute);
+    navigation.navigate(nextRoute);
   };
 
   if (phase === 'intro') {
