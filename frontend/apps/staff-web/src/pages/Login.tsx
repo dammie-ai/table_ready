@@ -42,23 +42,6 @@ export default function Login() {
     }
   }
 
-  const quickLogin = async (user: string, pass: string) => {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await apiClient.post<{ token: string; user: { id: number; username: string; roles: string[] } }>('/auth/login', {
-        username: user,
-        password: pass,
-      })
-      setAuth(res.token, res.user)
-      navigate('/staff')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('login.loginFailed'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#09090f]">
       <form onSubmit={handleSubmit} className="bg-[#111118] border border-white/8 p-8 rounded-2xl w-full max-w-sm">
@@ -99,44 +82,6 @@ export default function Login() {
         >
           {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> {t('login.signingIn')}</> : t('login.signIn')}
         </button>
-
-        <div className="mt-6 pt-6 border-t border-white/8">
-          <p className="text-xs text-[#6b7280] mb-3 text-center">{t('login.quickLogin')}</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => quickLogin('manager_test', 'password123')}
-              disabled={loading}
-              className="px-3 py-2 bg-[#1c1c27] border border-white/8 rounded-lg text-xs text-[#f1f5f9] hover:border-[#f97316]/50 transition-colors disabled:opacity-40"
-            >
-              {t('login.manager')}
-            </button>
-            <button
-              type="button"
-              onClick={() => quickLogin('kitchen_test', 'password123')}
-              disabled={loading}
-              className="px-3 py-2 bg-[#1c1c27] border border-white/8 rounded-lg text-xs text-[#f1f5f9] hover:border-[#f97316]/50 transition-colors disabled:opacity-40"
-            >
-              {t('login.kitchen')}
-            </button>
-            <button
-              type="button"
-              onClick={() => quickLogin('waiter_test', 'password123')}
-              disabled={loading}
-              className="px-3 py-2 bg-[#1c1c27] border border-white/8 rounded-lg text-xs text-[#f1f5f9] hover:border-[#f97316]/50 transition-colors disabled:opacity-40"
-            >
-              {t('login.waiter')}
-            </button>
-            <button
-              type="button"
-              onClick={() => quickLogin('delivery_test', 'password123')}
-              disabled={loading}
-              className="px-3 py-2 bg-[#1c1c27] border border-white/8 rounded-lg text-xs text-[#f1f5f9] hover:border-[#f97316]/50 transition-colors disabled:opacity-40"
-            >
-              {t('login.delivery')}
-            </button>
-          </div>
-        </div>
       </form>
     </div>
   )
