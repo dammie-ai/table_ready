@@ -47,7 +47,7 @@ export default function LocationCheckScreen({ navigation }: any) {
       } else {
         setWithinGeofence(false);
         setPhase('error');
-        setErrorMsg('You are outside the restaurant geofence.');
+        setErrorMsg(`You are outside the restaurant geofence (${res.distance_miles} mi away, must be within ${res.radius_miles} mi).`);
       }
     } catch (err) {
       setPhase('error');
