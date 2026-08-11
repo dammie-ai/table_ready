@@ -25,7 +25,7 @@ const AVG_DELIVERY_MPH = 20;
  * POST /api/orders
  * Handle new order creation with automatic recipe-based ingredient deduction
  */
-router.post('/', validate(schemas.createOrder), async (req, res) => {
+router.post('/', authenticateOptional, validate(schemas.createOrder), async (req, res) => {
   let client;
 
   try {
@@ -39,6 +39,10 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
 
   try {
     const { order_type, is_held, items, table_number, notes, ordered_by_user_id, idempotency_key, payment_method = 'card', delivery_latitude, delivery_longitude, tip_amount } = req.body;
+    // Ties the order to whoever's actually logged in, when they are — staff-web's
+    // guest checkout and any request with no/invalid token still work
+    // unauthenticated, this just captures identity when it's there.
+    const customerId = req.user?.type === 'customer' ? req.user.customer_id : null;
 
     if (idempotency_key) {
       const existingOrder = await pool.query(
@@ -236,9 +240,9 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
     const totalWithTax = parseFloat((calculatedTotal + taxAmount).toFixed(2));
 
     const insertOrderQuery = `
-      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation, payment_method, payment_status, delivery_latitude, delivery_longitude, tip_value)
-      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10, $11, $12, $13)
-      RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at, payment_method, payment_status, tip_value;
+      INSERT INTO orders (status, is_held, total_amount, order_type, table_number, notes, progress_percentage, idempotency_key, tax_calculation, payment_method, payment_status, delivery_latitude, delivery_longitude, tip_value, customer_id)
+      VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING master_order_id, status, is_held, total_amount, order_type, table_number, notes, created_at, payment_method, payment_status, tip_value, customer_id;
     `;
 
     // Declared intent only, not a charge — this is a pay-at-counter flow
@@ -261,6 +265,7 @@ router.post('/', validate(schemas.createOrder), async (req, res) => {
       order_type === 'DELIVERY' ? (delivery_latitude ?? null) : null,
       order_type === 'DELIVERY' ? (delivery_longitude ?? null) : null,
       tipValue,
+      customerId,
     ]);
 
     const createdOrder = orderResult.rows[0];

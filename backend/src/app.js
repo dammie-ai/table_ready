@@ -48,6 +48,8 @@ const orderLimiter = rateLimit({
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/customer/login', authLimiter);
+app.use('/api/customer/register', authLimiter);
 app.use('/api/orders', orderLimiter);
 
 // Routes
@@ -63,6 +65,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const promotionsRoutes = require('./routes/promotionsRoutes');
 const usualOrderRoutes = require('./routes/usualOrderRoutes');
+const customerAuthRoutes = require('./routes/customerAuthRoutes');
 const serviceRequestRoutes = require('./routes/serviceRequestRoutes');
 const tableRoutes = require('./routes/tableRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
@@ -104,6 +107,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/promotions', promotionsRoutes);
 app.use('/api/customer', usualOrderRoutes);
+app.use('/api/customer', customerAuthRoutes);
 app.use('/api/service-requests', serviceRequestRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/analytics', analyticsRoutes);

@@ -13,6 +13,11 @@ router.post('/register', authenticateToken, authorizeRoles('admin', 'manager'), 
 
 router.post('/login', validate(schemas.login), authController.login);
 
-router.delete('/account', authenticateToken, authController.deleteAccount);
+// authorizeRoles derives permission from req.user.role/roles — a customer
+// token (type: 'customer', no role field at all) fails this and gets a
+// clean 403, rather than reaching deleteAccount's raw `WHERE id =
+// req.user.id` against the *staff* users table with a customer_id number
+// that could easily collide with an unrelated staff member's id.
+router.delete('/account', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen', 'delivery', 'waiter', 'other'), authController.deleteAccount);
 
 module.exports = router;
