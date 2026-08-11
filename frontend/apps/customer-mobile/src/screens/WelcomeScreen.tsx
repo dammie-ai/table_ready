@@ -119,7 +119,7 @@ export default function WelcomeScreen({ navigation }: any) {
 const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
   },
   content: {
     alignItems: 'center',
