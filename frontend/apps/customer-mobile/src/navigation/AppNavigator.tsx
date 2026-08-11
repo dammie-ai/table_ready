@@ -42,10 +42,10 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
-export default function Navigation() {
+export default function Navigation({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LocationCheck" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName={isAuthenticated ? 'LocationCheck' : 'Login'} screenOptions={{ headerShown: false }}>
         <Stack.Screen name="LocationCheck" component={LocationCheckScreen} />
         <Stack.Screen name="GroupChoice" component={GroupChoiceScreen} options={{ title: 'Ordering Style' }} />
         <Stack.Screen name="Login" component={LoginScreen} />

@@ -1,18 +1,46 @@
-import { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
-import { spacing, typography, contrastText } from '../theme';
+import Input from '../components/Input';
+import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
+import { customerLogin, customerRegister, useAuthStore } from '@table-ready/shared';
 
-// Customer accounts (sign in / register) are disabled for now — the
-// backend's users table is the staff table (waiter/kitchen/manager/etc),
-// with no real customer-identity model behind it yet. Ordering has always
-// worked fully as a guest, so this just removes a form that couldn't
-// actually authenticate anyone.
+// The app's entry gate — customers must sign in before reaching Welcome.
+// Separate identity system from staff: this hits /customer/login and
+// /customer/register, tied to customer_profiles, never the staff users
+// table those old (removed) forms accidentally touched.
 export default function LoginScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      setError('Please fill in all fields.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      const res = mode === 'login'
+        ? await customerLogin({ email, password })
+        : await customerRegister({ email, password, first_name: firstName || undefined });
+      setAuth(res.token, res.user);
+      navigation.replace('LocationCheck');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -21,19 +49,61 @@ export default function LoginScreen({ navigation }: any) {
           <Text style={styles.logoIcon}>🍽️</Text>
         </View>
         <Text style={styles.logoTitle}>TableReady</Text>
-        <Text style={styles.logoSubtitle}>Accounts are coming soon</Text>
+        <Text style={styles.logoSubtitle}>{mode === 'login' ? 'Welcome back' : 'Create your account'}</Text>
+      </View>
+
+      <View style={styles.toggleRow}>
+        {(['login', 'register'] as const).map((m) => (
+          <TouchableOpacity
+            key={m}
+            onPress={() => { setMode(m); setError(''); }}
+            style={[styles.toggleButton, mode === m && styles.toggleButtonActive]}
+          >
+            <Text style={[styles.toggleText, mode === m && styles.toggleTextActive]}>
+              {m === 'login' ? 'Sign In' : 'Register'}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
-        <Text style={styles.message}>
-          Sign-in and saved accounts aren't available yet — order as a guest for now. Nothing about ordering,
-          tracking, or checkout requires an account.
-        </Text>
+        {mode === 'register' && (
+          <Input
+            label="Name (optional)"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="Your name"
+          />
+        )}
+
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="you@example.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <Input
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="••••••••"
+          secureTextEntry
+        />
+
+        {error && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
         <Button
-          title="Continue as Guest"
-          onPress={() => navigation.replace('Main')}
-          style={styles.guestButton}
+          title={loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}
+          onPress={handleSubmit}
+          disabled={loading}
+          style={styles.submitButton}
         />
 
         <View style={{ height: spacing.lg }} />
@@ -49,7 +119,7 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   hero: {
     alignItems: 'center',
-    paddingVertical: spacing.xxl * 2,
+    paddingVertical: spacing.xxl * 1.5,
     paddingHorizontal: spacing.xxl,
     backgroundColor: colors.primary,
     gap: spacing.sm,
@@ -77,21 +147,58 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     color: contrastText(colors.primary),
     opacity: 0.8,
   },
+  toggleRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.border,
+    borderRadius: borderRadius.lg,
+    padding: 4,
+    marginHorizontal: spacing.xxl,
+    marginTop: spacing.xxl,
+    gap: 4,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  toggleButtonActive: {
+    backgroundColor: colors.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  toggleTextActive: {
+    color: colors.accent,
+  },
   form: {
     flex: 1,
     backgroundColor: colors.background,
   },
   formContent: {
     padding: spacing.xxl,
-    gap: spacing.lg,
-    paddingTop: spacing.xxl * 1.5,
+    gap: spacing.md,
   },
-  message: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  errorBox: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
   },
-  guestButton: {
-    width: '100%',
+  errorText: {
+    color: colors.error,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  submitButton: {
+    marginTop: spacing.md,
   },
 });

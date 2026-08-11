@@ -13,6 +13,7 @@ type Props = {
   numberOfLines?: number;
   error?: string;
   rightAction?: { label: string; onPress: () => void };
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 };
 
 export default function Input({
@@ -26,6 +27,7 @@ export default function Input({
   numberOfLines = 1,
   error,
   rightAction,
+  autoCapitalize,
 }: Props) {
   const colors = useThemeStore((s) => s.colors);
 
@@ -49,6 +51,7 @@ export default function Input({
           keyboardType={keyboardType}
           multiline={multiline}
           numberOfLines={numberOfLines}
+          autoCapitalize={autoCapitalize}
         />
         {rightAction && (
           <TouchableOpacity onPress={rightAction.onPress} style={styles.rightAction}>
