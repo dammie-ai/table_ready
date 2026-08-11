@@ -1,15 +1,22 @@
 import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Modal, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing, borderRadius, typography } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import * as Location from 'expo-location';
-import { checkLocation } from '@table-ready/shared';
+import { checkLocation, useAuthStore } from '@table-ready/shared';
 
 export default function LocationCheckScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const token = useAuthStore((s) => s.token);
+  // Location is checked before sign-in, for every visitor — an already-
+  // signed-in returning customer skips Login and goes straight to
+  // GroupChoice; anyone else lands on Login next.
+  const nextRoute = token ? 'GroupChoice' : 'Login';
   // 'intro' explains *why* we're about to ask before the OS permission
   // dialog fires — jumping straight to the system prompt with zero context
   // (the previous behavior) is exactly what tanks grant rates and gives no
@@ -43,7 +50,7 @@ export default function LocationCheckScreen({ navigation }: any) {
       if (res.allowed) {
         setWithinGeofence(true);
         setPhase('success');
-        setTimeout(() => navigation.replace('GroupChoice'), 1500);
+        setTimeout(() => navigation.replace(nextRoute), 1500);
       } else {
         setWithinGeofence(false);
         setPhase('error');
@@ -61,12 +68,19 @@ export default function LocationCheckScreen({ navigation }: any) {
   };
 
   const handleManualContinue = () => {
-    navigation.replace('GroupChoice');
+    navigation.replace(nextRoute);
   };
 
   if (phase === 'intro') {
     return (
       <View style={styles.container}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Settings')}
+          style={[styles.settingsButton, { top: insets.top + spacing.lg }]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={styles.settingsIcon}>⚙️</Text>
+        </TouchableOpacity>
         <View style={styles.logoContainer}>
           <View style={styles.logoBox}>
             <Text style={styles.logoIcon}>🍽️</Text>
@@ -160,6 +174,21 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     padding: spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: spacing.lg,
+    left: spacing.lg,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: {
+    fontSize: 18,
   },
   center: {
     flex: 1,

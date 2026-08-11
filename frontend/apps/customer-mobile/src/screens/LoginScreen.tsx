@@ -34,7 +34,8 @@ export default function LoginScreen({ navigation }: any) {
         ? await customerLogin({ email, password })
         : await customerRegister({ email, password, first_name: firstName || undefined });
       setAuth(res.token, res.user);
-      navigation.replace('LocationCheck');
+      // Location is checked before Login now, not after — see LocationCheckScreen.
+      navigation.replace('GroupChoice');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {

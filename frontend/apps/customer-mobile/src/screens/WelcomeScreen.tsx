@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { checkLocation } from '@table-ready/shared';
 import Button from '../components/Button';
@@ -10,12 +10,6 @@ import { useThemeStore } from '../stores/themeStore';
 export default function WelcomeScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
-  // SafeAreaView's edges prop only insets its normal-flow children —
-  // absolutely-positioned ones (like the floating settings button below)
-  // aren't affected by it and need the inset applied by hand, or they can
-  // sit right under the status bar on devices with a shorter/taller one
-  // than the fixed offset assumed.
-  const insets = useSafeAreaInsets();
   const [surgeActive] = useState(false);
   const [isOpen] = useState(true);
   const [checkingDelivery, setCheckingDelivery] = useState(false);
@@ -58,13 +52,6 @@ export default function WelcomeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Settings')}
-        style={[styles.settingsButton, { top: insets.top + spacing.lg }]}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Text style={styles.settingsIcon}>⚙️</Text>
-      </TouchableOpacity>
       <ScrollView contentContainerStyle={styles.content}>
       {!isOpen && (
         <View style={styles.closedBanner}>
@@ -138,21 +125,6 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     alignItems: 'center',
     padding: spacing.xxl,
     gap: spacing.lg,
-  },
-  settingsButton: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsIcon: {
-    fontSize: 18,
   },
   closedBanner: {
     backgroundColor: '#dc2626',

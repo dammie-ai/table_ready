@@ -43,14 +43,18 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
-export default function Navigation({ isAuthenticated }: { isAuthenticated: boolean }) {
+export default function Navigation() {
   // Kept mounted app-wide (not per-screen) so a teammate's item lands here
   // even while this device is browsing the menu, not the table-cart screen.
   useGroupCartSync()
 
+  // Location is checked before sign-in now, for every visitor — whether
+  // they're already authenticated or not — so it's always the first
+  // screen. LocationCheckScreen itself decides whether to route an
+  // already-authenticated user past Login straight to GroupChoice.
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={isAuthenticated ? 'LocationCheck' : 'Login'} screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName="LocationCheck" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="LocationCheck" component={LocationCheckScreen} />
         <Stack.Screen name="GroupChoice" component={GroupChoiceScreen} options={{ title: 'Ordering Style' }} />
         <Stack.Screen name="Login" component={LoginScreen} />
