@@ -204,8 +204,8 @@ export async function getWaitlist() {
   return request<{ success: boolean; entries: any[] }>('/waitlist')
 }
 
-export async function cancelWaitlistEntry(entryId: number) {
-  return request<{ success: boolean }>(`/waitlist/${entryId}/cancel`, { method: 'PATCH', body: '{}' })
+export async function cancelWaitlistEntry(entryId: number, pinCode?: string) {
+  return request<{ success: boolean }>(`/waitlist/${entryId}/cancel`, { method: 'PATCH', body: JSON.stringify({ pin_code: pinCode }) })
 }
 
 export async function getWaitlistQueue(tableId: number) {
