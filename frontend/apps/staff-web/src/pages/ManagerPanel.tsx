@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { apiClient } from '../lib/api'
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import OrderActionsModal from '../components/OrderActionsModal'
 
 interface CategoryData {
   category_type: string
@@ -49,6 +50,8 @@ export default function ManagerPanel() {
   const [restockAmounts, setRestockAmounts] = useState<Record<number, string>>({})
   const [restockingId, setRestockingId] = useState<number | null>(null)
   const [restockError, setRestockError] = useState('')
+  const [orderLookup, setOrderLookup] = useState('')
+  const [managingOrderId, setManagingOrderId] = useState<number | null>(null)
 
   const loadInventory = async () => {
     const res = await apiClient.get<any>('/inventory')
@@ -299,6 +302,34 @@ export default function ManagerPanel() {
               })}
             </div>
           )}
+
+          <div className="bg-[#111118] border border-white/8 rounded-2xl p-5 mt-4 max-w-sm">
+            <h3 className="text-sm font-semibold mb-1 text-[#6b7280] uppercase tracking-widest font-mono">Order Actions</h3>
+            <p className="text-xs text-[#6b7280] mb-3">Void an item, record a cash payment, or distribute tips on a specific order.</p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const id = parseInt(orderLookup)
+                if (id) setManagingOrderId(id)
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="number"
+                value={orderLookup}
+                onChange={(e) => setOrderLookup(e.target.value)}
+                placeholder="Order #"
+                className="flex-1 bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!orderLookup}
+                className="bg-[#f97316] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#f97316]/85 disabled:opacity-40"
+              >
+                Open
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
@@ -376,6 +407,14 @@ export default function ManagerPanel() {
             Open Settings →
           </Link>
         </div>
+      )}
+
+      {managingOrderId && (
+        <OrderActionsModal
+          orderId={managingOrderId}
+          onClose={() => setManagingOrderId(null)}
+          onUpdated={() => setOrderLookup('')}
+        />
       )}
     </div>
   )
