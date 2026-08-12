@@ -10,7 +10,23 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8001'];
 
 app.use(helmet({
-  contentSecurityPolicy: false,
+  // This is mostly a JSON API, but it does serve a couple of real HTML
+  // pages (api-tester.html below, error pages) that had zero CSP
+  // protection. 'unsafe-inline' stays on script/style since api-tester.html
+  // uses an inline <script> — tightening that further means externalizing
+  // it first, not blocking it silently.
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 
@@ -90,9 +106,13 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'TableReady backend is operational' });
 });
 
-app.get('/api-tester', (req, res) => {
-  res.sendFile(require('path').join(__dirname, 'api-tester.html'));
-});
+// Maps the entire API surface for free to anyone who finds it — dev/staging
+// convenience only, never served in production.
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api-tester', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'api-tester.html'));
+  });
+}
 
 // API Route Mounts
 app.use('/api/auth', authRoutes);
