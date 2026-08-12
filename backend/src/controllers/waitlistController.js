@@ -221,8 +221,27 @@ exports.seatNextInLine = async (req, res) => {
 
 exports.cancelWaitlistEntry = async (req, res) => {
   const { entry_id } = req.params;
+  const { pin_code } = req.body;
+
+  // A guest has no account to authenticate cancelling their own spot with
+  // (same reasoning as joining), but entry_id is a small sequential
+  // integer — trivially guessable/enumerable. The pin_code already
+  // generated at join time (and shown to the guest) doubles as the
+  // ownership proof here, same role a table's check-in PIN plays
+  // elsewhere. Staff bypass this via their own role.
+  const userRoles = req.user
+    ? (Array.isArray(req.user.roles) ? req.user.roles : (req.user.role ? [req.user.role] : []))
+    : [];
+  const isStaff = userRoles.some((r) => ['admin', 'manager', 'waiter'].includes(r));
 
   try {
+    if (!isStaff) {
+      const ownerCheck = await pool.query(`SELECT pin_code FROM waitlist_entries WHERE entry_id = $1`, [entry_id]);
+      if (ownerCheck.rows.length === 0 || !pin_code || ownerCheck.rows[0].pin_code !== pin_code) {
+        return res.status(403).json({ success: false, error: 'You do not have permission to cancel this waitlist entry.' });
+      }
+    }
+
     const result = await pool.query(
       `UPDATE waitlist_entries
        SET status = 'cancelled', updated_at = NOW()
