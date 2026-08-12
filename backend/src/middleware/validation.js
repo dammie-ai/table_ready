@@ -99,6 +99,33 @@ const schemas = {
     progress_percentage: z.number().int().min(0).max(100).optional()
   }),
 
+  createComboMeal: z.object({
+    name: z.string().min(1, 'Combo name is required'),
+    description: z.string().optional(),
+    base_price: z.number().positive('Price must be greater than 0'),
+    image_url: z.string().url().optional(),
+    required_main_category: z.enum(['Entree', 'Entrée', 'Meat', 'Fish', 'Dessert', 'Combo']),
+    max_sides: z.number().int().positive('Max sides must be at least 1'),
+    sides_category: z.enum(['Entree', 'Entrée', 'Meat', 'Fish', 'Dessert', 'Combo'])
+  }),
+
+  updateComboMeal: z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+    base_price: z.number().positive().optional(),
+    image_url: z.string().url().optional(),
+    required_main_category: z.enum(['Entree', 'Entrée', 'Meat', 'Fish', 'Dessert', 'Combo']).optional(),
+    max_sides: z.number().int().positive().optional(),
+    sides_category: z.enum(['Entree', 'Entrée', 'Meat', 'Fish', 'Dessert', 'Combo']).optional(),
+    is_active: z.boolean().optional()
+  }),
+
+  addComboSide: z.object({
+    menu_item_id: z.number().int().positive('menu_item_id is required'),
+    is_default: z.boolean().optional(),
+    sort_order: z.number().int().nonnegative().optional()
+  }),
+
   createMenuItem: z.object({
     name: z.string().min(1, 'Item name is required'),
     category_type: z.enum(['Entree', 'Entrée', 'Meat', 'Fish', 'Dessert', 'Combo']),
