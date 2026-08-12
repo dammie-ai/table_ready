@@ -11,9 +11,9 @@ router.post('/:id/ingredients', authenticateToken, authorizeRoles('admin', 'mana
 router.get('/:id/ingredients', authenticateToken, menuController.getMenuItemIngredients);
 router.delete('/:id/ingredients/:inventoryId', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), menuController.removeIngredientFromMenuItem);
 
-router.post('/', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.createMenuItem), menuController.createMenuItem);
-router.put('/:id', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.updateMenuItem), menuController.updateMenuItem);
-router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager'), menuController.toggleMenuItem);
+router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), validate(schemas.createMenuItem), menuController.createMenuItem);
+router.put('/:id', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), validate(schemas.updateMenuItem), menuController.updateMenuItem);
+router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), menuController.toggleMenuItem);
 router.patch('/:id/toggle-stock', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), menuController.toggleStock);
 
 module.exports = router;

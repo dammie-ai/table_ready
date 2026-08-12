@@ -185,7 +185,7 @@ exports.addAllergensToMenuItem = async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE menu_items
-       SET allergens = $1, updated_at = NOW()
+       SET allergens = $1
        WHERE item_id = $2
        RETURNING item_id, name, allergens`,
       [allergens, item_id]

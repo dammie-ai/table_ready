@@ -9,7 +9,7 @@ const pool = db.pool || db;
 const getMenuItems = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT item_id, name, category_type, description, base_price, image_url, is_trending, prep_time_minutes, stock_quantity, out_of_stock_flag, is_active
+      `SELECT item_id, name, category_type, description, base_price, image_url, is_trending, prep_time_minutes, stock_quantity, out_of_stock_flag, is_active, allergens
        FROM menu_items
        WHERE is_active = true
        ORDER BY category_type, name ASC`
