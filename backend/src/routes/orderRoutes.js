@@ -192,17 +192,20 @@ router.post('/', authenticateOptional, validate(schemas.createOrder), async (req
           }
         }
 
-        // Price is always resolved server-side (never trust a client-supplied price).
-        // menu_items.base_price is the source of truth when the item is a real menu
-        // item; pure direct-inventory items (no menu_items row) fall back to
-        // whatever price the caller sent, defaulting to 0.
+        // Price is always resolved server-side (never trust a client-supplied
+        // price) — menu_items.base_price is the source of truth. A pure
+        // direct-inventory item (no menu_items row) has no server-known price
+        // at all, so it prices at 0 rather than trusting whatever the caller
+        // sent; this path is dead today (every real order item has a matching
+        // menu_items row) but stays closed if direct-inventory-only SKUs are
+        // ever introduced.
         const priceRes = await client.query(
           `SELECT base_price FROM menu_items WHERE item_id = $1`,
           [menuItemId]
         );
         const basePrice = priceRes.rows.length > 0
           ? parseFloat(priceRes.rows[0].base_price)
-          : (item.price || 0);
+          : 0;
         const dynamicUnitPrice = calculateAdjustedPrice(basePrice, multiplier);
 
         let modifierTotal = 0;
