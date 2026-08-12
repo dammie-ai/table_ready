@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
-import { getSocket } from '../lib/socket'
+import { getSocket, onConnectionChange } from '../lib/socket'
 
 interface Table {
   table_id: number
@@ -44,6 +44,7 @@ export default function WaiterDashboard() {
   const [myTables, setMyTables] = useState<MyTable[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'floor' | 'alerts' | 'my-tables'>('my-tables')
+  const [connected, setConnected] = useState(true)
 
   useEffect(() => {
     const loadData = async () => {
@@ -66,6 +67,11 @@ export default function WaiterDashboard() {
     }
 
     loadData()
+
+    const offConnection = onConnectionChange((isConnected) => {
+      setConnected(isConnected)
+      if (isConnected) loadData()
+    })
 
     const socket = getSocket()
     socket.on('service_request_created', (req: ServiceRequest) => {
@@ -97,6 +103,7 @@ export default function WaiterDashboard() {
       socket.off('service_request_updated')
       socket.off('table_status_updated')
       socket.off('kitchen_order_updated')
+      offConnection()
     }
   }, [])
 
@@ -169,6 +176,11 @@ export default function WaiterDashboard() {
 
   return (
     <div className="min-h-screen bg-[#09090f] text-[#f1f5f9]">
+      {!connected && (
+        <div className="bg-red-600 text-white text-center py-2 text-sm font-semibold">
+          ⚠ Connection lost — reconnecting... this screen may be stale until it clears.
+        </div>
+      )}
       <div className="sticky top-0 z-40 flex items-center justify-between px-4 md:px-6 h-14 bg-[#09090f]/95 backdrop-blur border-b border-white/8">
         <div className="flex items-center gap-3">
           <span className="font-display font-bold text-sm tracking-widest uppercase text-[#f97316]">TableReady</span>
