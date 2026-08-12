@@ -11,6 +11,7 @@ export default function ItemDetailScreen({ route, navigation }: any) {
   const { item } = route.params || {}
   const [detail, setDetail] = useState<MenuItemDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [detailError, setDetailError] = useState('')
   const [added, setAdded] = useState(false)
   const addItem = useCartStore((s) => s.addItem)
 
@@ -24,8 +25,9 @@ export default function ItemDetailScreen({ route, navigation }: any) {
     try {
       const res = await getMenuItemDetail(item.item_id)
       setDetail(res)
+      setDetailError('')
     } catch (err) {
-      console.error('Failed to load item detail:', err)
+      setDetailError('Ingredients, allergens, and customizations could not be loaded.')
     } finally {
       setLoading(false)
     }
@@ -68,6 +70,8 @@ export default function ItemDetailScreen({ route, navigation }: any) {
         </View>
 
         {item?.is_trending && <Text style={styles.trending}>Trending</Text>}
+
+        {detailError && <Text style={styles.description}>{detailError}</Text>}
 
         {detail?.ingredients && detail.ingredients.length > 0 && (
           <View style={styles.section}>

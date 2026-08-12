@@ -23,6 +23,13 @@ interface CartState {
   // update/remove against) — only plain, non-combo items sync.
   groupRoom: string | null
   remoteItems: RemoteCartItem[]
+  // Set by WelcomeScreen's Pickup/Delivery/Order-From-Home buttons so
+  // CheckoutScreen (reached several navigate() hops later, with nothing
+  // forwarding route params through Menu/Cart in between) can default to
+  // what the customer already chose instead of always starting at Pickup.
+  // Not persisted -- a fresh app launch shouldn't resurrect a stale intent.
+  orderType: string | null
+  setOrderType: (type: string) => void
   addItem: (item: Omit<CartItem, 'quantity' | 'cartId'>) => void
   removeItem: (cartId: string) => void
   updateQuantity: (cartId: string, quantity: number) => void
@@ -41,6 +48,8 @@ export const useCartStore = create<CartState>()(
       items: [],
       groupRoom: null,
       remoteItems: [],
+      orderType: null,
+      setOrderType: (type) => set({ orderType: type }),
 
       addItem: (item) => set((state) => {
         // Combos and customized (modifier-bearing) items are never merged

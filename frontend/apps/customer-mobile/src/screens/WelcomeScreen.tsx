@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import { checkLocation } from '@table-ready/shared';
+import { checkLocation, useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
 import BackButton from '../components/BackButton';
 import { spacing, borderRadius, typography, contrastText } from '../theme';
@@ -14,8 +14,10 @@ export default function WelcomeScreen({ navigation }: any) {
   const [surgeActive] = useState(false);
   const [isOpen] = useState(true);
   const [checkingDelivery, setCheckingDelivery] = useState(false);
+  const setOrderType = useCartStore((s) => s.setOrderType);
 
   const handleOrder = (orderType: string) => {
+    setOrderType(orderType);
     navigation.navigate('Menu', { mode: orderType });
   };
 

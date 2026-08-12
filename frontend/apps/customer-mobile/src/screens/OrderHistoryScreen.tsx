@@ -11,6 +11,7 @@ export default function OrderHistoryScreen({ navigation }: any) {
   const styles = useMemo(() => createStyles(colors), [colors])
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const user = useAuthStore((s) => s.user)
 
   useEffect(() => {
@@ -28,8 +29,9 @@ export default function OrderHistoryScreen({ navigation }: any) {
     try {
       const res = await getOrderHistory(user.id)
       setOrders(res.orders)
+      setError('')
     } catch (err) {
-      console.error('Failed to load order history:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load order history')
     } finally {
       setLoading(false)
     }
@@ -41,7 +43,11 @@ export default function OrderHistoryScreen({ navigation }: any) {
   }
 
   const renderOrder = ({ item }: { item: Order }) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('OrderTracking', { id: item.master_order_id.toString() })}>
+    // No access_token here -- it's a stateless HMAC only ever returned once,
+    // at order-creation time (CheckoutScreen). Cancelling from history relies
+    // on the logged-in customer's own JWT matching the order's customer_id
+    // instead (see PATCH /orders/:id/cancel).
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('OrderTracking', { id: item.master_order_id.toString(), orderType: item.order_type })}>
       <View style={styles.row}>
         <Text style={styles.orderId}>Order #{item.master_order_id}</Text>
         <Text style={styles.status}>{item.status.replace(/_/g, ' ')}</Text>
@@ -65,7 +71,14 @@ export default function OrderHistoryScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <BackButton navigation={navigation} />
-      {orders.length === 0 ? (
+      {error ? (
+        <View style={styles.center}>
+          <Text style={styles.empty}>{error}</Text>
+          <TouchableOpacity onPress={loadHistory}>
+            <Text style={styles.link}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : orders.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.empty}>No orders yet</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Welcome')}>

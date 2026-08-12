@@ -253,7 +253,7 @@ export async function customerLogin(payload: { email: string; password: string }
 }
 
 export async function deleteAccount() {
-  return request<{ success: boolean }>('/auth/account', { method: 'DELETE' })
+  return request<{ success: boolean }>('/customer/account', { method: 'DELETE' })
 }
 
 export async function joinSessionByCode(payload: { code: string }) {
