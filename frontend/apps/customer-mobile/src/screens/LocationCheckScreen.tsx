@@ -157,10 +157,6 @@ export default function LocationCheckScreen({ navigation }: any) {
           <Button title="Continue" onPress={handleManualContinue} variant="primary" style={styles.button} />
         </View>
       )}
-
-      <TouchableOpacity onPress={() => setPhase('error')} style={styles.simulateButton}>
-        <Text style={styles.simulateText}>Simulate error</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -261,12 +257,5 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     maxWidth: 320,
     marginTop: spacing.lg,
     gap: spacing.md,
-  },
-  simulateButton: {
-    marginTop: spacing.lg,
-  },
-  simulateText: {
-    fontSize: 12,
-    color: '#d1d5db',
   },
 });

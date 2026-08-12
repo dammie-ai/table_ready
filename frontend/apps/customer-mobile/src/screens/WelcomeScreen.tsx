@@ -87,13 +87,11 @@ export default function WelcomeScreen({ navigation }: any) {
       </View>
 
       <View style={styles.actions}>
-        <Button
-          title="⭐ Reorder Your Usual"
-          onPress={() => navigation.navigate('Cart')}
-          variant="tertiary"
-          style={styles.usualButton}
-        />
-
+        {/* "Reorder Your Usual" removed — the real /customer/usual/reorder
+            endpoint expects a guest session_token nothing in this app ever
+            produces (customers now always carry a JWT instead), so this
+            button just opened an empty cart. Needs a JWT-based backend
+            path before it can come back. */}
         <Button title="🍽️ Combo Deals" onPress={() => navigation.navigate('Combos')} variant="primary" style={styles.button} />
         <Button title="🪑 Dine In" onPress={() => navigation.navigate('TablePin')} variant="secondary" style={styles.button} />
         <Button title="📦 Pickup" onPress={() => handleOrder('pickup')} variant="secondary" style={styles.button} />
@@ -202,10 +200,6 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     width: '100%',
     maxWidth: 320,
     gap: spacing.md,
-  },
-  usualButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   button: {
     width: '100%',
