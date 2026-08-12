@@ -56,6 +56,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   const managerNavItems = [
     { path: '/staff', label: t('nav.dashboard'), icon: LayoutDashboard },
     { path: '/menu-management', label: t('nav.menu'), icon: UtensilsCrossed },
+    { path: '/combo-management', label: t('nav.combos'), icon: UtensilsCrossed },
     { path: '/reservations', label: t('nav.reservations'), icon: Calendar },
     { path: '/waitlist', label: t('nav.waitlist'), icon: ClipboardList },
     { path: '/delivery', label: t('nav.deliveryQueue'), icon: ClipboardList },

@@ -90,3 +90,42 @@ export async function getComboMealDetail(id: number): Promise<ComboDetailRespons
   const data = await res.json()
   return data
 }
+
+// Includes deactivated combos, unlike getComboMeals() — a manager needs to
+// see (and be able to reactivate) ones they've turned off.
+export async function getAllComboMeals(): Promise<{ success: boolean; combos: ComboMeal[] }> {
+  return apiClient.get(`/combo-meals?all=true`)
+}
+
+export interface ComboMealInput {
+  name: string
+  description?: string
+  base_price: number
+  image_url?: string
+  required_main_category: string
+  max_sides: number
+  sides_category: string
+}
+
+export async function createComboMeal(input: ComboMealInput) {
+  return apiClient.post<{ success: boolean; combo: ComboMeal }>('/combo-meals', input)
+}
+
+export async function updateComboMeal(id: number, input: Partial<ComboMealInput> & { is_active?: boolean }) {
+  return apiClient.put<{ success: boolean; combo: ComboMeal }>(`/combo-meals/${id}`, input)
+}
+
+export async function deleteComboMeal(id: number) {
+  return apiClient.delete<{ success: boolean; message: string }>(`/combo-meals/${id}`)
+}
+
+export async function addComboSide(comboId: number, menuItemId: number, isDefault = false) {
+  return apiClient.post<{ success: boolean; side: ComboMealSide }>(`/combo-meals/${comboId}/sides`, {
+    menu_item_id: menuItemId,
+    is_default: isDefault,
+  })
+}
+
+export async function removeComboSide(comboId: number, sideId: number) {
+  return apiClient.delete<{ success: boolean; message: string }>(`/combo-meals/${comboId}/sides/${sideId}`)
+}
