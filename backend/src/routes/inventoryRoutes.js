@@ -9,7 +9,7 @@ const { validate, schemas } = require('../middleware/validation');
 
 const pool = db.pool || db;
 
-router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), validate(schemas.inventoryDeduction), async (req, res) => {
+router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen'), validate(schemas.inventoryDeduction), async (req, res) => {
   const { items } = req.body;
 
   // Validate incoming payload
@@ -127,7 +127,7 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'
  * GET /api/inventory
  * Fetch full inventory list with active dynamic pricing applied
  */
-router.get('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+router.get('/', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen'), async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM inventory ORDER BY id ASC');
     
@@ -162,7 +162,7 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen')
  * PATCH /api/inventory/:id/toggle
  * Manually toggle an item's availability (Active / Disabled) by staff/admin
  */
-router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.toggleInventory), async (req, res) => {
+router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), validate(schemas.toggleInventory), async (req, res) => {
   const { id } = req.params;
   const { is_active } = req.body;
 
@@ -224,25 +224,25 @@ router.patch('/:id/toggle', authenticateToken, authorizeRoles('admin', 'manager'
  * GET /api/inventory/alerts
  * Fetch all active low-stock alerts
  */
-router.get('/alerts', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), inventoryAlertController.getActiveAlerts);
+router.get('/alerts', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen'), inventoryAlertController.getActiveAlerts);
 
 /**
  * GET /api/inventory/alerts/history
  * Fetch all alerts including acknowledged and resolved
  */
-router.get('/alerts/history', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), inventoryAlertController.getAlertHistory);
+router.get('/alerts/history', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen'), inventoryAlertController.getAlertHistory);
 
 /**
  * POST /api/inventory/alerts/:id/acknowledge
  * Mark an alert as acknowledged
  */
-router.post('/alerts/:id/acknowledge', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), inventoryAlertController.acknowledgeAlert);
+router.post('/alerts/:id/acknowledge', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen'), inventoryAlertController.acknowledgeAlert);
 
 /**
  * POST /api/inventory/alerts/:id/resolve
  * Mark an alert as resolved
  */
-router.post('/alerts/:id/resolve', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), inventoryAlertController.resolveAlert);
+router.post('/alerts/:id/resolve', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen'), inventoryAlertController.resolveAlert);
 
 /**
  * POST /api/inventory/log-waste
@@ -255,7 +255,7 @@ router.post('/alerts/:id/resolve', authenticateToken, authorizeRoles('admin', 'm
  * it (order fulfillment and waste respectively), so there was previously
  * no way to restock an item at all short of editing the database directly.
  */
-router.post('/:id/restock', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), async (req, res) => {
+router.post('/:id/restock', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen'), async (req, res) => {
   const { id } = req.params;
   const { quantity } = req.body;
 
@@ -317,7 +317,7 @@ router.post('/:id/restock', authenticateToken, authorizeRoles('admin', 'manager'
   }
 });
 
-router.post('/log-waste', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen'), validate(schemas.logWaste), async (req, res) => {
+router.post('/log-waste', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen'), validate(schemas.logWaste), async (req, res) => {
   const { inventory_id, quantity, reason } = req.body;
 
   if (!inventory_id || !quantity || quantity <= 0) {
