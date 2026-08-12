@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getNotificationPreferences, updateNotificationPreferences, deleteAccount, deleteStorageItem } from '@table-ready/shared'
+import { getNotificationPreferences, updateNotificationPreferences, deleteAccount } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
 import BackButton from '../components/BackButton'
@@ -53,12 +53,11 @@ export default function SettingsScreen({ navigation }: any) {
     }
   }
 
-  const handleLogout = async () => {
-    try {
-      await deleteStorageItem('tableready_token')
-    } catch {
-      // ignore
-    }
+  const handleLogout = () => {
+    // logout() alone is sufficient — it's a zustand persist store, so
+    // clearing state here also re-syncs the real 'tableready_auth' storage
+    // key. There never was a separate bare 'tableready_token' key to clean
+    // up (nothing in this app ever wrote one).
     logout()
     navigation.replace('Login')
   }
@@ -72,7 +71,6 @@ export default function SettingsScreen({ navigation }: any) {
         onPress: async () => {
           try {
             await deleteAccount()
-            await deleteStorageItem('tableready_token')
             logout()
             navigation.replace('Login')
           } catch (err) {
