@@ -8,5 +8,6 @@ router.get('/dish-of-week', dishOfWeekController.getDishOfWeek);
 router.post('/dish-of-week/calculate', authenticateToken, authorizeRoles('admin', 'manager'), dishOfWeekController.calculateDishOfWeek);
 router.post('/dish-of-week/override', authenticateToken, authorizeRoles('admin'), validate(schemas.overrideDishOfWeek), dishOfWeekController.overrideDishOfWeek);
 router.get('/dish-of-week/active-discounts', dishOfWeekController.getActiveDiscounts);
+router.patch('/:id', authenticateToken, authorizeRoles('admin', 'manager'), dishOfWeekController.togglePromotion);
 
 module.exports = router;

@@ -315,9 +315,10 @@ const schemas = {
   }),
 
   overrideDishOfWeek: z.object({
-    category_type: z.string().min(1, 'Category type is required'),
+    // category_type was required here but the controller never actually
+    // used it for anything — dropped rather than kept as pointless friction.
     menu_item_id: z.number().int().positive('Menu item ID must be a positive integer'),
-    discount_percentage: z.number().min(0).max(100, 'Discount cannot exceed 100%')
+    discount_percentage: z.number().min(0).max(100, 'Discount cannot exceed 100%').optional()
   }),
 
   analyticsQuery: z.object({

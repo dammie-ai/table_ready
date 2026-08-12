@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
+import { getMenuItems, type MenuItem } from '../lib/menuApi'
 
 interface Promotion {
   promotion_id: number
@@ -16,11 +17,17 @@ interface Promotion {
 export default function Promotions() {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [dishOfWeek, setDishOfWeek] = useState<Promotion | null>(null)
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [selectedItemId, setSelectedItemId] = useState('')
+  const [discountPct, setDiscountPct] = useState('0')
+  const [saving, setSaving] = useState(false)
   const { theme } = useTheme()
 
   useEffect(() => {
     loadPromotions()
+    getMenuItems().then((res) => setMenuItems(res.items || [])).catch((err) => console.error('Failed to load menu items:', err))
   }, [])
 
   const loadPromotions = async () => {
@@ -32,18 +39,38 @@ export default function Promotions() {
       setPromotions(promosRes.discounts || [])
       setDishOfWeek(dishRes.dish || null)
     } catch (err) {
-      console.error('Failed to load promotions:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load promotions')
     } finally {
       setLoading(false)
     }
   }
 
   const togglePromotion = async (promotionId: number, active: boolean) => {
+    setError('')
     try {
       await apiClient.patch(`/promotions/${promotionId}`, { active: !active })
       loadPromotions()
     } catch (err) {
-      console.error('Failed to toggle promotion:', err)
+      setError(err instanceof Error ? err.message : 'Failed to toggle promotion')
+    }
+  }
+
+  const handleSetDishOfWeek = async () => {
+    if (!selectedItemId) return
+    setSaving(true)
+    setError('')
+    try {
+      await apiClient.post('/promotions/dish-of-week/override', {
+        menu_item_id: parseInt(selectedItemId),
+        discount_percentage: parseFloat(discountPct) || 0,
+      })
+      setSelectedItemId('')
+      setDiscountPct('0')
+      loadPromotions()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set dish of the week')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -59,6 +86,43 @@ export default function Promotions() {
     <div className="min-h-screen bg-[#09090f] text-[#f1f5f9] p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6" style={{ color: theme?.text_color }}>Promotions</h1>
+
+        {error && <p className="text-red-400 mb-4 text-sm">{error}</p>}
+
+        <div className="bg-[#111118] border border-white/8 rounded-2xl p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Set Dish of the Week</h2>
+          <div className="flex gap-3 flex-wrap items-end">
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Menu Item</label>
+              <select
+                value={selectedItemId}
+                onChange={(e) => setSelectedItemId(e.target.value)}
+                className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+              >
+                <option value="">Select an item…</option>
+                {menuItems.map((m) => <option key={m.item_id} value={m.item_id}>{m.name}</option>)}
+              </select>
+            </div>
+            <div className="w-32">
+              <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Discount %</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={discountPct}
+                onChange={(e) => setDiscountPct(e.target.value)}
+                className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
+              />
+            </div>
+            <button
+              onClick={handleSetDishOfWeek}
+              disabled={!selectedItemId || saving}
+              className="bg-[#f97316] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#f97316]/85 disabled:opacity-40"
+            >
+              {saving ? 'Saving…' : 'Set'}
+            </button>
+          </div>
+        </div>
 
         {dishOfWeek && (
           <div className="bg-[#111118] border border-[#f97316]/30 rounded-2xl p-6 mb-6">
