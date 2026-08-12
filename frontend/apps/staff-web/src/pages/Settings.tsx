@@ -64,9 +64,72 @@ export default function Settings() {
   const { theme } = useTheme()
   const { t, i18n } = useTranslation()
 
+  // Surge pricing lives on its own set of admin endpoints (toggle + tiers),
+  // not the generic /config bulk-save this page otherwise uses — the
+  // backend has fully supported this since before this page existed, but
+  // no UI anywhere ever called it.
+  const [surgeEnabled, setSurgeEnabled] = useState(false)
+  const [surgeTiers, setSurgeTiers] = useState<{ min_orders: number; max_orders: number | null; multiplier: number }[]>([])
+  const [surgeLoading, setSurgeLoading] = useState(true)
+  const [surgeSaving, setSurgeSaving] = useState(false)
+  const [surgeMessage, setSurgeMessage] = useState('')
+
   useEffect(() => {
     loadConfig()
+    loadSurgeConfig()
   }, [])
+
+  const loadSurgeConfig = async () => {
+    try {
+      const res = await apiClient.get<{ success: boolean; dynamicPricingEnabled: boolean; tiers: any[] }>('/admin/surge-pricing/config')
+      setSurgeEnabled(res.dynamicPricingEnabled)
+      setSurgeTiers(res.tiers || [])
+    } catch (err) {
+      console.error('Failed to load surge pricing config:', err)
+    } finally {
+      setSurgeLoading(false)
+    }
+  }
+
+  const toggleSurge = async (enabled: boolean) => {
+    setSurgeEnabled(enabled)
+    try {
+      await apiClient.patch('/admin/surge-pricing/toggle', { enabled })
+    } catch (err) {
+      setSurgeMessage(err instanceof Error ? err.message : 'Failed to toggle surge pricing.')
+      setSurgeEnabled(!enabled)
+    }
+  }
+
+  const saveSurgeTiers = async () => {
+    setSurgeSaving(true)
+    setSurgeMessage('')
+    try {
+      await apiClient.put('/admin/surge-pricing/tiers', { tiers: surgeTiers })
+      setSurgeMessage('Surge tiers saved.')
+    } catch (err) {
+      setSurgeMessage(err instanceof Error ? err.message : 'Failed to save surge tiers.')
+    } finally {
+      setSurgeSaving(false)
+    }
+  }
+
+  const updateSurgeTier = (index: number, field: 'min_orders' | 'max_orders' | 'multiplier', value: number | null) => {
+    setSurgeTiers((prev) => prev.map((t, i) => i === index ? { ...t, [field]: value } : t))
+  }
+
+  const addSurgeTier = () => {
+    setSurgeTiers((prev) => [...prev, { min_orders: 0, max_orders: null, multiplier: 1.0 }])
+  }
+
+  const removeSurgeTier = (index: number) => {
+    setSurgeTiers((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+  const updateBusinessHours = (day: string, field: 'open' | 'close', value: string) => {
+    updateConfig('business_hours', { ...config.business_hours, [day]: { ...config.business_hours?.[day], [field]: value } })
+  }
 
   const loadConfig = async () => {
     try {
@@ -398,6 +461,86 @@ export default function Settings() {
               rows={3}
               placeholder="RECEIVED, IN_PREPARATION, COOKING, READY, READY_FOR_PICKUP, PICKED_UP"
             />
+          </div>
+
+          <div className={cardCls}>
+            <h2 className="text-xl font-semibold mb-4">Business Hours</h2>
+            <p className="text-sm text-[#6b7280] mb-4">Leave a day blank to leave it unset — orders aren't currently blocked outside these hours, but the backend already checks this for whenever that's wired in.</p>
+            <div className="space-y-2">
+              {DAYS.map((day) => (
+                <div key={day} className="grid grid-cols-3 gap-3 items-center">
+                  <span className="text-sm capitalize text-[#f1f5f9]">{day}</span>
+                  <input
+                    type="time"
+                    value={config.business_hours?.[day]?.open || ''}
+                    onChange={(e) => updateBusinessHours(day, 'open', e.target.value)}
+                    className={inputCls}
+                  />
+                  <input
+                    type="time"
+                    value={config.business_hours?.[day]?.close || ''}
+                    onChange={(e) => updateBusinessHours(day, 'close', e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={cardCls}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Surge Pricing</h2>
+              {!surgeLoading && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-sm text-[#6b7280]">{surgeEnabled ? 'Enabled' : 'Disabled'}</span>
+                  <input type="checkbox" checked={surgeEnabled} onChange={(e) => toggleSurge(e.target.checked)} className="w-4 h-4" />
+                </label>
+              )}
+            </div>
+            <p className="text-sm text-[#6b7280] mb-4">Order volume tiers that multiply prices during busy periods — surge_tiers.min_orders counts orders placed today.</p>
+            {surgeLoading ? (
+              <p className="text-sm text-[#6b7280]">Loading…</p>
+            ) : (
+              <>
+                <div className="space-y-2 mb-4">
+                  {surgeTiers.map((tier, i) => (
+                    <div key={i} className="grid grid-cols-4 gap-3 items-center">
+                      <input
+                        type="number"
+                        value={tier.min_orders}
+                        onChange={(e) => updateSurgeTier(i, 'min_orders', parseInt(e.target.value) || 0)}
+                        placeholder="Min orders"
+                        className={inputCls}
+                      />
+                      <input
+                        type="number"
+                        value={tier.max_orders ?? ''}
+                        onChange={(e) => updateSurgeTier(i, 'max_orders', e.target.value ? parseInt(e.target.value) : null)}
+                        placeholder="Max (blank = ∞)"
+                        className={inputCls}
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={tier.multiplier}
+                        onChange={(e) => updateSurgeTier(i, 'multiplier', parseFloat(e.target.value) || 1)}
+                        placeholder="Multiplier"
+                        className={inputCls}
+                      />
+                      <button onClick={() => removeSurgeTier(i)} className="text-sm text-red-400 hover:text-red-300">Remove</button>
+                    </div>
+                  ))}
+                  {surgeTiers.length === 0 && <p className="text-sm text-[#6b7280]">No tiers configured.</p>}
+                </div>
+                <div className="flex gap-3 items-center">
+                  <button onClick={addSurgeTier} className="text-sm bg-white/5 border border-white/8 px-4 py-2 rounded-xl hover:bg-white/10">Add Tier</button>
+                  <button onClick={saveSurgeTiers} disabled={surgeSaving} className="text-sm bg-[#f97316] text-white px-4 py-2 rounded-xl hover:bg-[#f97316]/85 disabled:opacity-50">
+                    {surgeSaving ? 'Saving…' : 'Save Tiers'}
+                  </button>
+                  {surgeMessage && <span className="text-sm text-[#6b7280]">{surgeMessage}</span>}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
