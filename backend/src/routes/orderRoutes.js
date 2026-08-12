@@ -581,7 +581,7 @@ router.get('/:id', async (req, res) => {
     }
 
     const itemsRes = await pool.query(
-      `SELECT oi.quantity, oi.custom_instructions, oi.item_status,
+      `SELECT oi.order_item_id, oi.item_id, oi.quantity, oi.custom_instructions, oi.item_status,
               COALESCE(mod_names.modifiers, '[]'::json) AS modifiers,
               COALESCE(mi.name, 'Item #' || oi.item_id) AS name, COALESCE(mi.base_price, 0) AS base_price
        FROM order_items oi
