@@ -11,6 +11,15 @@ exports.register = async (req, res) => {
     return res.status(400).json({ success: false, error: 'Username, password, and role are required.' });
   }
 
+  // assistant_manager can create staff accounts (manage_staff) but must not
+  // be able to grant admin/manager -- that would be a self-service path to
+  // privilege escalation via a role the caller doesn't hold themselves.
+  // (Token roles come back as req.user.roles, an array -- see authGuard.js.)
+  const callerRoles = Array.isArray(req.user?.roles) ? req.user.roles : (req.user?.role ? [req.user.role] : []);
+  if (!callerRoles.includes('admin') && !callerRoles.includes('manager') && (role === 'admin' || role === 'manager')) {
+    return res.status(403).json({ success: false, error: 'Assistant managers cannot create admin or manager accounts.' });
+  }
+
   try {
     const userCheck = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
     if (userCheck.rows.length > 0) {

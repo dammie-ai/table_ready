@@ -6,10 +6,12 @@ const { validate, schemas } = require('../middleware/validation');
 
 // Staff-account creation only — this is the users/staff table, not customer
 // accounts (those live in customer_profiles and never touch this route).
-// Must stay behind admin/manager auth: the request body lets the caller
-// pick any role, so an open registration endpoint here is a direct path
-// to self-granted manager access.
-router.post('/register', authenticateToken, authorizeRoles('admin', 'manager'), validate(schemas.register), authController.register);
+// assistant_manager has manage_staff and needs this for StaffManagement.tsx's
+// "Add Staff" form, but the request body lets the caller pick any role, so
+// authController.register itself blocks assistant_manager from granting
+// admin/manager -- the escalation guard, not this route list, is what keeps
+// this safe now that it's wider than admin/manager.
+router.post('/register', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), validate(schemas.register), authController.register);
 
 router.post('/login', validate(schemas.login), authController.login);
 

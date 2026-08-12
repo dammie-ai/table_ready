@@ -17,7 +17,7 @@ router.get('/waiter', authenticateToken, authorizeRoles('waiter', 'admin', 'mana
 
 router.get('/kitchen', authenticateToken, authorizeRoles('kitchen', 'admin', 'manager'), dashboardController.getKitchenDashboard);
 
-router.get('/delivery', authenticateToken, authorizeRoles('delivery', 'admin', 'manager'), dashboardController.getDeliveryDashboard);
+router.get('/delivery', authenticateToken, authorizeRoles('delivery', 'admin', 'manager', 'assistant_manager'), dashboardController.getDeliveryDashboard);
 
 router.get('/admin', authenticateToken, authorizeRoles('admin', 'manager'), dashboardController.getAdminDashboard);
 
