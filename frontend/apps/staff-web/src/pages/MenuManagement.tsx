@@ -107,11 +107,12 @@ export default function MenuManagement() {
   }
 
   const handleToggle = async (itemId: number) => {
+    setError('')
     try {
       await apiClient.patch(`/menu/${itemId}/toggle`, {})
       await loadItems()
     } catch (err) {
-      console.error('Failed to toggle item:', err)
+      setError(err instanceof Error ? err.message : 'Failed to toggle item')
     }
   }
 

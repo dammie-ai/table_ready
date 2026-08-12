@@ -48,6 +48,7 @@ export default function ManagerPanel() {
   const [loading, setLoading] = useState(true)
   const [restockAmounts, setRestockAmounts] = useState<Record<number, string>>({})
   const [restockingId, setRestockingId] = useState<number | null>(null)
+  const [restockError, setRestockError] = useState('')
 
   const loadInventory = async () => {
     const res = await apiClient.get<any>('/inventory')
@@ -82,12 +83,13 @@ export default function ManagerPanel() {
     const amount = parseInt(restockAmounts[id])
     if (!amount || amount <= 0) return
     setRestockingId(id)
+    setRestockError('')
     try {
       await apiClient.post(`/inventory/${id}/restock`, { quantity: amount })
       setRestockAmounts((prev) => ({ ...prev, [id]: '' }))
       await loadInventory()
     } catch (err) {
-      console.error('Failed to restock:', err)
+      setRestockError(err instanceof Error ? err.message : 'Failed to restock item')
     } finally {
       setRestockingId(null)
     }
@@ -316,6 +318,11 @@ export default function ManagerPanel() {
       {view === 'inventory' && (
         <div className="p-4 md:p-6 max-w-lg">
           <h2 className="font-display font-bold text-xl mb-4">Inventory Levels</h2>
+          {restockError && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {restockError}
+            </div>
+          )}
           <div className="space-y-3">
             {inventory.map((item) => {
               const pct = item.stock_quantity > 0 ? (item.stock_quantity / item.reorder_threshold) * 100 : 0

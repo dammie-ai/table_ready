@@ -17,6 +17,8 @@ export default function Waitlist() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ customer_name: '', phone: '', party_size: 2, table_id: '' })
+  const [error, setError] = useState('')
+  const [busyId, setBusyId] = useState<number | null>(null)
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export default function Waitlist() {
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     try {
       await apiClient.post('/waitlist/join', {
         customer_name: form.customer_name,
@@ -47,25 +50,46 @@ export default function Waitlist() {
       setForm({ customer_name: '', phone: '', party_size: 2, table_id: '' })
       loadWaitlist()
     } catch (err) {
-      console.error('Failed to join waitlist:', err)
+      setError(err instanceof Error ? err.message : 'Failed to join waitlist')
     }
   }
 
   const seatNext = async (entryId: number) => {
+    setError('')
+    setBusyId(entryId)
     try {
       await apiClient.post(`/waitlist/${entryId}/seat`, {})
       loadWaitlist()
     } catch (err) {
-      console.error('Failed to seat customer:', err)
+      setError(err instanceof Error ? err.message : 'Failed to seat customer')
+    } finally {
+      setBusyId(null)
     }
   }
 
   const cancelEntry = async (entryId: number) => {
+    setError('')
+    setBusyId(entryId)
     try {
       await apiClient.patch(`/waitlist/${entryId}/cancel`, {})
       loadWaitlist()
     } catch (err) {
-      console.error('Failed to cancel waitlist entry:', err)
+      setError(err instanceof Error ? err.message : 'Failed to cancel waitlist entry')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const markNoShow = async (entryId: number) => {
+    setError('')
+    setBusyId(entryId)
+    try {
+      await apiClient.patch(`/waitlist/${entryId}/noshow`, {})
+      loadWaitlist()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark no-show')
+    } finally {
+      setBusyId(null)
     }
   }
 
@@ -102,6 +126,12 @@ export default function Waitlist() {
             {showForm ? 'Cancel' : 'Add to Waitlist'}
           </button>
         </div>
+
+        {error && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         {showForm && (
           <div className="bg-[#111118] border border-white/8 rounded-2xl p-6 mb-6">
@@ -189,13 +219,22 @@ export default function Waitlist() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => seatNext(entry.entry_id)}
-                        className="px-3 py-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-medium hover:bg-emerald-500/25"
+                        disabled={busyId === entry.entry_id}
+                        className="px-3 py-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-medium hover:bg-emerald-500/25 disabled:opacity-50"
                       >
                         Seat
                       </button>
                       <button
+                        onClick={() => markNoShow(entry.entry_id)}
+                        disabled={busyId === entry.entry_id}
+                        className="px-3 py-1.5 bg-gray-500/15 text-gray-400 border border-gray-500/30 rounded-lg text-xs font-medium hover:bg-gray-500/25 disabled:opacity-50"
+                      >
+                        No-Show
+                      </button>
+                      <button
                         onClick={() => cancelEntry(entry.entry_id)}
-                        className="px-3 py-1.5 bg-red-500/15 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/25"
+                        disabled={busyId === entry.entry_id}
+                        className="px-3 py-1.5 bg-red-500/15 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/25 disabled:opacity-50"
                       >
                         Cancel
                       </button>
