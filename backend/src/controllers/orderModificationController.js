@@ -303,14 +303,17 @@ exports.distributeTips = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No tip to distribute on this order.' });
     }
 
-    let allocatedCents = 0;
+    // allocatedCents was compared against totalTip (dollars) on the last
+    // split with no unit conversion -- a $5 tip split 60/40 produced a
+    // second split of -$295 (5 - 300) instead of $2.
+    let allocatedDollars = 0;
     for (let i = 0; i < splits.length; i++) {
       const split = splits[i];
       if (i === splits.length - 1) {
-        split.amount = parseFloat((totalTip - allocatedCents).toFixed(2));
+        split.amount = parseFloat((totalTip - allocatedDollars).toFixed(2));
       } else {
         split.amount = parseFloat((Math.floor(split.percentage / 100 * totalTip * 100) / 100).toFixed(2));
-        allocatedCents += Math.round(split.amount * 100);
+        allocatedDollars += split.amount;
       }
       await client.query(
         'INSERT INTO order_payments (master_order_id, payment_method, amount, status, paid_by_user_id) VALUES ($1, $2, $3, $4, $5)',

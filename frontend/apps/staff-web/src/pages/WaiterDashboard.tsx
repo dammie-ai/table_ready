@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
 import { getSocket, onConnectionChange } from '../lib/socket'
+import OrderActionsModal from '../components/OrderActionsModal'
 
 interface Table {
   table_id: number
@@ -108,6 +109,7 @@ export default function WaiterDashboard() {
   }, [])
 
   const [servingId, setServingId] = useState<number | null>(null)
+  const [managingOrderId, setManagingOrderId] = useState<number | null>(null)
 
   // The kitchen's own advance chain stops at READY for dine-in orders now
   // (see KitchenDisplay.tsx) — this is the actual hand-off confirmation
@@ -250,6 +252,12 @@ export default function WaiterDashboard() {
                           {servingId === table.master_order_id ? 'Marking served…' : '✓ Mark Served'}
                         </button>
                       )}
+                      <button
+                        onClick={() => setManagingOrderId(table.master_order_id!)}
+                        className="w-full mt-1.5 bg-white/10 hover:bg-white/20 text-xs font-semibold py-2 rounded-lg transition-colors"
+                      >
+                        Manage Order
+                      </button>
                     </div>
                   ) : (
                     <div className="text-xs opacity-50 italic">No active order</div>
@@ -352,6 +360,16 @@ export default function WaiterDashboard() {
             </div>
           )}
         </div>
+      )}
+
+      {managingOrderId && (
+        <OrderActionsModal
+          orderId={managingOrderId}
+          onClose={() => setManagingOrderId(null)}
+          onUpdated={() => {
+            apiClient.get<any>('/tables/my-tables').then((res) => setMyTables(res.tables || [])).catch(() => {})
+          }}
+        />
       )}
     </div>
   )
