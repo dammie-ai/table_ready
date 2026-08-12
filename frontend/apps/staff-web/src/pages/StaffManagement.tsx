@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
 import { useTheme } from '../hooks/useTheme'
+import { useAuthStore } from '../stores/authStore'
 
 interface StaffMember {
   id: number
@@ -29,19 +30,26 @@ export default function StaffManagement() {
   const [assigningTableId, setAssigningTableId] = useState<number | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
   const [unlockingId, setUnlockingId] = useState<number | null>(null)
+  const [staffError, setStaffError] = useState('')
   const { theme } = useTheme()
+  const primaryRole = useAuthStore((s) => s.primaryRole)
 
   useEffect(() => {
     loadStaff()
     loadTables()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadStaff = async () => {
     try {
-      const res = await apiClient.get<{ success: boolean; staff_on_shift: StaffMember[] }>('/dashboard/admin')
+      // /dashboard/admin also returns audit logs, which assistant_manager's
+      // own dashboard config deliberately excludes -- assistant_manager gets
+      // the roster from its own dashboard endpoint instead, same field.
+      const path = primaryRole === 'assistant_manager' ? '/dashboard/assistant_manager' : '/dashboard/admin'
+      const res = await apiClient.get<{ success: boolean; staff_on_shift: StaffMember[] }>(path)
       setStaff(res.staff_on_shift || [])
     } catch (err) {
-      console.error('Failed to load staff:', err)
+      setStaffError(err instanceof Error ? err.message : 'Failed to load staff')
     } finally {
       setLoading(false)
     }
@@ -143,6 +151,12 @@ export default function StaffManagement() {
             {showForm ? 'Cancel' : 'Add Staff'}
           </button>
         </div>
+
+        {staffError && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {staffError}
+          </div>
+        )}
 
         {showForm && (
           <div className="bg-[#111118] border border-white/8 rounded-2xl p-6 mb-6">

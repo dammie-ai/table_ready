@@ -24,14 +24,16 @@ export default function KitchenDisplay() {
   const [stockLoading, setStockLoading] = useState(true)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const [connected, setConnected] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
         const res = await apiClient.get<{ success: boolean; orders: Order[] }>('/orders/kitchen-orders')
         setOrders(res.orders || [])
+        setError('')
       } catch (err) {
-        console.error('Failed to load orders:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load orders')
       } finally {
         setLoading(false)
       }
@@ -100,7 +102,7 @@ export default function KitchenDisplay() {
       const res = await toggleMenuItemStock(itemId)
       setMenuItems((prev) => prev.map((m) => (m.item_id === itemId ? res.item : m)))
     } catch (err) {
-      console.error('Failed to toggle stock:', err)
+      setError(err instanceof Error ? err.message : 'Failed to toggle stock')
     } finally {
       setTogglingId(null)
     }
@@ -137,7 +139,7 @@ export default function KitchenDisplay() {
         status: nextStatus,
       })
     } catch (err) {
-      console.error('Failed to advance status:', err)
+      setError(err instanceof Error ? err.message : 'Failed to advance order status')
     }
   }
 
@@ -154,6 +156,11 @@ export default function KitchenDisplay() {
       {!connected && (
         <div className="bg-red-600 text-white text-center py-2 rounded-lg mb-4 font-semibold">
           ⚠ Connection lost — reconnecting... orders may be stale until this clears.
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-900/60 border border-red-600 text-red-200 text-center py-2 rounded-lg mb-4 text-sm">
+          {error}
         </div>
       )}
       <h1 className="text-4xl font-bold mb-6 text-center">Kitchen Display</h1>
