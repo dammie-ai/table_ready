@@ -381,7 +381,7 @@ const schemas = {
   createReservation: z.object({
     customer_name: z.string().min(1, 'Customer name is required'),
     customer_phone: z.string().optional(),
-    customer_email: z.string().email().optional(),
+    customer_email: z.string().email().optional().or(z.literal('')),
     table_id: z.number().int().positive().optional(),
     reservation_date: z.string().min(1, 'Reservation date is required'),
     reservation_time: z.string().min(1, 'Reservation time is required'),
@@ -392,7 +392,7 @@ const schemas = {
   updateReservation: z.object({
     customer_name: z.string().min(1).optional(),
     customer_phone: z.string().optional(),
-    customer_email: z.string().email().optional(),
+    customer_email: z.string().email().optional().or(z.literal('')),
     table_id: z.number().int().positive().optional(),
     reservation_date: z.string().optional(),
     reservation_time: z.string().optional(),
@@ -429,7 +429,7 @@ const schemas = {
   createSupplier: z.object({
     name: z.string().min(1, 'Supplier name is required'),
     contact_name: z.string().optional(),
-    email: z.string().email().optional(),
+    email: z.string().email().optional().or(z.literal('')),
     phone: z.string().optional(),
     address: z.string().optional(),
     tax_id: z.string().optional(),
@@ -440,7 +440,7 @@ const schemas = {
   updateSupplier: z.object({
     name: z.string().min(1).optional(),
     contact_name: z.string().optional(),
-    email: z.string().email().optional(),
+    email: z.string().email().optional().or(z.literal('')),
     phone: z.string().optional(),
     address: z.string().optional(),
     tax_id: z.string().optional(),

@@ -475,7 +475,7 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
  * GET /api/orders/kitchen
  * Fetch active kitchen orders (filters out held, completed, served, and cancelled orders)
  */
-  router.get('/kitchen-orders', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
+  router.get('/kitchen-orders', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen', 'waiter'), async (req, res) => {
   try {
     const kitchenOrders = await pool.query(
       `SELECT o.*,
@@ -533,6 +533,13 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
  */
   router.get('/history/:userId', authenticateToken, async (req, res) => {
   const { userId } = req.params;
+
+  // A customer token has no role, only customer_id -- authenticateToken
+  // alone doesn't stop customer A from reading customer B's order history
+  // by changing the URL param, so that ownership check has to happen here.
+  if (req.user?.type === 'customer' && String(req.user.customer_id) !== String(userId)) {
+    return res.status(403).json({ success: false, error: 'You can only view your own order history.' });
+  }
 
   try {
     const historyQuery = `
@@ -709,7 +716,7 @@ router.get('/:id', async (req, res) => {
  * PATCH /api/orders/:id/status
  * Update order status and emit real-time WebSockets
  */
-router.patch('/:id/status', authenticateToken, authorizeRoles('admin', 'manager', 'kitchen', 'waiter'), async (req, res) => {
+router.patch('/:id/status', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'kitchen', 'waiter'), async (req, res) => {
   const { id } = req.params;
   let { status, progress_percentage } = req.body;
 
@@ -985,8 +992,14 @@ router.patch('/:id/cancel', authenticateOptional, async (req, res) => {
     ? (Array.isArray(req.user.roles) ? req.user.roles : (req.user.role ? [req.user.role] : []))
     : [];
   const isStaff = userRoles.some((r) => ['admin', 'manager', 'waiter'].includes(r));
+  const isCustomerToken = req.user?.type === 'customer';
 
-  if (!isStaff && !verifyOrderAccessToken(id, access_token)) {
+  // access_token is a stateless HMAC of the order ID (see orderAccess.js) --
+  // never stored, so it can't be looked up in advance of fetching the
+  // order. A logged-in customer's own JWT is checked against the order's
+  // customer_id instead, once the order is loaded below (this covers
+  // reaching Cancel from Order History, where no access_token is passed).
+  if (!isStaff && !isCustomerToken && !verifyOrderAccessToken(id, access_token)) {
     return res.status(403).json({ success: false, error: 'You do not have permission to cancel this order.' });
   }
 
@@ -1005,6 +1018,11 @@ router.patch('/:id/cancel', authenticateOptional, async (req, res) => {
     }
 
     const order = orderQuery.rows[0];
+
+    if (!isStaff && isCustomerToken && String(order.customer_id) !== String(req.user.customer_id) && !verifyOrderAccessToken(id, access_token)) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'You do not have permission to cancel this order.' });
+    }
     const nonCancellableStatuses = ['IN_PREPARATION', 'COOKING', 'COMPLETED', 'SERVED', 'CANCELLED_AND_REFUNDED'];
 
     if (nonCancellableStatuses.includes(order.status)) {

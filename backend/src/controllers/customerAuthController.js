@@ -81,6 +81,34 @@ exports.register = async (req, res) => {
   }
 };
 
+exports.deleteAccount = async (req, res) => {
+  // authenticateToken only verifies the JWT and sets req.user -- it doesn't
+  // check shape, so this also has to reject a staff token here (no
+  // customer_id/type on those) rather than deleting the wrong row.
+  if (req.user?.type !== 'customer' || !req.user?.customer_id) {
+    return res.status(403).json({ success: false, error: 'This action requires a customer account.' });
+  }
+
+  try {
+    // orders.customer_id has no FK to customer_profiles (unenforced,
+    // intentionally loose) -- order history survives as a business record
+    // with a dangling customer_id once the profile itself is gone.
+    // customer_sessions/favorite_combos/notification_preferences/
+    // tax_exemptions all cascade; order_payments.paid_by_customer_id is
+    // SET NULL.
+    const result = await pool.query(
+      'DELETE FROM customer_profiles WHERE customer_id = $1 RETURNING customer_id',
+      [req.user.customer_id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Account not found.' });
+    }
+    return res.status(200).json({ success: true, message: 'Account deleted.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 

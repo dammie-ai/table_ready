@@ -19,6 +19,6 @@ router.put('/:id', authenticateToken, authorizeRoles('admin', 'manager', 'assist
 
 router.patch('/:id/cancel', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), reservationController.cancelReservation);
 
-router.post('/:id/seat', authenticateToken, authorizeRoles('admin', 'manager', 'waiter'), reservationController.seatReservation);
+router.post('/:id/seat', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'waiter'), reservationController.seatReservation);
 
 module.exports = router;

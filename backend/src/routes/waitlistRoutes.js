@@ -10,8 +10,8 @@ const { validate, schemas } = require('../middleware/validation');
 router.post('/join', validate(schemas.joinWaitlist), waitlistController.joinWaitlist);
 router.get('/', authenticateToken, waitlistController.getWaitlist);
 router.get('/queue/:table_id', authenticateToken, waitlistController.getWaitlistQueue);
-router.post('/:entry_id/seat', authenticateToken, authorizeRoles('admin', 'manager', 'waiter'), waitlistController.seatNextInLine);
+router.post('/:entry_id/seat', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'waiter'), waitlistController.seatNextInLine);
 router.patch('/:entry_id/cancel', authenticateOptional, waitlistController.cancelWaitlistEntry);
-router.patch('/:entry_id/noshow', authenticateToken, authorizeRoles('admin', 'manager'), waitlistController.markNoShow);
+router.patch('/:entry_id/noshow', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager', 'waiter'), waitlistController.markNoShow);
 
 module.exports = router;

@@ -6,15 +6,22 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authGuard')
 
 const pool = db.pool || db;
 
-// All admin routes require authentication + admin or manager role
+// All admin routes require authentication; most are admin/manager-only,
+// but surge-pricing and employee-unlock are also opened to assistant_manager
+// below (Settings.tsx's surge-pricing card and StaffManagement.tsx's unlock
+// button are both already shown to that role) -- restaurant-config,
+// settings, and audit-logs stay admin/manager-only since nothing currently
+// grants assistant_manager access to those.
 router.use(authenticateToken);
-router.use(authorizeRoles('admin', 'manager'));
+
+const adminOrManager = authorizeRoles('admin', 'manager');
+const adminManagerOrAssistant = authorizeRoles('admin', 'manager', 'assistant_manager');
 
 /**
  * GET /api/admin/surge-pricing/config
  * Fetch current dynamic pricing toggle status and configured tiers
  */
-router.get('/surge-pricing/config', async (req, res) => {
+router.get('/surge-pricing/config', adminManagerOrAssistant, async (req, res) => {
   try {
     const settingRes = await pool.query(
       `SELECT value FROM settings WHERE key = 'dynamic_pricing_enabled'`
@@ -39,7 +46,7 @@ router.get('/surge-pricing/config', async (req, res) => {
  * PATCH /api/admin/surge-pricing/toggle
  * Quickly toggle dynamic pricing ON or OFF
  */
-router.patch('/surge-pricing/toggle', async (req, res) => {
+router.patch('/surge-pricing/toggle', adminManagerOrAssistant, async (req, res) => {
   const { enabled } = req.body; // Expects boolean: true or false
 
   if (typeof enabled !== 'boolean') {
@@ -86,7 +93,7 @@ router.patch('/surge-pricing/toggle', async (req, res) => {
  * PUT /api/admin/surge-pricing/tiers
  * Replace existing tier rules with new admin configurations
  */
-router.put('/surge-pricing/tiers', async (req, res) => {
+router.put('/surge-pricing/tiers', adminManagerOrAssistant, async (req, res) => {
   const { tiers } = req.body;
   // Expected format: [{ min_orders: 0, max_orders: 10, multiplier: 1.00 }, ...]
 
@@ -138,7 +145,7 @@ router.put('/surge-pricing/tiers', async (req, res) => {
  * GET /api/admin/restaurant-config
  * Get all restaurant config
  */
-router.get('/restaurant-config', async (req, res) => {
+router.get('/restaurant-config', adminOrManager, async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM restaurant_config`);
     const config = {};
@@ -155,7 +162,7 @@ router.get('/restaurant-config', async (req, res) => {
  * PATCH /api/admin/restaurant-config/:key
  * Update a specific restaurant config key
  */
-router.patch('/restaurant-config/:key', async (req, res) => {
+router.patch('/restaurant-config/:key', adminOrManager, async (req, res) => {
   const { key } = req.params;
   const { value } = req.body;
 
@@ -192,7 +199,7 @@ router.patch('/restaurant-config/:key', async (req, res) => {
  * GET /api/admin/settings
  * Get all settings
  */
-router.get('/settings', async (req, res) => {
+router.get('/settings', adminOrManager, async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM settings`);
     return res.status(200).json({ success: true, settings: result.rows });
@@ -205,7 +212,7 @@ router.get('/settings', async (req, res) => {
  * PATCH /api/admin/settings/:key
  * Update a specific setting
  */
-router.patch('/settings/:key', async (req, res) => {
+router.patch('/settings/:key', adminOrManager, async (req, res) => {
   const { key } = req.params;
   const { value } = req.body;
 
@@ -238,8 +245,8 @@ router.patch('/settings/:key', async (req, res) => {
 
 // Audit log routes (moved here to avoid router mount conflicts)
 const auditLogController = require('../controllers/auditLogController');
-router.post('/audit-logs', auditLogController.createLog);
-router.get('/audit-logs', auditLogController.getLogs);
+router.post('/audit-logs', adminOrManager, auditLogController.createLog);
+router.get('/audit-logs', adminOrManager, auditLogController.getLogs);
 
 /**
  * PATCH /api/admin/employees/:id/unlock
@@ -248,7 +255,7 @@ router.get('/audit-logs', auditLogController.getLogs);
  * manager to "contact an admin" when no admin action existed to actually
  * unlock the account short of a direct database edit.
  */
-router.patch('/employees/:id/unlock', async (req, res) => {
+router.patch('/employees/:id/unlock', adminManagerOrAssistant, async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE employees SET account_lock_status = false WHERE employee_id = $1 RETURNING employee_id, name, account_lock_status`,

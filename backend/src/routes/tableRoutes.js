@@ -7,7 +7,7 @@ const { validate, schemas } = require('../middleware/validation');
 router.post('/verify-code', validate(schemas.verifyTableCode), tableController.verifyTableCode);
 router.get('/floor-layout', tableController.getFloorLayout);
 router.get('/my-tables', authenticateToken, authorizeRoles('waiter'), tableController.getMyTables);
-router.patch('/:id/assign-waiter', authenticateToken, authorizeRoles('admin', 'manager'), tableController.assignWaiter);
+router.patch('/:id/assign-waiter', authenticateToken, authorizeRoles('admin', 'manager', 'assistant_manager'), tableController.assignWaiter);
 router.post('/check-location', validate(schemas.verifyLocation), tableController.verifyLocation);
 router.post('/qr/generate', authenticateToken, authorizeRoles('admin', 'manager', 'waiter'), validate(schemas.generateQR), tableController.generateQRCode);
 router.post('/qr/verify', validate(schemas.verifyQRCode), tableController.verifyQRCode);
