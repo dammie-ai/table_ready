@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
-import { getSocket } from '../lib/socket'
+import { getSocket, onConnectionChange } from '../lib/socket'
 import { getMenuItems, toggleMenuItemStock, type MenuItem } from '../lib/menuApi'
 
 interface Order {
@@ -23,6 +23,7 @@ export default function KitchenDisplay() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [stockLoading, setStockLoading] = useState(true)
   const [togglingId, setTogglingId] = useState<number | null>(null)
+  const [connected, setConnected] = useState(true)
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -49,6 +50,16 @@ export default function KitchenDisplay() {
 
     loadOrders()
     loadMenuItems()
+
+    // A dropped connection has no per-event replay — refetch on
+    // reconnect rather than trust whatever's still on screen.
+    const offConnection = onConnectionChange((isConnected) => {
+      setConnected(isConnected)
+      if (isConnected) {
+        loadOrders()
+        loadMenuItems()
+      }
+    })
 
     const socket = getSocket()
     socket.on('new_kitchen_order', (order: Order) => {
@@ -79,6 +90,7 @@ export default function KitchenDisplay() {
       socket.off('new_kitchen_order')
       socket.off('kitchen_order_updated')
       socket.off('menu_item_updated')
+      offConnection()
     }
   }, [])
 
@@ -139,6 +151,11 @@ export default function KitchenDisplay() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
+      {!connected && (
+        <div className="bg-red-600 text-white text-center py-2 rounded-lg mb-4 font-semibold">
+          ⚠ Connection lost — reconnecting... orders may be stale until this clears.
+        </div>
+      )}
       <h1 className="text-4xl font-bold mb-6 text-center">Kitchen Display</h1>
 
       <div className="flex justify-center gap-3 mb-8">
