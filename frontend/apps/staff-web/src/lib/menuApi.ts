@@ -187,3 +187,43 @@ export async function addModifierToItem(menuItemId: number, modifierId: number) 
 export async function removeModifierFromItem(menuItemId: number, modifierId: number) {
   return apiClient.delete<{ success: boolean; message: string }>(`/modifiers/item/${menuItemId}/${modifierId}`)
 }
+
+export interface AllergenSummaryItem {
+  item_id: number
+  name: string
+  allergens: string[]
+  allergen_count: number
+  category_type: string
+  times_ordered: number
+}
+
+export interface AllergyAlert {
+  order_item_id: number
+  master_order_id: number
+  item_name: string
+  allergens: string[]
+  quantity: number
+  item_status: string
+  order_type: string
+  table_number: number | null
+  order_status: string
+}
+
+export async function getAllergenSummary() {
+  return apiClient.get<{
+    success: boolean
+    menu_items_with_allergens: AllergenSummaryItem[]
+    allergen_frequency: Record<string, { count: number; items: string[] }>
+  }>('/allergy/summary')
+}
+
+export async function getAllergyAlerts() {
+  return apiClient.get<{ success: boolean; count: number; alerts: AllergyAlert[] }>('/allergy/alerts')
+}
+
+export async function updateMenuItemAllergens(itemId: number, allergens: string[]) {
+  return apiClient.patch<{ success: boolean; message: string; item: { item_id: number; name: string; allergens: string[] } }>(
+    `/allergy/menu/${itemId}/allergens`,
+    { allergens }
+  )
+}

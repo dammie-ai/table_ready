@@ -9,6 +9,7 @@ import ManagerPanel from './pages/ManagerPanel'
 import MenuManagement from './pages/MenuManagement'
 import ComboManagement from './pages/ComboManagement'
 import ModifierManagement from './pages/ModifierManagement'
+import AllergyManagement from './pages/AllergyManagement'
 import Reservations from './pages/Reservations'
 import Waitlist from './pages/Waitlist'
 import StaffManagement from './pages/StaffManagement'
@@ -96,6 +97,12 @@ export default function App() {
       <Route path="/modifier-management" element={
         <ProtectedRoute allowedRoles={['manager', 'assistant_manager']}>
           <StaffLayout><ModifierManagement /></StaffLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/allergy-management" element={
+        <ProtectedRoute allowedRoles={['manager', 'assistant_manager']}>
+          <StaffLayout><AllergyManagement /></StaffLayout>
         </ProtectedRoute>
       } />
 
