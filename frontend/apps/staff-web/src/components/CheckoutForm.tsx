@@ -92,7 +92,9 @@ export default function CheckoutForm({
           table_number: tableNumber ? Number(tableNumber) : undefined,
           items: orderItems,
           notes: [specialInstructions, deliveryAddress ? `Delivery: ${deliveryAddress}` : null].filter(Boolean).join('\n') || undefined,
-          tip_value: tip || undefined,
+          // Same fix as Checkout.tsx: createOrder's schema only recognizes
+          // tip_amount, not tip_value -- the tip was silently dropped.
+          tip_amount: tip || undefined,
           idempotency_key: `checkout-${Date.now()}`,
         })
         const createdOrderId = orderRes.order.master_order_id
