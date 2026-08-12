@@ -15,13 +15,14 @@ export default function WaitlistScreen({ navigation }: any) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [joining, setJoining] = useState(false)
   const [myEntry, setMyEntry] = useState<any>(null)
 
   useEffect(() => {
     getFloorLayout()
-      .then((res) => setTables(res.tables || []))
-      .catch((err) => console.error('Failed to load tables:', err))
+      .then((res) => { setTables(res.tables || []); setLoadError('') })
+      .catch((err) => setLoadError(err instanceof Error ? err.message : 'Failed to load tables'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -94,7 +95,7 @@ export default function WaitlistScreen({ navigation }: any) {
 
       <Text style={styles.listTitle}>Pick a Table</Text>
       {tables.length === 0 ? (
-        <Text style={styles.emptyQueue}>No tables available right now.</Text>
+        <Text style={styles.emptyQueue}>{loadError || 'No tables available right now.'}</Text>
       ) : (
         <View style={styles.tableGrid}>
           {tables.map((t) => (

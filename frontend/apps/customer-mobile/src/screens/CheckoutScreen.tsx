@@ -12,7 +12,8 @@ const TIP_PRESETS = [0, 15, 18, 20];
 export default function CheckoutScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [orderType, setOrderType] = useState('pickup');
+  const rememberedOrderType = useCartStore((s) => s.orderType);
+  const [orderType, setOrderType] = useState(rememberedOrderType || 'pickup');
   const [tableNumber, setTableNumber] = useState('');
 
   // A verified table (scanned QR or manually entered on the TablePin

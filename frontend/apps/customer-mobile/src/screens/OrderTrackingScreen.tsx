@@ -40,9 +40,14 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
   const [toastError, setToastError] = useState('');
   const [deliveryTracking, setDeliveryTracking] = useState<{ distance_miles: number | null; eta_minutes: number | null } | null>(null);
 
-  const orderType = route.params?.orderType || 'dine-in';
-  const isPickup = orderType === 'pickup';
-  const isDelivery = orderType === 'delivery' || order?.order_type === 'DELIVERY';
+  // route.params.orderType and order.order_type are both the uppercase
+  // backend enum ('PICKUP' | 'DELIVERY' | 'DINE_IN' | 'ORDER_FROM_HOME') --
+  // prefer the loaded order's own value once available, since it's
+  // authoritative, and fall back to the nav param before that resolves.
+  const orderType = order?.order_type || route.params?.orderType || 'DINE_IN';
+  const isPickup = orderType === 'PICKUP';
+  const isDelivery = orderType === 'DELIVERY';
+  const isDineIn = orderType === 'DINE_IN' || orderType === 'IN_HOUSE';
 
   const currentStep = order ? Math.max(STEPS.findIndex((s) => s.id === order.status), 0) : 0;
   const isOnHold = order?.status === 'ON_HOLD';
@@ -316,7 +321,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           </TouchableOpacity>
         )}
 
-        {orderType === 'dine-in' && !isCancelled && (
+        {isDineIn && !isCancelled && (
           <View style={styles.serviceCard}>
             <Text style={styles.sectionLabel}>Request Service</Text>
             <View style={styles.serviceGrid}>

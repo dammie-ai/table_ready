@@ -17,6 +17,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
   const [combos, setCombos] = useState<ComboMeal[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedCombo, setSelectedCombo] = useState<ComboMeal | null>(null);
   const [selectedMain, setSelectedMain] = useState<MenuItem | null>(null);
   const [selectedSides, setSelectedSides] = useState<MenuItem[]>([]);
@@ -27,6 +28,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
         setCombos(comboRes.combos);
         setMenuItems(menuRes.items);
       })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load combos'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -131,6 +133,7 @@ export default function ComboBuilderScreen({ navigation }: any) {
         {step === 1 && (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Choose a combo deal to get started</Text>
+            {error && <Text style={styles.comboDesc}>{error}</Text>}
             {combos.map((combo) => (
               <TouchableOpacity
                 key={combo.combo_id}
