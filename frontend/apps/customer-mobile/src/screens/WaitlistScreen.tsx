@@ -53,7 +53,7 @@ export default function WaitlistScreen({ navigation }: any) {
   const handleCancel = async () => {
     if (!myEntry) return
     try {
-      await cancelWaitlistEntry(myEntry.entry_id)
+      await cancelWaitlistEntry(myEntry.entry_id, myEntry.pin_code)
       setMyEntry(null)
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to cancel')
