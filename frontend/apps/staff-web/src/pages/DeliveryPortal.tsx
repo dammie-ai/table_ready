@@ -49,6 +49,7 @@ export default function DeliveryPortal() {
   const [assigningId, setAssigningId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'queue' | 'map'>('queue')
+  const [error, setError] = useState('')
   const watchIds = useRef<Record<number, number>>({})
 
   const startTrackingLocation = (orderId: number) => {
@@ -85,8 +86,9 @@ export default function DeliveryPortal() {
       mine.forEach((d) => {
         if (d.delivery_status === 'out_for_delivery') startTrackingLocation(d.master_order_id)
       })
+      setError('')
     } catch (err) {
-      console.error('Failed to load deliveries:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load deliveries')
     } finally {
       setLoading(false)
     }
@@ -179,6 +181,12 @@ export default function DeliveryPortal() {
           ))}
         </div>
       </div>
+
+      {error && (
+        <div className="mx-4 md:mx-6 mt-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
 
       {view === 'queue' ? (
         <div className="p-4 md:p-6 max-w-2xl">

@@ -179,7 +179,10 @@ export default function ComboManagement() {
                 {combo.is_active ? 'Deactivate' : 'Reactivate'}
               </button>
               <button
-                onClick={() => { if (confirm(`Delete "${combo.name}"? This deactivates it (existing orders referencing it are preserved).`)) deleteComboMeal(combo.combo_id).then(load) }}
+                onClick={() => {
+                  if (!confirm(`Delete "${combo.name}"? This deactivates it (existing orders referencing it are preserved).`)) return
+                  deleteComboMeal(combo.combo_id).then(load).catch((err) => setError(err instanceof Error ? err.message : 'Failed to delete combo'))
+                }}
                 className="text-sm bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100"
               >
                 Delete

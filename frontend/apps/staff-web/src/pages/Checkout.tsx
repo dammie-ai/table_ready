@@ -72,6 +72,18 @@ export default function Checkout() {
   }
 
   const handleSuccess = (createdOrderId?: number) => {
+    if (createdOrderId) {
+      // Guest ordering has no account/customer_id -- Order History reads this
+      // locally-persisted list of order IDs instead, one per completed order.
+      try {
+        const raw = localStorage.getItem('tableready_order_history')
+        const ids: number[] = raw ? JSON.parse(raw) : []
+        const updated = [createdOrderId, ...ids.filter((id) => id !== createdOrderId)].slice(0, 20)
+        localStorage.setItem('tableready_order_history', JSON.stringify(updated))
+      } catch {
+        // Non-critical -- worst case this order is missing from history.
+      }
+    }
     // Navigate away first — clearing the cart while still on /checkout would
     // trigger the empty-cart redirect effect above and hijack this navigation.
     if (createdOrderId) {

@@ -15,16 +15,37 @@ interface Order {
 export default function OrderHistory() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
   const { theme } = useTheme()
 
   useEffect(() => {
     const loadHistory = async () => {
+      // Guest ordering has no account/customer_id to look order history up
+      // by -- Checkout.tsx persists each completed order's ID here locally,
+      // and GET /orders/:id is public (no auth) so it works for a guest.
+      let ids: number[] = []
       try {
-        const res = await apiClient.get<{ success: boolean; orders: Order[] }>('/orders/history/1')
-        setOrders(res.orders || [])
+        const raw = localStorage.getItem('tableready_order_history')
+        ids = raw ? JSON.parse(raw) : []
+      } catch {
+        ids = []
+      }
+
+      if (ids.length === 0) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const results = await Promise.all(
+          ids.map((id) =>
+            apiClient.get<{ success: boolean; order: Order }>(`/orders/${id}`).then((res) => res.order).catch(() => null)
+          )
+        )
+        setOrders(results.filter((o): o is Order => o !== null))
       } catch (err) {
-        console.error('Failed to load order history:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load order history')
       } finally {
         setLoading(false)
       }
@@ -53,6 +74,12 @@ export default function OrderHistory() {
             Back to Menu
           </button>
         </div>
+
+        {error && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         {orders.length === 0 ? (
           <div className="text-center py-16">
