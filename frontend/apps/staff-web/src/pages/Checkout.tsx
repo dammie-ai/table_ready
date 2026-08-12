@@ -107,7 +107,11 @@ export default function Checkout() {
         table_number: tableNumber ? Number(tableNumber) : undefined,
         items: buildOrderItems(),
         notes: [specialInstructions, deliveryAddress ? `Delivery: ${deliveryAddress}` : null].filter(Boolean).join('\n') || undefined,
-        tip_value: tip || undefined,
+        // createOrder's schema/controller only ever recognized tip_amount --
+        // this sent tip_value, an unrecognized key zod silently strips, so
+        // every order's tip persisted as $0 regardless of what was shown
+        // to the customer.
+        tip_amount: tip || undefined,
         payment_method: 'cash',
         idempotency_key: `checkout-cash-${Date.now()}`,
       })

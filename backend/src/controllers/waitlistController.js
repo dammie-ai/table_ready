@@ -123,12 +123,32 @@ exports.getWaitlist = async (req, res) => {
 };
 
 exports.seatNextInLine = async (req, res) => {
-  const { table_id } = req.params;
+  // Route is POST /:entry_id/seat (a specific entry, per the "Seat" button
+  // next to each waitlist card) -- this read req.params.table_id, which
+  // this route never provides, so table_id was always undefined and the
+  // table lookup below always 404'd "Table not found." for every entry.
+  const { entry_id } = req.params;
 
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
+
+    const nextEntry = await client.query(
+      `SELECT * FROM waitlist_entries WHERE entry_id = $1 AND status = 'waiting' FOR UPDATE`,
+      [entry_id]
+    );
+
+    if (nextEntry.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({
+        success: false,
+        error: 'Waitlist entry not found or already processed.',
+      });
+    }
+
+    const entry = nextEntry.rows[0];
+    const table_id = entry.table_id;
 
     const tableRes = await client.query(
       `SELECT * FROM restaurant_tables WHERE table_id = $1 FOR UPDATE`,
@@ -139,24 +159,6 @@ exports.seatNextInLine = async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(404).json({ success: false, error: 'Table not found.' });
     }
-
-    const nextEntry = await client.query(
-      `SELECT * FROM waitlist_entries
-       WHERE table_id = $1 AND status = 'waiting'
-       ORDER BY created_at ASC
-       LIMIT 1`,
-      [table_id]
-    );
-
-    if (nextEntry.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({
-        success: false,
-        error: 'No waiting customers for this table.',
-      });
-    }
-
-    const entry = nextEntry.rows[0];
     const newPin = Math.floor(1000 + Math.random() * 9000).toString();
     const pinExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 

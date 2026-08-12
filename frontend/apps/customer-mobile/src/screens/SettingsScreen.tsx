@@ -32,10 +32,24 @@ export default function SettingsScreen({ navigation }: any) {
     loadPreferences()
   }, [isGuest])
 
+  // The backend models this as one row per (channel, event_type) pair,
+  // not a flat {order_updates, promotions, reminders} object -- GET
+  // returned an array the UI read straight as flat booleans (always
+  // undefined), and PATCH sent a flat object the backend's schema
+  // requires as a `preferences` array (silently 400'd, stripped by zod
+  // either way). 'push' is the only channel this screen exposes a toggle
+  // for; a preference with no saved row yet defaults to on, matching this
+  // screen's original default state.
   const loadPreferences = async () => {
     try {
       const res = await getNotificationPreferences()
-      setPrefs(res.preferences)
+      const rows: { channel: string; event_type: string; is_enabled: boolean }[] = res.preferences || []
+      const findPref = (eventType: string) => rows.find((r) => r.channel === 'push' && r.event_type === eventType)?.is_enabled
+      setPrefs({
+        order_updates: findPref('order_updates') ?? true,
+        promotions: findPref('promotions') ?? true,
+        reminders: findPref('reminders') ?? true,
+      })
     } catch (err) {
       console.error('Failed to load preferences:', err)
     } finally {
@@ -47,7 +61,7 @@ export default function SettingsScreen({ navigation }: any) {
     const updated = { ...prefs, [key]: value }
     setPrefs(updated)
     try {
-      await updateNotificationPreferences(updated)
+      await updateNotificationPreferences({ preferences: [{ channel: 'push', event_type: key, is_enabled: value }] })
     } catch (err) {
       Alert.alert('Error', 'Failed to update preferences')
     }
@@ -106,7 +120,7 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
           <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>
-            Accounts aren't available yet — ordering works fully as a guest, no sign-in needed.
+            Sign in or create an account to start ordering.
           </Text>
         </View>
       ) : (

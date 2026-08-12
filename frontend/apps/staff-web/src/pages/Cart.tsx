@@ -10,6 +10,7 @@ export default function Cart() {
   const items = useCartStore((s) => s.items)
   const removeItem = useCartStore((s) => s.removeItem)
   const updateQuantity = useCartStore((s) => s.updateQuantity)
+  const updateInstructions = useCartStore((s) => s.updateInstructions)
   const removeCartLine = useCartStore((s) => s.removeCartLine)
   const updateCartLineQuantity = useCartStore((s) => s.updateCartLineQuantity)
   const clearCart = useCartStore((s) => s.clearCart)
@@ -164,6 +165,12 @@ export default function Cart() {
                           [item.menu_item_id!]: e.target.value,
                         }))
                       }
+                      // Local state above only drove this input's own
+                      // display -- updateInstructions (the store action
+                      // that actually attaches this to the cart item
+                      // checkout reads from) was never called, so anything
+                      // typed here was silently discarded.
+                      onBlur={(e) => updateInstructions(item.menu_item_id!, e.target.value)}
                       placeholder="e.g., no onions, extra sauce"
                       className="w-full border rounded px-3 py-2 text-sm"
                     />
