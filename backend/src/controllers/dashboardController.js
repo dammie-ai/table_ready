@@ -309,11 +309,16 @@ exports.getAdminDashboard = async (req, res) => {
        LIMIT 20`
     );
 
+    // Excluded manager/admin/other roles entirely -- fine for a quick
+    // dashboard glance, but staff-web's Staff Management page reuses this
+    // same field as its actual full roster, where those accounts need to
+    // be visible too (nothing else in the frontend depends on this being
+    // operational-roles-only).
     const staffOnShift = await pool.query(
-      `SELECT u.id, u.username, u.role, e.name, e.account_lock_status
+      `SELECT u.id, u.username, u.role, u.employee_id, e.name, e.account_lock_status
        FROM users u
        LEFT JOIN employees e ON u.employee_id = e.employee_id
-       WHERE u.role IN ('waiter', 'kitchen', 'delivery', 'assistant_manager')
+       WHERE u.role IN ('waiter', 'kitchen', 'delivery', 'assistant_manager', 'manager', 'admin', 'other')
        ORDER BY u.role ASC, u.username ASC`
     );
 
@@ -398,11 +403,16 @@ exports.getAssistantManagerDashboard = async (req, res) => {
        LIMIT 20`
     );
 
+    // Excluded manager/admin/other roles entirely -- fine for a quick
+    // dashboard glance, but staff-web's Staff Management page reuses this
+    // same field as its actual full roster, where those accounts need to
+    // be visible too (nothing else in the frontend depends on this being
+    // operational-roles-only).
     const staffOnShift = await pool.query(
-      `SELECT u.id, u.username, u.role, e.name, e.account_lock_status
+      `SELECT u.id, u.username, u.role, u.employee_id, e.name, e.account_lock_status
        FROM users u
        LEFT JOIN employees e ON u.employee_id = e.employee_id
-       WHERE u.role IN ('waiter', 'kitchen', 'delivery', 'assistant_manager')
+       WHERE u.role IN ('waiter', 'kitchen', 'delivery', 'assistant_manager', 'manager', 'admin', 'other')
        ORDER BY u.role ASC, u.username ASC`
     );
 

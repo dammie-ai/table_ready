@@ -7,6 +7,7 @@ interface StaffMember {
   username: string
   role: string
   name?: string
+  employee_id?: number
   account_lock_status?: boolean
 }
 
@@ -26,6 +27,8 @@ export default function StaffManagement() {
   const [tables, setTables] = useState<TableRow[]>([])
   const [assignError, setAssignError] = useState<string | null>(null)
   const [assigningTableId, setAssigningTableId] = useState<number | null>(null)
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [unlockingId, setUnlockingId] = useState<number | null>(null)
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -79,6 +82,7 @@ export default function StaffManagement() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
+    setCreateError(null)
     try {
       await apiClient.post('/auth/register', {
         username: form.username,
@@ -89,7 +93,22 @@ export default function StaffManagement() {
       setForm({ username: '', password: '', role: 'waiter', name: '' })
       loadStaff()
     } catch (err) {
-      console.error('Failed to create staff:', err)
+      // Previously only console.error'd -- a duplicate username or a
+      // too-short password left the form sitting there with zero
+      // indication of what went wrong.
+      setCreateError(err instanceof Error ? err.message : 'Failed to create staff account')
+    }
+  }
+
+  const handleUnlock = async (employeeId: number) => {
+    setUnlockingId(employeeId)
+    try {
+      await apiClient.patch(`/admin/employees/${employeeId}/unlock`, {})
+      await loadStaff()
+    } catch (err) {
+      console.error('Failed to unlock employee:', err)
+    } finally {
+      setUnlockingId(null)
     }
   }
 
@@ -128,6 +147,11 @@ export default function StaffManagement() {
         {showForm && (
           <div className="bg-[#111118] border border-white/8 rounded-2xl p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Add Staff Member</h2>
+            {createError && (
+              <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                {createError}
+              </div>
+            )}
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -143,7 +167,7 @@ export default function StaffManagement() {
                 <div>
                   <label className="block text-xs text-[#6b7280] uppercase tracking-widest font-mono mb-1.5">Password</label>
                   <input
-                    type="text"
+                    type="password"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="w-full bg-[#1c1c27] border border-white/8 rounded-xl px-4 py-2.5 text-sm text-[#f1f5f9] outline-none"
@@ -205,9 +229,20 @@ export default function StaffManagement() {
                     {member.role}
                   </span>
                   {member.account_lock_status && (
-                    <span className="text-xs px-2.5 py-1 rounded-full border bg-red-500/15 text-red-400 border-red-500/30">
-                      Locked
-                    </span>
+                    <>
+                      <span className="text-xs px-2.5 py-1 rounded-full border bg-red-500/15 text-red-400 border-red-500/30">
+                        Locked
+                      </span>
+                      {member.employee_id && (
+                        <button
+                          onClick={() => handleUnlock(member.employee_id!)}
+                          disabled={unlockingId === member.employee_id}
+                          className="text-xs px-2.5 py-1 rounded-full border bg-white/5 text-[#f1f5f9] border-white/8 hover:bg-white/10 disabled:opacity-50"
+                        >
+                          {unlockingId === member.employee_id ? '…' : 'Unlock'}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

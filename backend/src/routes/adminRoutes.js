@@ -241,4 +241,37 @@ const auditLogController = require('../controllers/auditLogController');
 router.post('/audit-logs', auditLogController.createLog);
 router.get('/audit-logs', auditLogController.getLogs);
 
+/**
+ * PATCH /api/admin/employees/:id/unlock
+ * account_lock_status was only ever read (checked at login) -- nothing
+ * anywhere ever set or cleared it, so staff-web's "Locked" badge told a
+ * manager to "contact an admin" when no admin action existed to actually
+ * unlock the account short of a direct database edit.
+ */
+router.patch('/employees/:id/unlock', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE employees SET account_lock_status = false WHERE employee_id = $1 RETURNING employee_id, name, account_lock_status`,
+      [req.params.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Employee not found.' });
+    }
+
+    await logAudit({
+      actor_id: req.user?.id || null,
+      actor_username: req.user?.username || null,
+      action: 'EMPLOYEE_UNLOCKED',
+      entity_type: 'employee',
+      entity_id: parseInt(req.params.id),
+      new_value: 'account_lock_status=false',
+      ip_address: req.ip || req.connection.remoteAddress
+    });
+
+    return res.status(200).json({ success: true, employee: result.rows[0] });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
