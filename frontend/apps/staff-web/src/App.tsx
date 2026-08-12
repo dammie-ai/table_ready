@@ -8,6 +8,7 @@ import DeliveryPortal from './pages/DeliveryPortal'
 import ManagerPanel from './pages/ManagerPanel'
 import MenuManagement from './pages/MenuManagement'
 import ComboManagement from './pages/ComboManagement'
+import ModifierManagement from './pages/ModifierManagement'
 import Reservations from './pages/Reservations'
 import Waitlist from './pages/Waitlist'
 import StaffManagement from './pages/StaffManagement'
@@ -89,6 +90,12 @@ export default function App() {
       <Route path="/combo-management" element={
         <ProtectedRoute allowedRoles={['manager', 'assistant_manager']}>
           <StaffLayout><ComboManagement /></StaffLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/modifier-management" element={
+        <ProtectedRoute allowedRoles={['manager', 'assistant_manager']}>
+          <StaffLayout><ModifierManagement /></StaffLayout>
         </ProtectedRoute>
       } />
 

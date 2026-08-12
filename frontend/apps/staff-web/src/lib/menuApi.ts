@@ -129,3 +129,61 @@ export async function addComboSide(comboId: number, menuItemId: number, isDefaul
 export async function removeComboSide(comboId: number, sideId: number) {
   return apiClient.delete<{ success: boolean; message: string }>(`/combo-meals/${comboId}/sides/${sideId}`)
 }
+
+export interface Modifier {
+  modifier_id: number
+  name: string
+  description: string | null
+  price_adjustment: number
+  modifier_type: 'choice' | 'extra' | 'removal' | 'preparation'
+  is_active: boolean
+}
+
+export interface ItemModifier {
+  item_modifier_id: number
+  menu_item_id: number
+  modifier_id: number
+  is_required: boolean
+  max_quantity: number
+  sort_order: number
+  name: string
+  description: string | null
+  price_adjustment: number
+  modifier_type: string
+}
+
+export interface ModifierInput {
+  name: string
+  description?: string
+  price_adjustment?: number
+  modifier_type?: 'choice' | 'extra' | 'removal' | 'preparation'
+  is_active?: boolean
+}
+
+export async function getModifiers() {
+  return apiClient.get<{ success: boolean; count: number; modifiers: Modifier[] }>('/modifiers')
+}
+
+export async function createModifier(input: ModifierInput) {
+  return apiClient.post<{ success: boolean; modifier: Modifier }>('/modifiers', input)
+}
+
+export async function updateModifier(id: number, input: Partial<ModifierInput>) {
+  return apiClient.put<{ success: boolean; modifier: Modifier }>(`/modifiers/${id}`, input)
+}
+
+export async function deleteModifier(id: number) {
+  return apiClient.delete<{ success: boolean; message: string }>(`/modifiers/${id}`)
+}
+
+export async function getMenuItemModifiers(menuItemId: number) {
+  return apiClient.get<{ success: boolean; count: number; modifiers: ItemModifier[] }>(`/modifiers/item/${menuItemId}`)
+}
+
+export async function addModifierToItem(menuItemId: number, modifierId: number) {
+  return apiClient.post<{ success: boolean; item_modifier: ItemModifier }>(`/modifiers/item/${menuItemId}`, { modifier_id: modifierId })
+}
+
+export async function removeModifierFromItem(menuItemId: number, modifierId: number) {
+  return apiClient.delete<{ success: boolean; message: string }>(`/modifiers/item/${menuItemId}/${modifierId}`)
+}
