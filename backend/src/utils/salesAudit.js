@@ -232,15 +232,23 @@ function scheduleSalesAudit(io) {
   setInterval(() => checkDueAudits(io), 60 * 1000);
 }
 
-function createDefaultAuditConfig() {
-  pool.query(
-    `INSERT INTO sales_audit_config (schedule_type, interval_value, day_of_week, hour, minute, is_active, next_run)
-     VALUES ('weekly', 1, 6, 0, 0, true, $1)
-     ON CONFLICT DO NOTHING`,
-    [calculateNextRun('weekly', 1, 6, 0, 0)]
-  ).catch((err) => {
+async function createDefaultAuditConfig() {
+  // "ON CONFLICT DO NOTHING" here had no conflict target and no matching
+  // unique constraint on the table exists (only the auto-incrementing PK,
+  // which never collides on a fresh insert) -- it silently did nothing,
+  // and every server restart inserted another duplicate default config.
+  // An explicit existence check is the actual fix.
+  try {
+    const existing = await pool.query(`SELECT config_id FROM sales_audit_config LIMIT 1`);
+    if (existing.rows.length > 0) return;
+    await pool.query(
+      `INSERT INTO sales_audit_config (schedule_type, interval_value, day_of_week, hour, minute, is_active, next_run)
+       VALUES ('weekly', 1, 6, 0, 0, true, $1)`,
+      [calculateNextRun('weekly', 1, 6, 0, 0)]
+    );
+  } catch (err) {
     console.error('[SalesAudit] Failed to create default config:', err.message);
-  });
+  }
 }
 
 module.exports = {
