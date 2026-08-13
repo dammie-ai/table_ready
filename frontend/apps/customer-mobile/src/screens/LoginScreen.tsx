@@ -30,13 +30,16 @@ export default function LoginScreen({ navigation }: any) {
   // what they typed last time, same as a browser remembering a password.
   useEffect(() => {
     getStorageItem(REMEMBERED_KEY).then((stored) => {
+      console.log('[login] remembered credentials read:', stored ? 'found' : 'none stored yet');
       if (!stored) return;
       try {
         const { email: savedEmail, password: savedPassword } = JSON.parse(stored);
         if (savedEmail) setEmail(savedEmail);
         if (savedPassword) setPassword(savedPassword);
-      } catch {}
-    }).catch(() => {});
+      } catch (err) {
+        console.log('[login] failed to parse remembered credentials:', err);
+      }
+    }).catch((err) => console.log('[login] failed to read remembered credentials:', err));
   }, []);
 
   const handleSubmit = async () => {
@@ -51,7 +54,9 @@ export default function LoginScreen({ navigation }: any) {
         ? await customerLogin({ email, password })
         : await customerRegister({ email, password, first_name: firstName || undefined });
       setAuth(res.token, res.user);
-      setStorageItem(REMEMBERED_KEY, JSON.stringify({ email, password })).catch(() => {});
+      setStorageItem(REMEMBERED_KEY, JSON.stringify({ email, password }))
+        .then(() => console.log('[login] remembered credentials saved'))
+        .catch((err) => console.log('[login] failed to save remembered credentials:', err));
       // Location is checked before Login now, not after — see LocationCheckScreen.
       navigation.navigate('GroupChoice');
     } catch (err) {
