@@ -94,7 +94,11 @@ export default function WelcomeScreen({ navigation }: any) {
             produces (customers now always carry a JWT instead), so this
             button just opened an empty cart. Needs a JWT-based backend
             path before it can come back. */}
-        <Button title="🍽️ Combo Deals" onPress={() => navigation.navigate('Combos')} variant="primary" style={styles.button} />
+        {/* A standalone "Combo Deals" shortcut used to jump straight into
+            item selection here, skipping order-type/table selection
+            entirely — the only path on this screen that did. Combos are
+            still fully reachable from inside the Menu screen once an
+            order type (and, for dine-in, a table) has actually been set. */}
         <Button title="🪑 Dine In" onPress={() => navigation.navigate('TablePin')} variant="secondary" style={styles.button} />
         <Button title="📦 Pickup" onPress={() => handleOrder('pickup')} variant="secondary" style={styles.button} />
         <Button

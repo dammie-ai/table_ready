@@ -13,3 +13,6 @@ frontend/packages/*/node_modules/
 frontend/apps/customer-mobile/.expo/
 frontend/apps/customer-mobile/dist/
 frontend/apps/staff-web/dist/
+.expo/
+backend/.expo/
+.claude/

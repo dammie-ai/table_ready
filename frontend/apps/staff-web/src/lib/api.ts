@@ -1,9 +1,15 @@
-// Only use localhost when actually served from localhost (local dev) —
-// a deployed build needs the real deployed backend instead.
+// Only use the deployed backend when actually served from the deployed
+// static site's own domain — everything else (localhost, 127.0.0.1, a LAN
+// IP when opened from another device on the same network, etc.) is local
+// dev and should hit the local backend. The old check only matched the
+// literal string "localhost", so opening this via a LAN IP silently fell
+// through to the deployed backend instead, which doesn't have local-only
+// test accounts.
 const DEPLOYED_API = 'https://tableready-backend.onrender.com'
-export const API_ORIGIN = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:8001'
-  : DEPLOYED_API
+const DEPLOYED_HOSTS = ['tableready-staff-web.onrender.com']
+export const API_ORIGIN = typeof window !== 'undefined' && DEPLOYED_HOSTS.includes(window.location.hostname)
+  ? DEPLOYED_API
+  : `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:8001`
 const API_BASE = `${API_ORIGIN}/api`
 
 function getToken(): string | null {

@@ -1,17 +1,23 @@
 import { Platform } from 'react-native'
+import Constants from 'expo-constants'
 import { getStorageItem } from './storage'
 
 // On web, only use localhost when actually served from localhost (local
 // dev); a deployed build (Vercel/Render static site) needs the real
-// deployed backend. On a real device (Expo Go), "localhost"/LAN IPs only
-// work on the same network as the dev machine, so point at the deployed
-// backend by default too — swap back to a LAN IP here for local-only testing.
+// deployed backend. On a real device (Expo Go), "localhost" doesn't reach
+// the dev machine, so dev builds derive the dev machine's current LAN IP
+// from Expo's own packager host (Constants.expoConfig.hostUri is exactly
+// "<the address this phone used to reach Metro>:8081") instead of a
+// hardcoded value — that address changes every time the dev machine joins
+// a different network, which a hardcoded IP can't survive. Non-dev
+// (production/store) builds always use the deployed backend, untouched.
 const DEPLOYED_API = 'https://tableready-backend.onrender.com/api'
+const devHost = Constants.expoConfig?.hostUri?.split(':')[0]
 const API_BASE = Platform.OS === 'web'
   ? (typeof window !== 'undefined' && window.location.hostname === 'localhost'
       ? 'http://localhost:8001/api'
       : DEPLOYED_API)
-  : DEPLOYED_API
+  : (__DEV__ && devHost ? `http://${devHost}:8001/api` : DEPLOYED_API)
 
 // The auth token actually lives inside useAuthStore's zustand-persist
 // envelope under 'tableready_auth' (secure on-device storage on native,

@@ -25,11 +25,21 @@ export function getSocket() {
   if (!socket) {
     socket = io(API_ORIGIN, {
       auth: { token: getToken() },
-      transports: ['websocket', 'polling'],
+      // polling first — some networks (seen on this one) block the
+      // WebSocket upgrade outright, which left websocket-first sockets
+      // never actually connecting (customer-mobile had the identical bug).
+      transports: ['polling', 'websocket'],
     })
 
-    socket.on('connect', () => connectionListeners.forEach((fn) => fn(true)))
-    socket.on('disconnect', () => connectionListeners.forEach((fn) => fn(false)))
+    socket.on('connect', () => {
+      console.log('[socket] connected, id:', socket?.id)
+      connectionListeners.forEach((fn) => fn(true))
+    })
+    socket.on('connect_error', (err) => console.log('[socket] connect_error:', err.message))
+    socket.on('disconnect', (reason) => {
+      console.log('[socket] disconnected:', reason)
+      connectionListeners.forEach((fn) => fn(false))
+    })
   }
   return socket
 }

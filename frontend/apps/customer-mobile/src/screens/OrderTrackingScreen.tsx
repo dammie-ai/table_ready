@@ -52,6 +52,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
   const currentStep = order ? Math.max(STEPS.findIndex((s) => s.id === order.status), 0) : 0;
   const isOnHold = order?.status === 'ON_HOLD';
   const isCancelled = order?.status === 'CANCELLED' || order?.status === 'CANCELLED_AND_REFUNDED';
+  const isCompleted = order?.status === 'COMPLETED';
   const isAtPickupStep = STEPS[currentStep]?.id === 'READY_FOR_PICKUP';
 
   useEffect(() => {
@@ -78,7 +79,18 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
       });
 
     const socket = getSocket();
-    socket.emit('join_order', orderId);
+    // getSocket() connects as a guest first, then silently disconnects and
+    // reconnects once the stored auth token loads (a moment later, async)
+    // to upgrade to an authenticated connection. Room membership doesn't
+    // survive a disconnect, so joining only once here means a client that
+    // was in 'order_<id>' on the guest connection falls out of it the
+    // instant the auth upgrade happens — the initial REST fetch above
+    // still works, but every live status push afterward silently never
+    // arrives. Re-joining on every 'connect' (not just mount) covers that
+    // upgrade and any later reconnect (network blip, etc.) the same way.
+    const joinRoom = () => socket.emit('join_order', orderId);
+    if (socket.connected) joinRoom();
+    socket.on('connect', joinRoom);
 
     const handleStatusUpdate = (data: { status: string; progressPercentage: number }) => {
       setOrder((prev) => (prev ? { ...prev, status: data.status, progress_percentage: data.progressPercentage } : prev));
@@ -92,6 +104,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
 
     return () => {
       cancelled = true;
+      socket.off('connect', joinRoom);
       socket.off('order_status_updated', handleStatusUpdate);
       socket.off('delivery_location_updated', handleDeliveryLocation);
     };
@@ -311,6 +324,28 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           </View>
         )}
 
+        {!isCancelled && (
+          <View style={styles.progressCard}>
+            <Text style={styles.sectionLabel}>Payment</Text>
+            <View style={styles.paymentStatusRow}>
+              <Text style={styles.paymentStatusText}>
+                {order.payment_status === 'Paid'
+                  ? '✅ Paid'
+                  : order.payment_status === 'Refunded'
+                    ? '↩️ Refunded'
+                    : `⏳ Awaiting payment${order.payment_method ? ` (${order.payment_method})` : ''}`}
+              </Text>
+              {order.payment_status !== 'Paid' && order.payment_status !== 'Refunded' && (
+                <Text style={styles.paymentStatusHint}>
+                  {order.payment_method === 'card'
+                    ? 'A staff member will bring a card reader to you.'
+                    : 'Pay a staff member when your order is ready.'}
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
+
         {!isCancelled && ['RECEIVED', 'ON_HOLD'].includes(order.status) && (
           <TouchableOpacity
             style={[styles.cancelButton, cancelling && { opacity: 0.5 }]}
@@ -321,7 +356,27 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
           </TouchableOpacity>
         )}
 
-        {isDineIn && !isCancelled && (
+        {isCompleted && (
+          <View style={styles.serviceCard}>
+            <Text style={styles.sectionLabel}>All Done!</Text>
+            <Text style={styles.completedText}>Thanks for dining with us — hope you enjoyed your meal.</Text>
+            <Text style={styles.completedSubtext}>Anything else?</Text>
+            <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+              <Button
+                title="🍽️ Order Again"
+                onPress={() => navigation.navigate('Menu', { mode: orderType, table_number: order.table_number })}
+                variant="primary"
+              />
+              <Button
+                title="Done"
+                onPress={() => navigation.navigate('Welcome')}
+                variant="secondary"
+              />
+            </View>
+          </View>
+        )}
+
+        {isDineIn && !isCancelled && !isCompleted && (
           <View style={styles.serviceCard}>
             <Text style={styles.sectionLabel}>Request Service</Text>
             <View style={styles.serviceGrid}>
@@ -586,6 +641,18 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   progressList: {
     gap: 0,
   },
+  paymentStatusRow: {
+    gap: spacing.xs,
+  },
+  paymentStatusText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  paymentStatusHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
   progressItem: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -661,6 +728,16 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  completedText: {
+    fontSize: 14,
+    color: colors.text,
+    marginTop: spacing.xs,
+  },
+  completedSubtext: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   serviceGrid: {
     flexDirection: 'row',

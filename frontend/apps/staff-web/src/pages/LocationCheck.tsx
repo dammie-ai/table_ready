@@ -66,6 +66,7 @@ export default function LocationCheck({
           return
         }
 
+        let verified = false
         watchId = navigator.geolocation.watchPosition(
           (position) => {
             const { latitude, longitude } = position.coords
@@ -77,8 +78,11 @@ export default function LocationCheck({
             setDistance(dist)
 
             if (dist <= geofenceConfig.radius_meters) {
-              setStatus(`You're within ${Math.round(dist)}m of the restaurant`)
-              onLocationVerified(true)
+              if (!verified) {
+                verified = true
+                setStatus(`You're within ${Math.round(dist)}m of the restaurant`)
+                onLocationVerified(true)
+              }
             } else {
               setStatus(`You're ${Math.round(dist)}m away. Please get closer to the restaurant.`)
             }

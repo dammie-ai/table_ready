@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { borderRadius, spacing } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
@@ -30,6 +31,7 @@ export default function Input({
   autoCapitalize,
 }: Props) {
   const colors = useThemeStore((s) => s.colors);
+  const [revealed, setRevealed] = useState(false);
 
   return (
     <View style={styles.wrapper}>
@@ -47,17 +49,28 @@ export default function Input({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={colors.textSecondary}
-          secureTextEntry={secureTextEntry}
+          secureTextEntry={secureTextEntry && !revealed}
           keyboardType={keyboardType}
           multiline={multiline}
           numberOfLines={numberOfLines}
           autoCapitalize={autoCapitalize}
         />
-        {rightAction && (
+        {secureTextEntry ? (
+          <TouchableOpacity
+            onPress={() => setRevealed((r) => !r)}
+            style={styles.rightAction}
+            accessibilityRole="button"
+            accessibilityLabel={revealed ? 'Hide password' : 'Show password'}
+          >
+            <Text style={[styles.rightActionText, { color: colors.accent }]}>
+              {revealed ? 'Hide' : 'Show'}
+            </Text>
+          </TouchableOpacity>
+        ) : rightAction ? (
           <TouchableOpacity onPress={rightAction.onPress} style={styles.rightAction}>
             <Text style={[styles.rightActionText, { color: colors.accent }]}>{rightAction.label}</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
       {error && <Text style={[styles.error, { color: colors.error }]}>{error}</Text>}
     </View>

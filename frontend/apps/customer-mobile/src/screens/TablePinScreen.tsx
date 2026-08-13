@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { verifyTableCode, setStorageItem } from '@table-ready/shared'
@@ -24,9 +24,6 @@ export default function TablePinScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors)
   const styles = useMemo(() => createStyles(colors), [colors])
   const [permission, requestPermission] = useCameraPermissions()
-  const [mode, setMode] = useState<'scan' | 'manual'>('scan')
-  const [tableNumber, setTableNumber] = useState('')
-  const [pin, setPin] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [verified, setVerified] = useState<{ table: string; code: string } | null>(null)
   const [error, setError] = useState('')
@@ -43,10 +40,10 @@ export default function TablePinScreen({ navigation }: any) {
 
   useEffect(() => {
     autoRetriedRef.current = false
-  }, [mode, permission?.granted])
+  }, [permission?.granted])
 
   useEffect(() => {
-    if (mode !== 'scan' || !permission?.granted) {
+    if (!permission?.granted) {
       setCameraStalled(false)
       return
     }
@@ -67,7 +64,7 @@ export default function TablePinScreen({ navigation }: any) {
       })
     }, 4000)
     return () => clearTimeout(timeout)
-  }, [mode, permission?.granted, cameraKey])
+  }, [permission?.granted, cameraKey])
 
   const retryCamera = () => {
     setCameraStalled(false)
@@ -113,11 +110,6 @@ export default function TablePinScreen({ navigation }: any) {
     verify(parsed.table, parsed.code)
   }
 
-  const handleManualSubmit = () => {
-    if (!tableNumber || pin.length !== 4) return
-    verify(tableNumber, pin)
-  }
-
   if (verified) {
     return (
       <SafeAreaView style={styles.center} edges={['top']}>
@@ -142,7 +134,7 @@ export default function TablePinScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={[typography.h3, { color: colors.text }]}>{mode === 'scan' ? 'Scan Table QR Code' : 'Enter Table Code'}</Text>
+        <Text style={[typography.h3, { color: colors.text }]}>Scan Table QR Code</Text>
       </View>
 
       {error ? (
@@ -151,8 +143,7 @@ export default function TablePinScreen({ navigation }: any) {
         </View>
       ) : null}
 
-      {mode === 'scan' ? (
-        <View style={styles.scanArea}>
+      <View style={styles.scanArea}>
           {!permission ? (
             <View style={styles.permissionBox}>
               <ActivityIndicator color={colors.primary} />
@@ -175,7 +166,6 @@ export default function TablePinScreen({ navigation }: any) {
                 — retrying almost always fixes it.
               </Text>
               <Button title="Retry Camera" onPress={retryCamera} variant="primary" style={styles.permissionButton} />
-              <Button title="Enter Code Manually" onPress={() => setMode('manual')} variant="secondary" style={styles.permissionButton} />
             </View>
           ) : (
             <View style={styles.cameraBox}>
@@ -202,46 +192,6 @@ export default function TablePinScreen({ navigation }: any) {
           )}
           <Text style={styles.scanHint}>Point your camera at the QR code on your table</Text>
         </View>
-      ) : (
-        <View style={styles.manualForm}>
-          <Text style={styles.fieldLabel}>Table Number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. 12"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="numeric"
-            value={tableNumber}
-            onChangeText={setTableNumber}
-          />
-          <Text style={styles.fieldLabel}>4-Digit Table Code</Text>
-          <TextInput
-            style={[styles.input, styles.pinInput]}
-            placeholder="••••"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="numeric"
-            maxLength={4}
-            value={pin}
-            onChangeText={(v) => setPin(v.replace(/\D/g, '').slice(0, 4))}
-          />
-          <Text style={styles.manualHint}>Ask your server for the table code, or scan the QR code instead.</Text>
-          <Button
-            title={verifying ? 'Verifying...' : 'Confirm Table'}
-            onPress={handleManualSubmit}
-            disabled={verifying || !tableNumber || pin.length !== 4}
-            variant="primary"
-            style={styles.confirmButton}
-          />
-        </View>
-      )}
-
-      <TouchableOpacity
-        onPress={() => { setError(''); setMode(mode === 'scan' ? 'manual' : 'scan') }}
-        style={styles.switchModeButton}
-      >
-        <Text style={styles.switchModeText}>
-          {mode === 'scan' ? 'Enter Code Manually' : 'Scan QR Code Instead'}
-        </Text>
-      </TouchableOpacity>
     </SafeAreaView>
   )
 }

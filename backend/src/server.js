@@ -30,7 +30,17 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    // Matches app.js's Express CORS: allow no-Origin requests (native
+    // mobile clients don't send a browser-style Origin header at all)
+    // rather than exact-matching an allowlisted IP that changes every
+    // time the dev machine joins a different network.
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PATCH', 'PUT'],
     credentials: true,
   },

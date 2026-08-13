@@ -70,6 +70,7 @@ export default function OrderActionsModal({ orderId, onClose, onUpdated }: { ord
 
   const handleVoid = async (itemId: number) => {
     const reason = window.prompt('Reason for voiding this item?') || ''
+    if (!window.confirm('Void this item? This cannot be undone.')) return
     setVoidingId(itemId)
     setError('')
     try {

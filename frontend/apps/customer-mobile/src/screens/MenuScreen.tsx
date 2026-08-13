@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getMenuItems, getComboMeals, getDishOfWeek } from '@table-ready/shared';
+import { getMenuItems, getComboMeals, getDishOfWeek, getSocket } from '@table-ready/shared';
 import { useCartStore } from '@table-ready/shared';
 import Button from '../components/Button';
 import { spacing, borderRadius, typography, contrastText } from '../theme';
@@ -22,6 +22,22 @@ export default function MenuScreen({ route, navigation }: any) {
 
   useEffect(() => {
     loadMenu();
+
+    // Staff toggling an item's availability/stock broadcasts
+    // 'menu_item_updated' globally (io.emit, not room-scoped, so this
+    // isn't affected by the join/reconnect issue order tracking had) —
+    // but nothing on this screen was listening for it, so a customer
+    // already viewing the menu never saw an item go out of stock until
+    // they backed out and reopened it. Patches just the changed fields
+    // into the matching item in place.
+    const socket = getSocket();
+    const handleMenuItemUpdate = (data: { item_id: number; is_active?: boolean; out_of_stock_flag?: boolean }) => {
+      setItems((prev) => prev.map((item) => (item.item_id === data.item_id ? { ...item, ...data } : item)));
+    };
+    socket.on('menu_item_updated', handleMenuItemUpdate);
+    return () => {
+      socket.off('menu_item_updated', handleMenuItemUpdate);
+    };
   }, []);
 
   const loadMenu = async () => {

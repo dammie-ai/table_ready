@@ -244,14 +244,40 @@ exports.recordCashPayment = async (req, res) => {
       paymentStatus = 'PartiallyPaid';
     }
 
+    // Paying the bill only means the order is actually *done* if the food
+    // has already gone out (SERVED for dine-in, PICKED_UP for takeout) --
+    // a pickup/delivery order paid in advance is still cooking, and
+    // auto-completing it here would mark it done before it exists.
+    const readyToClose = ['SERVED', 'PICKED_UP'].includes(order.status);
+    const newStatus = paymentStatus === 'Paid' && readyToClose ? 'COMPLETED' : null;
+
     await client.query(
       'INSERT INTO order_payments (master_order_id, payment_method, amount, status, paid_by_user_id) VALUES ($1, $2, $3, $4, $5)',
       [orderId, 'cash', amount, 'succeeded', req.user?.id || null]
     );
 
-    await client.query('UPDATE orders SET payment_status = $1, updated_at = NOW() WHERE master_order_id = $2', [paymentStatus, orderId]);
+    if (newStatus) {
+      await client.query(
+        'UPDATE orders SET payment_status = $1, status = $2, progress_percentage = 100, updated_at = NOW() WHERE master_order_id = $3',
+        [paymentStatus, newStatus, orderId]
+      );
+    } else {
+      await client.query('UPDATE orders SET payment_status = $1, updated_at = NOW() WHERE master_order_id = $2', [paymentStatus, orderId]);
+    }
 
     await client.query('COMMIT');
+
+    if (newStatus) {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`order_${orderId}`).emit('order_status_updated', {
+          orderId: parseInt(orderId),
+          status: newStatus,
+          progressPercentage: 100,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
 
     await logAudit({
       actor_id: req.user?.id || null,

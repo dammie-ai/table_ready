@@ -111,6 +111,7 @@ export default function Checkout() {
     })
 
   const handleCashOrder = async () => {
+    if (placingCashOrder) return
     setError('')
     setPlacingCashOrder(true)
     try {
@@ -266,7 +267,7 @@ export default function Checkout() {
                   key={pct}
                   onClick={() => setTip(pct === 0 ? 0 : subtotal * (pct / 100))}
                   className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                    tip === (pct === 0 ? 0 : subtotal * (pct / 100))
+                    Math.abs(tip - (pct === 0 ? 0 : subtotal * (pct / 100))) < 0.005
                       ? 'border-[#f97316] bg-[#f97316]/15 text-[#f97316]'
                       : 'border-white/8 text-[#6b7280]'
                   }`}
@@ -343,6 +344,7 @@ export default function Checkout() {
             deliveryAddress={deliveryAddress}
             specialInstructions={specialInstructions}
             tip={tip}
+            total={finalTotal}
             onSuccess={handleSuccess}
           />
         </Elements>

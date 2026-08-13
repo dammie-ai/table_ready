@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing, borderRadius, typography } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 import Button from '../components/Button';
-import Input from '../components/Input';
 import * as Location from 'expo-location';
 import { checkLocation } from '@table-ready/shared';
 
@@ -19,10 +18,8 @@ export default function LocationCheckScreen({ navigation }: any) {
   // dialog fires — jumping straight to the system prompt with zero context
   // (the previous behavior) is exactly what tanks grant rates and gives no
   // recovery path if the user reflexively denies it.
-  const [phase, setPhase] = useState<'intro' | 'loading' | 'success' | 'error' | 'manual'>('intro');
+  const [phase, setPhase] = useState<'intro' | 'loading' | 'success' | 'error'>('intro');
   const [errorMsg, setErrorMsg] = useState('');
-  const [manualAddress, setManualAddress] = useState('');
-  const [withinGeofence, setWithinGeofence] = useState(true);
 
   const requestLocation = async () => {
     setPhase('loading');
@@ -46,11 +43,9 @@ export default function LocationCheckScreen({ navigation }: any) {
       });
 
       if (res.allowed) {
-        setWithinGeofence(true);
         setPhase('success');
         setTimeout(() => navigation.navigate(nextRoute), 1500);
       } else {
-        setWithinGeofence(false);
         setPhase('error');
         setErrorMsg(`You are outside the restaurant geofence (${res.distance_miles} mi away, must be within ${res.radius_miles} mi).`);
       }
@@ -58,15 +53,6 @@ export default function LocationCheckScreen({ navigation }: any) {
       setPhase('error');
       setErrorMsg(err instanceof Error ? err.message : 'Location error');
     }
-  };
-
-  const handleContinueAnyway = () => {
-    setWithinGeofence(false);
-    setPhase('manual');
-  };
-
-  const handleManualContinue = () => {
-    navigation.navigate(nextRoute);
   };
 
   if (phase === 'intro') {
@@ -99,7 +85,6 @@ export default function LocationCheckScreen({ navigation }: any) {
 
         <View style={styles.buttonContainer}>
           <Button title="Allow Location Access" onPress={requestLocation} variant="primary" style={styles.button} />
-          <Button title="Continue Anyway" onPress={handleContinueAnyway} variant="tertiary" style={styles.button} />
         </View>
       </View>
     );
@@ -142,21 +127,7 @@ export default function LocationCheckScreen({ navigation }: any) {
 
       <View style={styles.buttonContainer}>
         <Button title="Retry Location" onPress={requestLocation} variant="secondary" style={styles.button} />
-        <Button title="Continue Anyway" onPress={handleContinueAnyway} variant="tertiary" style={styles.button} />
       </View>
-
-      {phase === 'manual' && (
-        <View style={styles.manualSection}>
-          <Input
-            label="Address or Note"
-            value={manualAddress}
-            onChangeText={setManualAddress}
-            placeholder="Optional address or note for staff"
-            multiline
-          />
-          <Button title="Continue" onPress={handleManualContinue} variant="primary" style={styles.button} />
-        </View>
-      )}
     </View>
   );
 }

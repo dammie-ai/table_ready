@@ -19,19 +19,24 @@ export default function CheckoutScreen({ navigation }: any) {
   // A verified table (scanned QR or manually entered on the TablePin
   // screen) means this is unambiguously a dine-in order — skip making the
   // customer pick the order type and retype the table number they already
-  // gave us.
+  // gave us. But that stored table number outlives the session it was
+  // scanned for, so it must never override an order type the customer
+  // explicitly picked afterward (e.g. Pickup/Delivery from Welcome) —
+  // only apply it while dine-in is still the active/remembered choice.
   useEffect(() => {
+    if (rememberedOrderType && rememberedOrderType !== 'dine-in') return;
     getStorageItem('tableready_table_number').then((stored) => {
       if (stored) {
         setOrderType('dine-in');
         setTableNumber(stored);
       }
     }).catch(() => {});
-  }, []);
+  }, [rememberedOrderType]);
   const [address, setAddress] = useState('');
   const [instructions, setInstructions] = useState('');
   const [tipPercent, setTipPercent] = useState(18);
   const [customTip, setCustomTip] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
   const [placingOrder, setPlacingOrder] = useState(false);
 
   const cart = useCartStore((s) => s.items);
@@ -124,7 +129,7 @@ export default function CheckoutScreen({ navigation }: any) {
         notes,
         idempotency_key: `mobile-checkout-${Date.now()}`,
         tip_amount: tipAmount > 0 ? parseFloat(tipAmount.toFixed(2)) : undefined,
-        payment_method: 'cash',
+        payment_method: paymentMethod,
         ...deliveryCoords,
       })
 
@@ -318,18 +323,34 @@ export default function CheckoutScreen({ navigation }: any) {
 
         <View style={styles.paymentCard}>
           <Text style={styles.sectionLabel}>Payment Method</Text>
+          <View style={styles.orderTypeRow}>
+            <TouchableOpacity
+              onPress={() => setPaymentMethod('cash')}
+              style={[styles.orderTypeButton, { flex: 1 }, paymentMethod === 'cash' && styles.orderTypeButtonActive]}
+            >
+              <Text style={styles.orderTypeEmoji}>💵</Text>
+              <Text style={[styles.orderTypeText, paymentMethod === 'cash' && styles.orderTypeTextActive]}>Cash</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setPaymentMethod('card')}
+              style={[styles.orderTypeButton, { flex: 1 }, paymentMethod === 'card' && styles.orderTypeButtonActive]}
+            >
+              <Text style={styles.orderTypeEmoji}>💳</Text>
+              <Text style={[styles.orderTypeText, paymentMethod === 'card' && styles.orderTypeTextActive]}>Card</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.paymentRow}>
-            <View style={styles.cardBrand}>
-              <Text style={styles.cardBrandText}>💵</Text>
-            </View>
             <View style={styles.cardDetails}>
-              <Text style={styles.cardNumber}>Cash</Text>
-              <Text style={styles.cardExpiry}>Pay when your order is ready</Text>
+              <Text style={styles.cardExpiry}>
+                {paymentMethod === 'cash'
+                  ? 'Pay when your order is ready.'
+                  : 'A staff member will bring a card reader to you — in-app card entry isn’t available on mobile yet.'}
+              </Text>
             </View>
           </View>
           <View style={styles.secureRow}>
             <Text style={styles.secureIcon}>🔒</Text>
-            <Text style={styles.secureText}>An idempotency key prevents duplicate orders. Card payment is coming soon.</Text>
+            <Text style={styles.secureText}>An idempotency key prevents duplicate orders.</Text>
           </View>
         </View>
 

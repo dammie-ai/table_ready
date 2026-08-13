@@ -231,7 +231,7 @@ export default function DeliveryPortal() {
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-sm font-semibold text-[#f97316]">${delivery.total_amount.toFixed(2)}</div>
+                      <div className="text-sm font-semibold text-[#f97316]">${Number(delivery.total_amount).toFixed(2)}</div>
                     </div>
                   </div>
 

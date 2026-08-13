@@ -123,7 +123,7 @@ export default function OrderHistory() {
                 <div className="border-t border-white/8 pt-3 flex justify-between items-center">
                   <span className="font-bold" style={{ color: theme?.text_color }}>Total</span>
                   <span className="font-bold text-lg" style={{ color: theme?.primary_color }}>
-                    ${order.total_amount.toFixed(2)}
+                    ${Number(order.total_amount).toFixed(2)}
                   </span>
                 </div>
 

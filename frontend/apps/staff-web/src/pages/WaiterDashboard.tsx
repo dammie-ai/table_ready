@@ -36,6 +36,7 @@ interface MyTable {
   master_order_id: number | null
   order_status: string | null
   total_amount: number | null
+  payment_status: string | null
 }
 
 export default function WaiterDashboard() {
@@ -98,17 +99,31 @@ export default function WaiterDashboard() {
     socket.on('kitchen_order_updated', ({ orderId, status }: { orderId: number; status: string }) => {
       setMyTables((prev) => prev.map((t) => t.master_order_id === orderId ? { ...t, order_status: status } : t))
     })
+    // kitchen_order_updated only covers a *status change* on an order this
+    // dashboard already knows about — a brand new order landing on one of
+    // this waiter's tables (going from "No active order" to having one)
+    // was never pushed at all, only visible after a manual refresh.
+    socket.on('new_kitchen_order', (order: { master_order_id: number; table_number?: number; status: string; total_amount: number }) => {
+      if (!order.table_number) return
+      setMyTables((prev) => prev.map((t) =>
+        t.table_number === order.table_number
+          ? { ...t, master_order_id: order.master_order_id, order_status: order.status, total_amount: order.total_amount }
+          : t
+      ))
+    })
 
     return () => {
       socket.off('service_request_created')
       socket.off('service_request_updated')
       socket.off('table_status_updated')
       socket.off('kitchen_order_updated')
+      socket.off('new_kitchen_order')
       offConnection()
     }
   }, [])
 
   const [servingId, setServingId] = useState<number | null>(null)
+  const [completingId, setCompletingId] = useState<number | null>(null)
   const [managingOrderId, setManagingOrderId] = useState<number | null>(null)
 
   // The kitchen's own advance chain stops at READY for dine-in orders now
@@ -124,6 +139,22 @@ export default function WaiterDashboard() {
       console.error('Failed to mark order served:', err)
     } finally {
       setServingId(null)
+    }
+  }
+
+  // SERVED existed as a terminal state in practice — nothing anywhere ever
+  // moved an order past it to COMPLETED, even though the status is a valid,
+  // already-supported value on the same PATCH /status endpoint markServed
+  // uses. Closing the table's order out once the bill is settled.
+  const completeOrder = async (orderId: number) => {
+    setCompletingId(orderId)
+    try {
+      await apiClient.patch(`/orders/${orderId}/status`, { status: 'COMPLETED' })
+      setMyTables((prev) => prev.map((t) => t.master_order_id === orderId ? { ...t, order_status: 'COMPLETED' } : t))
+    } catch (err) {
+      console.error('Failed to complete order:', err)
+    } finally {
+      setCompletingId(null)
     }
   }
 
@@ -250,6 +281,20 @@ export default function WaiterDashboard() {
                           className="w-full mt-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-lg disabled:opacity-50 transition-colors"
                         >
                           {servingId === table.master_order_id ? 'Marking served…' : '✓ Mark Served'}
+                        </button>
+                      )}
+                      {table.order_status === 'SERVED' && table.payment_status !== 'Paid' && (
+                        <div className="w-full mt-2.5 text-center text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg py-2 px-2">
+                          Awaiting payment — record it under Manage Order before this can be completed.
+                        </div>
+                      )}
+                      {table.order_status === 'SERVED' && table.payment_status === 'Paid' && (
+                        <button
+                          onClick={() => completeOrder(table.master_order_id!)}
+                          disabled={completingId === table.master_order_id}
+                          className="w-full mt-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-lg disabled:opacity-50 transition-colors"
+                        >
+                          {completingId === table.master_order_id ? 'Completing…' : '✓ Complete Order'}
                         </button>
                       )}
                       <button

@@ -479,6 +479,7 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
   try {
     const kitchenOrders = await pool.query(
       `SELECT o.*,
+              cp.first_name AS customer_name,
               COALESCE(
                 json_agg(
                   json_build_object(
@@ -494,6 +495,7 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
                 '[]'
               ) AS items
        FROM orders o
+       LEFT JOIN customer_profiles cp ON o.customer_id = cp.customer_id
        LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
        LEFT JOIN menu_items mi ON oi.item_id = mi.item_id
        -- oi.modifiers only ever stored {modifier_id, quantity} — never a
@@ -514,7 +516,7 @@ router.get('/pickup-queue', authenticateToken, authorizeRoles('admin', 'manager'
          LEFT JOIN menu_modifiers mm ON mm.modifier_id = (elem->>'modifier_id')::int
        ) mod_names ON true
        WHERE o.status NOT IN ('ON_HOLD', 'CANCELLED_AND_REFUNDED', 'CANCELLED', 'COMPLETED', 'SERVED', 'PICKED_UP')
-       GROUP BY o.master_order_id
+       GROUP BY o.master_order_id, cp.first_name
        ORDER BY o.created_at ASC`
     );
 

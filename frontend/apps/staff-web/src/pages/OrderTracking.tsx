@@ -102,8 +102,16 @@ export default function OrderTracking() {
   }
 
   const isOnHold = order.status === 'ON_HOLD'
-  const statusSteps = ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'READY_FOR_PICKUP', 'PICKED_UP']
+  // Dine-in orders terminate at SERVED (the waiter's hand-off confirmation),
+  // never PICKED_UP — a dine-in order using the takeout step list would
+  // never find its own final status in the array (indexOf returns -1,
+  // collapsing the "complete" progress bar back to empty).
+  const isDineIn = order.order_type === 'DINE_IN' || order.order_type === 'IN_HOUSE'
+  const statusSteps = isDineIn
+    ? ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'SERVED']
+    : ['RECEIVED', 'IN_PREPARATION', 'COOKING', 'READY', 'READY_FOR_PICKUP', 'PICKED_UP']
   const currentStep = isOnHold ? -1 : statusSteps.indexOf(order.status)
+  const isComplete = order.status === 'PICKED_UP' || order.status === 'SERVED'
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -174,12 +182,12 @@ export default function OrderTracking() {
         <div className="border-t mt-4 pt-4 flex justify-between" style={{ borderColor: theme?.primary_color + '20' }}>
           <span className="text-xl font-bold" style={{ color: theme?.text_color }}>Total</span>
           <span className="text-xl font-bold" style={{ color: theme?.primary_color }}>
-            ${order.total_amount.toFixed(2)}
+            ${Number(order.total_amount).toFixed(2)}
           </span>
         </div>
       </div>
 
-      {order.status === 'PICKED_UP' && (
+      {isComplete && (
         <div className="border rounded-lg p-4 mb-6" style={{ borderColor: theme?.primary_color + '40' }}>
           {ratingSubmitted ? (
             <p className="text-center font-medium" style={{ color: theme?.text_color }}>

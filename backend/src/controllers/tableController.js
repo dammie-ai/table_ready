@@ -138,10 +138,10 @@ exports.getMyTables = async (req, res) => {
     const result = await pool.query(
       `SELECT
          rt.table_id, rt.table_number, rt.status_state, rt.capacity, rt.section,
-         o.master_order_id, o.status AS order_status, o.total_amount
+         o.master_order_id, o.status AS order_status, o.total_amount, o.payment_status
        FROM restaurant_tables rt
        LEFT JOIN LATERAL (
-         SELECT master_order_id, status, total_amount
+         SELECT master_order_id, status, total_amount, payment_status
          FROM orders
          WHERE table_number = rt.table_number
            AND status NOT IN ('PICKED_UP', 'CANCELLED', 'COMPLETED')

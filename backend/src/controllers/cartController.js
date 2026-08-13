@@ -428,6 +428,7 @@ exports.checkout = async (req, res) => {
 
     const fullOrder = await pool.query(
       `SELECT o.*,
+              cp.first_name AS customer_name,
               json_agg(
                 json_build_object(
                   'order_item_id', oi.order_item_id,
@@ -438,9 +439,10 @@ exports.checkout = async (req, res) => {
                 )
               ) AS items
        FROM orders o
+       LEFT JOIN customer_profiles cp ON o.customer_id = cp.customer_id
        LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
        WHERE o.master_order_id = $1
-       GROUP BY o.master_order_id`,
+       GROUP BY o.master_order_id, cp.first_name`,
       [createdOrder.master_order_id]
     );
 

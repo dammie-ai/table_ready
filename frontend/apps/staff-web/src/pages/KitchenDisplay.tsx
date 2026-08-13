@@ -9,6 +9,7 @@ interface Order {
   total_amount: number
   table_number?: number
   order_type?: string
+  customer_name?: string
   items: any[]
 }
 
@@ -231,6 +232,7 @@ export default function KitchenDisplay() {
                   <h2 className="text-3xl font-bold">#{order.master_order_id}</h2>
                   <p className="text-xl text-gray-300">
                     {order.table_number ? `Table ${order.table_number}` : (order.order_type?.replace('_', ' ') || 'Takeout')}
+                    {order.customer_name && <span className="text-gray-400"> · {order.customer_name}</span>}
                   </p>
                 </div>
                 <span
