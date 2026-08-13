@@ -99,7 +99,7 @@ export default function WelcomeScreen({ navigation }: any) {
             entirely — the only path on this screen that did. Combos are
             still fully reachable from inside the Menu screen once an
             order type (and, for dine-in, a table) has actually been set. */}
-        <Button title="🪑 Dine In" onPress={() => navigation.navigate('TablePin')} variant="secondary" style={styles.button} />
+        <Button title="🪑 Dine In" onPress={() => navigation.navigate('LocationCheck')} variant="secondary" style={styles.button} />
         <Button title="📦 Pickup" onPress={() => handleOrder('pickup')} variant="secondary" style={styles.button} />
         <Button
           title={checkingDelivery ? 'Checking your location...' : '🚗 Delivery'}
@@ -112,7 +112,7 @@ export default function WelcomeScreen({ navigation }: any) {
       </View>
 
       <View style={styles.secondaryRow}>
-        <Button title="🔑 Join Table" onPress={() => navigation.navigate('TablePin')} variant="tertiary" style={styles.secondaryButton} />
+        <Button title="🔑 Join Table" onPress={() => navigation.navigate('LocationCheck')} variant="tertiary" style={styles.secondaryButton} />
         <Button title="📋 Waitlist" onPress={() => navigation.navigate('Waitlist')} variant="tertiary" style={styles.secondaryButton} />
         <Button title="📅 Reserve" onPress={() => navigation.navigate('Reservations')} variant="tertiary" style={styles.secondaryButton} />
       </View>

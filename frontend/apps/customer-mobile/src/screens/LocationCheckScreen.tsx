@@ -11,10 +11,13 @@ export default function LocationCheckScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  // Sign-in always follows location confirmation, unconditionally — the
-  // Login screen itself stays in the flow every time; it just autofills
-  // remembered credentials now instead of being skipped (see LoginScreen).
-  const nextRoute = 'Login';
+  // No longer a universal gate every visitor sits through before even
+  // choosing what they want — Pickup/Delivery/Order From Home/Reservations
+  // never needed to be near the restaurant, and Delivery already runs its
+  // own separate (wider-radius) check inline on Welcome. This screen is
+  // reached only from Welcome's "Dine In"/"Join Table" buttons now, so
+  // TablePin (the QR/PIN check-in) is always where it leads.
+  const nextRoute = 'TablePin';
   // 'intro' explains *why* we're about to ask before the OS permission
   // dialog fires — jumping straight to the system prompt with zero context
   // (the previous behavior) is exactly what tanks grant rates and gives no

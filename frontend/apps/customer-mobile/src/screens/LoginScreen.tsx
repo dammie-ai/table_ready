@@ -25,9 +25,9 @@ export default function LoginScreen({ navigation }: any) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // The screen itself always stays in the flow (location check -> Login,
-  // every time) -- this just spares a returning customer from retyping
-  // what they typed last time, same as a browser remembering a password.
+  // Login is the app's front door on every launch -- this just spares a
+  // returning customer from retyping what they typed last time, same as
+  // a browser remembering a password.
   useEffect(() => {
     getStorageItem(REMEMBERED_KEY).then((stored) => {
       console.log('[login] remembered credentials read:', stored ? 'found' : 'none stored yet');
@@ -57,7 +57,6 @@ export default function LoginScreen({ navigation }: any) {
       setStorageItem(REMEMBERED_KEY, JSON.stringify({ email, password }))
         .then(() => console.log('[login] remembered credentials saved'))
         .catch((err) => console.log('[login] failed to save remembered credentials:', err));
-      // Location is checked before Login now, not after — see LocationCheckScreen.
       navigation.navigate('GroupChoice');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');

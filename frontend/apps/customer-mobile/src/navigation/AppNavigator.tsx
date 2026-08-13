@@ -48,16 +48,19 @@ export default function Navigation() {
   // even while this device is browsing the menu, not the table-cart screen.
   useGroupCartSync()
 
-  // Location is checked before sign-in now, for every visitor — whether
-  // they're already authenticated or not — so it's always the first
-  // screen. LocationCheckScreen itself decides whether to route an
-  // already-authenticated user past Login straight to GroupChoice.
+  // Sign-in is the front door — no location gate up front anymore. That
+  // used to block every visitor behind a tight dine-in-only geofence
+  // before they'd even picked Pickup/Delivery/Order From Home/
+  // Reservations, none of which require being near the restaurant.
+  // LocationCheck is now only reached from Welcome's "Dine In"/"Join
+  // Table" buttons, right before TablePin's QR/PIN check-in. Delivery
+  // still runs its own separate, wider-radius check inline on Welcome.
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="LocationCheck" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="LocationCheck" component={LocationCheckScreen} />
         <Stack.Screen name="GroupChoice" component={GroupChoiceScreen} options={{ title: 'Ordering Style' }} />
-        <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ title: 'TableReady' }} />
         <Stack.Screen name="TablePin" component={TablePinScreen} options={{ title: 'Table Check-In' }} />
         <Stack.Screen name="Main" component={TabNavigator} />
