@@ -69,15 +69,55 @@ exports.assignDriver = async (req, res) => {
 
 /**
  * POST /api/delivery/:orderId/status
- * Update delivery status
+ * Update delivery status. Marking 'delivered' only closes out the order's
+ * main status (and unlocks the customer's "Completed" screen) if payment
+ * is already settled (e.g. paid by card at checkout) -- a cash-on-delivery
+ * order stays open until the driver records the cash payment via
+ * recordCashPayment, same rule as the dine-in waiter flow.
  */
 exports.updateDeliveryStatus = async (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+  const client = await pool.connect();
   try {
-    const { status } = req.body;
-    await pool.query('UPDATE orders SET delivery_status = $1 WHERE master_order_id = $2', [status, req.params.orderId]);
+    await client.query('BEGIN');
+
+    const orderRes = await client.query('SELECT status, payment_status FROM orders WHERE master_order_id = $1 FOR UPDATE', [orderId]);
+    if (orderRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Order not found.' });
+    }
+    const order = orderRes.rows[0];
+    const shouldComplete = status === 'delivered' && order.payment_status === 'Paid';
+
+    const updated = await client.query(
+      shouldComplete
+        ? `UPDATE orders SET delivery_status = $1, status = 'COMPLETED', progress_percentage = 100, updated_at = NOW() WHERE master_order_id = $2 RETURNING status, progress_percentage`
+        : `UPDATE orders SET delivery_status = $1, updated_at = NOW() WHERE master_order_id = $2 RETURNING status, progress_percentage`,
+      [status, orderId]
+    );
+
+    await client.query('COMMIT');
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('delivery_status_updated', { orderId: parseInt(orderId), status });
+      if (shouldComplete) {
+        io.to(`order_${orderId}`).emit('order_status_updated', {
+          orderId: parseInt(orderId),
+          status: updated.rows[0].status,
+          progressPercentage: updated.rows[0].progress_percentage,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+
     return res.status(200).json({ success: true });
   } catch (err) {
+    await client.query('ROLLBACK');
     return res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
   }
 };
 

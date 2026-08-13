@@ -245,10 +245,12 @@ exports.recordCashPayment = async (req, res) => {
     }
 
     // Paying the bill only means the order is actually *done* if the food
-    // has already gone out (SERVED for dine-in, PICKED_UP for takeout) --
-    // a pickup/delivery order paid in advance is still cooking, and
-    // auto-completing it here would mark it done before it exists.
-    const readyToClose = ['SERVED', 'PICKED_UP'].includes(order.status);
+    // has already gone out (SERVED for dine-in, PICKED_UP for takeout, or
+    // the driver has already marked it delivered) -- a pickup/delivery
+    // order paid in advance is still cooking, and auto-completing it here
+    // would mark it done before it exists.
+    const readyToClose = ['SERVED', 'PICKED_UP'].includes(order.status) ||
+      (order.order_type === 'DELIVERY' && order.delivery_status === 'delivered');
     const newStatus = paymentStatus === 'Paid' && readyToClose ? 'COMPLETED' : null;
 
     await client.query(

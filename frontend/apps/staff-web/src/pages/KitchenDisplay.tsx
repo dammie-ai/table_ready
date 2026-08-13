@@ -109,30 +109,26 @@ export default function KitchenDisplay() {
     }
   }
 
-  // READY_FOR_PICKUP/PICKED_UP describe a takeout customer or driver
-  // physically collecting the order — meaningless for a table order,
-  // which a waiter delivers instead. Kitchen's chain stops at READY for
-  // DINE_IN; a waiter owns the READY -> SERVED handoff from there
-  // (WaiterDashboard's "Mark Served"), so the kitchen can no longer walk
-  // a table order straight to a "picked up" state with no one having
-  // confirmed the food actually reached the table.
-  const nextStatusFor = (currentStatus: string, orderType?: string) => {
-    const dineInFlow: Record<string, string> = {
+  // Kitchen's chain stops at READY for every order type, full stop --
+  // READY_FOR_PICKUP/PICKED_UP/OUT_FOR_DELIVERY/etc describe a customer,
+  // counter staff, or driver physically taking the order, which kitchen
+  // can't confirm happened. This used to let kitchen walk a PICKUP order
+  // straight to PICKED_UP (skipping the counter hand-off, same class of
+  // bug SERVED already covers for dine-in) and, worse, walk a DELIVERY
+  // order to PICKED_UP too, bypassing the driver flow in DeliveryPortal
+  // entirely. Waiter's "Pickup" tab and DeliveryPortal own everything
+  // past READY for their respective types now.
+  const nextStatusFor = (currentStatus: string) => {
+    const flow: Record<string, string> = {
       RECEIVED: 'IN_PREPARATION',
       IN_PREPARATION: 'COOKING',
       COOKING: 'READY',
     }
-    const takeoutFlow: Record<string, string> = {
-      ...dineInFlow,
-      READY: 'READY_FOR_PICKUP',
-      READY_FOR_PICKUP: 'PICKED_UP',
-    }
-    const flow = orderType === 'DINE_IN' || orderType === 'IN_HOUSE' ? dineInFlow : takeoutFlow
     return flow[currentStatus]
   }
 
-  const advanceStatus = async (orderId: number, currentStatus: string, orderType?: string) => {
-    const nextStatus = nextStatusFor(currentStatus, orderType)
+  const advanceStatus = async (orderId: number, currentStatus: string) => {
+    const nextStatus = nextStatusFor(currentStatus)
     if (!nextStatus) return
 
     try {
@@ -283,23 +279,24 @@ export default function KitchenDisplay() {
 
               <div className="border-t border-gray-700 pt-4">
                 {(() => {
-                  const next = nextStatusFor(order.status, order.order_type)
+                  const next = nextStatusFor(order.status)
                   if (!next) {
-                    // DINE_IN order sitting at READY — kitchen's part is
-                    // done; a waiter marks it Served from their dashboard,
-                    // not this button.
+                    // Order sitting at READY — kitchen's part is done;
+                    // whoever owns hand-off for this type takes it from
+                    // here (waiter for DINE_IN/PICKUP/ORDER_FROM_HOME,
+                    // driver for DELIVERY), not this button.
                     return (
                       <div className="w-full text-center text-yellow-400 text-lg font-bold py-4 rounded-lg border-2 border-dashed border-yellow-500/40">
-                        Waiting for waiter
+                        {order.order_type === 'DELIVERY' ? 'Waiting for driver' : 'Waiting for waiter'}
                       </div>
                     )
                   }
                   return (
                     <button
-                      onClick={() => advanceStatus(order.master_order_id, order.status, order.order_type)}
+                      onClick={() => advanceStatus(order.master_order_id, order.status)}
                       className="w-full bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-4 rounded-lg"
                     >
-                      {next === 'PICKED_UP' ? 'COMPLETE' : 'ADVANCE'}
+                      ADVANCE
                     </button>
                   )
                 })()}

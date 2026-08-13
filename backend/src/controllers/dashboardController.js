@@ -225,7 +225,8 @@ exports.getDeliveryDashboard = async (req, res) => {
 
     const availableDeliveries = await pool.query(
       `SELECT o.master_order_id, o.order_type, o.table_number, o.total_amount, o.created_at,
-              o.customer_id, cp.first_name, cp.last_name, cp.phone,
+              o.customer_id, o.payment_status, o.payment_method, o.delivery_status,
+              cp.first_name, cp.last_name, cp.phone,
               json_agg(json_build_object('item_id', oi.item_id, 'quantity', oi.quantity)) AS items
        FROM orders o
        LEFT JOIN order_items oi ON o.master_order_id = oi.master_order_id
@@ -240,7 +241,8 @@ exports.getDeliveryDashboard = async (req, res) => {
     );
 
     const myDeliveries = await pool.query(
-      `SELECT o.master_order_id, o.status, o.total_amount, o.created_at,
+      `SELECT o.master_order_id, o.status, o.order_type, o.total_amount, o.created_at,
+              o.payment_status, o.payment_method, o.delivery_status,
               cp.first_name, cp.last_name, cp.phone,
               json_agg(json_build_object('item_id', oi.item_id, 'quantity', oi.quantity)) AS items
        FROM orders o
@@ -254,12 +256,12 @@ exports.getDeliveryDashboard = async (req, res) => {
     );
 
     const deliveryStats = await pool.query(
-      `SELECT 
-         COUNT(*) FILTER (WHERE o.status = 'OUT_FOR_DELIVERY') AS active_deliveries,
-         COUNT(*) FILTER (WHERE o.status = 'DELIVERED') AS completed_today,
-         COALESCE(SUM(o.total_amount), 0) AS total_earnings
+      `SELECT
+         COUNT(*) FILTER (WHERE o.delivery_status = 'out_for_delivery') AS active_deliveries,
+         COUNT(*) FILTER (WHERE o.delivery_status = 'delivered') AS completed_today,
+         COALESCE(SUM(o.total_amount) FILTER (WHERE o.delivery_status = 'delivered'), 0) AS total_earnings
        FROM orders o
-       LEFT JOIN order_assignments oa ON o.master_order_id = oa.order_id AND oa.assigned_to = $1
+       JOIN order_assignments oa ON o.master_order_id = oa.order_id AND oa.assigned_to = $1
        WHERE o.order_type = 'DELIVERY' AND o.created_at >= $2`,
       [userId, new Date(new Date().setHours(0, 0, 0, 0))]
     );

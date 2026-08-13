@@ -17,6 +17,8 @@ interface Delivery {
   phone?: string
   driver_latitude?: number
   driver_longitude?: number
+  payment_status?: string | null
+  payment_method?: string | null
 }
 
 interface Driver {
@@ -50,6 +52,7 @@ export default function DeliveryPortal() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'queue' | 'map'>('queue')
   const [error, setError] = useState('')
+  const [collectingId, setCollectingId] = useState<number | null>(null)
   const watchIds = useRef<Record<number, number>>({})
 
   const startTrackingLocation = (orderId: number) => {
@@ -111,14 +114,42 @@ export default function DeliveryPortal() {
     socket.on('delivery_assigned', () => {
       loadDeliveries()
     })
+    // A brand new delivery order landing was never pushed here at all —
+    // same gap the waiter dashboard had for new dine-in orders. Refetching
+    // (rather than merging the raw broadcast payload, which doesn't carry
+    // the assignment/customer join columns this screen needs) is simplest
+    // and correct since this event is infrequent.
+    socket.on('new_kitchen_order', (order: { order_type?: string }) => {
+      if (order.order_type === 'DELIVERY') loadDeliveries()
+    })
 
     return () => {
       socket.off('delivery_status_updated')
       socket.off('delivery_assigned')
+      socket.off('new_kitchen_order')
       Object.keys(watchIds.current).forEach((id) => stopTrackingLocation(parseInt(id)))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Cash-on-delivery isn't settled until the driver actually collects it —
+  // marking 'delivered' alone won't close the order out on the backend
+  // unless payment_status is already 'Paid' (e.g. paid by card at
+  // checkout), so this is the only way a COD delivery ever reaches
+  // Completed on the customer's tracking screen.
+  const collectPayment = async (delivery: Delivery) => {
+    setCollectingId(delivery.master_order_id)
+    try {
+      await apiClient.post(`/orders/${delivery.master_order_id}/cash-payment`, { amount: delivery.total_amount })
+      setMyDeliveries((prev) => prev.map((d) =>
+        d.master_order_id === delivery.master_order_id ? { ...d, payment_status: 'Paid' } : d
+      ))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to record payment')
+    } finally {
+      setCollectingId(null)
+    }
+  }
 
   const updateStatus = async (orderId: number, status: string) => {
     try {
@@ -255,7 +286,7 @@ export default function DeliveryPortal() {
                         {assigningId === delivery.master_order_id ? '…' : 'Assign'}
                       </button>
                     </div>
-                  ) : meta.next && meta.nextLabel && (
+                  ) : meta.next && meta.nextLabel ? (
                     <div className="px-5 pb-4 pt-0">
                       <button
                         onClick={() => updateStatus(delivery.master_order_id, meta.next!)}
@@ -263,6 +294,23 @@ export default function DeliveryPortal() {
                       >
                         {meta.nextLabel}
                       </button>
+                    </div>
+                  ) : delivery.delivery_status === 'delivered' && delivery.payment_status !== 'Paid' ? (
+                    <div className="px-5 pb-4 pt-0">
+                      <p className="text-xs text-amber-400 mb-2">
+                        Awaiting payment{delivery.payment_method ? ` (${delivery.payment_method})` : ''} — collect cash before this closes out.
+                      </p>
+                      <button
+                        onClick={() => collectPayment(delivery)}
+                        disabled={collectingId === delivery.master_order_id}
+                        className="w-full bg-emerald-600 hover:bg-emerald-600/80 disabled:opacity-40 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                      >
+                        {collectingId === delivery.master_order_id ? '…' : `Collect $${Number(delivery.total_amount).toFixed(2)} Cash`}
+                      </button>
+                    </div>
+                  ) : delivery.delivery_status === 'delivered' && (
+                    <div className="px-5 pb-4 pt-0">
+                      <p className="text-xs text-emerald-400">✓ Paid — delivery complete.</p>
                     </div>
                   )}
                 </div>

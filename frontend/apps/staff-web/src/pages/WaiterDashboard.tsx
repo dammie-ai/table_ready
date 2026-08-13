@@ -39,28 +39,52 @@ interface MyTable {
   payment_status: string | null
 }
 
+// PICKUP and ORDER_FROM_HOME converge into the same flow once an
+// ORDER_FROM_HOME order is released from hold — both are counter hand-offs
+// with no table involved, so they share this one queue.
+interface CounterOrder {
+  master_order_id: number
+  order_type: string
+  status: string
+  total_amount: number
+  payment_status: string | null
+  payment_method: string | null
+  customer_name?: string | null
+}
+
+const COUNTER_FLOW: Record<string, string> = {
+  READY: 'READY_FOR_PICKUP',
+  READY_FOR_PICKUP: 'PICKED_UP',
+}
+
 export default function WaiterDashboard() {
   const [tables, setTables] = useState<Table[]>([])
   const [requests, setRequests] = useState<ServiceRequest[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [myTables, setMyTables] = useState<MyTable[]>([])
+  const [counterOrders, setCounterOrders] = useState<CounterOrder[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'floor' | 'alerts' | 'my-tables'>('my-tables')
+  const [view, setView] = useState<'floor' | 'alerts' | 'my-tables' | 'counter'>('my-tables')
   const [connected, setConnected] = useState(true)
+  const [collectingId, setCollectingId] = useState<number | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [tablesRes, requestsRes, sessionsRes, myTablesRes] = await Promise.all([
+        const [tablesRes, requestsRes, sessionsRes, myTablesRes, kitchenRes] = await Promise.all([
           apiClient.get<any>('/tables/floor-layout'),
           apiClient.get<any>('/service-requests'),
           apiClient.get<any>('/sessions'),
           apiClient.get<any>('/tables/my-tables'),
+          apiClient.get<any>('/orders/kitchen-orders'),
         ])
         setTables(tablesRes.tables || [])
         setRequests(requestsRes.requests || [])
         setSessions(sessionsRes.sessions || [])
         setMyTables(myTablesRes.tables || [])
+        setCounterOrders(
+          (kitchenRes.orders || []).filter((o: any) => o.order_type === 'PICKUP' || o.order_type === 'ORDER_FROM_HOME')
+        )
       } catch (err) {
         console.error('Failed to load waiter data:', err)
       } finally {
@@ -95,21 +119,28 @@ export default function WaiterDashboard() {
     })
     // The backend broadcasts this on every kitchen status change — without
     // it, a waiter's own dashboard never learned food was ready until they
-    // manually refreshed.
+    // manually refreshed. Covers both a table's order and a counter order,
+    // since both flow through the same generic status PATCH.
     socket.on('kitchen_order_updated', ({ orderId, status }: { orderId: number; status: string }) => {
       setMyTables((prev) => prev.map((t) => t.master_order_id === orderId ? { ...t, order_status: status } : t))
+      setCounterOrders((prev) => prev.map((o) => o.master_order_id === orderId ? { ...o, status } : o))
     })
     // kitchen_order_updated only covers a *status change* on an order this
     // dashboard already knows about — a brand new order landing on one of
     // this waiter's tables (going from "No active order" to having one)
     // was never pushed at all, only visible after a manual refresh.
-    socket.on('new_kitchen_order', (order: { master_order_id: number; table_number?: number; status: string; total_amount: number }) => {
-      if (!order.table_number) return
-      setMyTables((prev) => prev.map((t) =>
-        t.table_number === order.table_number
-          ? { ...t, master_order_id: order.master_order_id, order_status: order.status, total_amount: order.total_amount }
-          : t
-      ))
+    socket.on('new_kitchen_order', (order: CounterOrder & { table_number?: number }) => {
+      if (order.table_number) {
+        setMyTables((prev) => prev.map((t) =>
+          t.table_number === order.table_number
+            ? { ...t, master_order_id: order.master_order_id, order_status: order.status, total_amount: order.total_amount }
+            : t
+        ))
+        return
+      }
+      if (order.order_type === 'PICKUP' || order.order_type === 'ORDER_FROM_HOME') {
+        setCounterOrders((prev) => [order, ...prev])
+      }
     })
 
     return () => {
@@ -155,6 +186,44 @@ export default function WaiterDashboard() {
       console.error('Failed to complete order:', err)
     } finally {
       setCompletingId(null)
+    }
+  }
+
+  // Mirrors markServed/completeOrder's pattern but for the counter queue --
+  // kitchen's advance button stops at READY for every type now, so this is
+  // the only thing that moves a PICKUP/ORDER_FROM_HOME order the rest of
+  // the way (READY -> READY_FOR_PICKUP -> PICKED_UP). If it was already
+  // paid up front (e.g. card at checkout), marking it picked up goes
+  // straight to COMPLETED here too -- same reasoning as DeliveryPortal's
+  // shouldComplete check, since nothing else will ever close this out.
+  const advanceCounterStatus = async (order: CounterOrder) => {
+    const nextStatus = COUNTER_FLOW[order.status]
+    if (!nextStatus) return
+    const finalStatus = nextStatus === 'PICKED_UP' && order.payment_status === 'Paid' ? 'COMPLETED' : nextStatus
+    try {
+      await apiClient.patch(`/orders/${order.master_order_id}/status`, { status: finalStatus })
+      if (finalStatus === 'COMPLETED') {
+        setCounterOrders((prev) => prev.filter((o) => o.master_order_id !== order.master_order_id))
+      } else {
+        setCounterOrders((prev) => prev.map((o) => o.master_order_id === order.master_order_id ? { ...o, status: finalStatus } : o))
+      }
+    } catch (err) {
+      console.error('Failed to advance counter order:', err)
+    }
+  }
+
+  // recordCashPayment already treats PICKED_UP as ready-to-close (same
+  // rule as SERVED for dine-in), so collecting payment here both records
+  // it and completes the order server-side in one call.
+  const collectCounterPayment = async (order: CounterOrder) => {
+    setCollectingId(order.master_order_id)
+    try {
+      await apiClient.post(`/orders/${order.master_order_id}/cash-payment`, { amount: order.total_amount })
+      setCounterOrders((prev) => prev.filter((o) => o.master_order_id !== order.master_order_id))
+    } catch (err) {
+      console.error('Failed to collect payment:', err)
+    } finally {
+      setCollectingId(null)
     }
   }
 
@@ -221,7 +290,7 @@ export default function WaiterDashboard() {
           <span className="text-sm font-medium text-[#f1f5f9]">Waiter Dashboard</span>
         </div>
         <div className="flex gap-1">
-          {(['my-tables', 'floor', 'alerts'] as const).map((v) => (
+          {(['my-tables', 'counter', 'floor', 'alerts'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -234,7 +303,7 @@ export default function WaiterDashboard() {
                   {requests.filter((r) => r.status === 'pending').length}
                 </span>
               )}
-              {v === 'floor' ? 'Floor Map' : v === 'my-tables' ? 'My Tables' : 'Alerts'}
+              {v === 'floor' ? 'Floor Map' : v === 'my-tables' ? 'My Tables' : v === 'counter' ? 'Pickup' : 'Alerts'}
             </button>
           ))}
         </div>
@@ -306,6 +375,76 @@ export default function WaiterDashboard() {
                     </div>
                   ) : (
                     <div className="text-xs opacity-50 italic">No active order</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : view === 'counter' ? (
+        <div className="p-4 md:p-6 max-w-2xl">
+          <div className="flex items-center gap-3 mb-5">
+            <h2 className="font-display font-bold text-xl">Pickup Queue</h2>
+            <span className="text-xs font-mono bg-[#f97316]/15 text-[#f97316] border border-[#f97316]/30 px-2 py-0.5 rounded">
+              {counterOrders.length} active
+            </span>
+          </div>
+
+          {counterOrders.length === 0 ? (
+            <div className="text-center text-[#6b7280] py-16">
+              <div className="text-4xl mb-3">📦</div>
+              <p className="font-medium">No pickup or order-ahead orders right now.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {counterOrders.map((order) => (
+                <div key={order.master_order_id} className="bg-[#111118] border border-white/8 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-4 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-sm">#{order.master_order_id}</span>
+                        <span className="text-[10px] border px-1.5 py-0.5 rounded font-mono font-bold text-blue-400 bg-blue-500/10 border-blue-500/30 capitalize">
+                          {order.status.toLowerCase().replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-[10px] text-[#6b7280]">
+                          {order.order_type === 'ORDER_FROM_HOME' ? 'Order from Home' : 'Pickup'}
+                        </span>
+                      </div>
+                      <div className="text-sm font-medium mt-0.5">
+                        {order.customer_name || `Order #${order.master_order_id}`}
+                      </div>
+                    </div>
+                    <div className="text-sm font-semibold text-[#f97316] flex-shrink-0">
+                      ${Number(order.total_amount).toFixed(2)}
+                    </div>
+                  </div>
+
+                  {order.status === 'READY' || order.status === 'READY_FOR_PICKUP' ? (
+                    <div className="px-5 pb-4 pt-0">
+                      <button
+                        onClick={() => advanceCounterStatus(order)}
+                        className="w-full bg-[#f97316] hover:bg-[#f97316]/80 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                      >
+                        {order.status === 'READY' ? 'Ready for Pickup' : 'Customer Picked Up'}
+                      </button>
+                    </div>
+                  ) : order.status === 'PICKED_UP' && order.payment_status !== 'Paid' ? (
+                    <div className="px-5 pb-4 pt-0">
+                      <p className="text-xs text-amber-400 mb-2">
+                        Awaiting payment{order.payment_method ? ` (${order.payment_method})` : ''} — collect before this closes out.
+                      </p>
+                      <button
+                        onClick={() => collectCounterPayment(order)}
+                        disabled={collectingId === order.master_order_id}
+                        className="w-full bg-emerald-600 hover:bg-emerald-600/80 disabled:opacity-40 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                      >
+                        {collectingId === order.master_order_id ? '…' : `Collect $${Number(order.total_amount).toFixed(2)} Cash`}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="px-5 pb-4 pt-0">
+                      <p className="text-xs text-[#6b7280]">Waiting on the kitchen.</p>
+                    </div>
                   )}
                 </div>
               ))}
