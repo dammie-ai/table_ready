@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
@@ -6,7 +6,9 @@ import Input from '../components/Input';
 import BackButton from '../components/BackButton';
 import { spacing, borderRadius, typography, contrastText } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
-import { customerLogin, customerRegister, useAuthStore } from '@table-ready/shared';
+import { customerLogin, customerRegister, useAuthStore, getStorageItem, setStorageItem } from '@table-ready/shared';
+
+const REMEMBERED_KEY = 'tableready_remembered_credentials';
 
 // The app's entry gate — customers must sign in before reaching Welcome.
 // Separate identity system from staff: this hits /customer/login and
@@ -23,6 +25,20 @@ export default function LoginScreen({ navigation }: any) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // The screen itself always stays in the flow (location check -> Login,
+  // every time) -- this just spares a returning customer from retyping
+  // what they typed last time, same as a browser remembering a password.
+  useEffect(() => {
+    getStorageItem(REMEMBERED_KEY).then((stored) => {
+      if (!stored) return;
+      try {
+        const { email: savedEmail, password: savedPassword } = JSON.parse(stored);
+        if (savedEmail) setEmail(savedEmail);
+        if (savedPassword) setPassword(savedPassword);
+      } catch {}
+    }).catch(() => {});
+  }, []);
+
   const handleSubmit = async () => {
     if (!email || !password) {
       setError('Please fill in all fields.');
@@ -35,6 +51,7 @@ export default function LoginScreen({ navigation }: any) {
         ? await customerLogin({ email, password })
         : await customerRegister({ email, password, first_name: firstName || undefined });
       setAuth(res.token, res.user);
+      setStorageItem(REMEMBERED_KEY, JSON.stringify({ email, password })).catch(() => {});
       // Location is checked before Login now, not after — see LocationCheckScreen.
       navigation.navigate('GroupChoice');
     } catch (err) {

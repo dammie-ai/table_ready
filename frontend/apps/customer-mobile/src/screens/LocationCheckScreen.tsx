@@ -5,19 +5,16 @@ import { spacing, borderRadius, typography } from '../theme';
 import { useThemeStore } from '../stores/themeStore';
 import Button from '../components/Button';
 import * as Location from 'expo-location';
-import { checkLocation, useAuthStore } from '@table-ready/shared';
+import { checkLocation } from '@table-ready/shared';
 
 export default function LocationCheckScreen({ navigation }: any) {
   const colors = useThemeStore((s) => s.colors);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
-  // Location is checked fresh every single time, on purpose — that's the
-  // actual "are you near the restaurant" safety check and shouldn't be
-  // silently skipped just because a session is remembered. Only the
-  // credential-entry step is skipped for a returning, already-signed-in
-  // customer (token persists from a prior session — see authStore).
-  const token = useAuthStore((s) => s.token);
-  const nextRoute = token ? 'GroupChoice' : 'Login';
+  // Sign-in always follows location confirmation, unconditionally — the
+  // Login screen itself stays in the flow every time; it just autofills
+  // remembered credentials now instead of being skipped (see LoginScreen).
+  const nextRoute = 'Login';
   // 'intro' explains *why* we're about to ask before the OS permission
   // dialog fires — jumping straight to the system prompt with zero context
   // (the previous behavior) is exactly what tanks grant rates and gives no
