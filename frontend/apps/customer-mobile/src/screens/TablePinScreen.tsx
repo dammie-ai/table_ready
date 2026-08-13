@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { CameraView, useCameraPermissions } from 'expo-camera'
-import { verifyTableCode, setStorageItem } from '@table-ready/shared'
+import { verifyTableCode, setStorageItem, useCartStore } from '@table-ready/shared'
 import Button from '../components/Button'
 import { spacing, borderRadius, typography } from '../theme'
 import { useThemeStore } from '../stores/themeStore'
@@ -20,9 +20,11 @@ function parseTableQr(raw: string): { table: string; code: string } | null {
   return { table: tableMatch[1], code: codeMatch[1] }
 }
 
-export default function TablePinScreen({ navigation }: any) {
+export default function TablePinScreen({ navigation, route }: any) {
   const colors = useThemeStore((s) => s.colors)
   const styles = useMemo(() => createStyles(colors), [colors])
+  const thenGroupRoom = route?.params?.thenGroupRoom as string | undefined
+  const setGroupRoom = useCartStore((s) => s.setGroupRoom)
   const [permission, requestPermission] = useCameraPermissions()
   const [verifying, setVerifying] = useState(false)
   const [verified, setVerified] = useState<{ table: string; code: string } | null>(null)
@@ -85,7 +87,12 @@ export default function TablePinScreen({ navigation }: any) {
       }
       setVerified({ table, code })
       setTimeout(() => {
-        navigation.replace('Menu', { mode: 'dine-in', table_number: Number(table) })
+        if (thenGroupRoom) {
+          setGroupRoom(thenGroupRoom)
+          navigation.replace('TableCart')
+        } else {
+          navigation.replace('Menu', { mode: 'dine-in', table_number: Number(table) })
+        }
       }, 1800)
     } catch (err) {
       scannedRef.current = false

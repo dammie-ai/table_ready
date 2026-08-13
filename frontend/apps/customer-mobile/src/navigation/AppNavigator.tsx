@@ -25,7 +25,7 @@ export type RootStackParamList = {
   GroupChoice: undefined
   Login: undefined
   Welcome: undefined
-  TablePin: undefined
+  TablePin: { thenGroupRoom?: string } | undefined
   Main: undefined
   Menu: { mode?: string; table_number?: number }
   ItemDetail: { item: any }

@@ -21,7 +21,6 @@ export default function GroupChoiceScreen({ navigation }: any) {
   const [groupSubMode, setGroupSubMode] = useState<SubMode | null>(null);
   const [roomCode] = useState(generateRoomCode);
   const [joinCode, setJoinCode] = useState('');
-  const setGroupRoom = useCartStore((s) => s.setGroupRoom);
   const leaveGroupRoom = useCartStore((s) => s.leaveGroupRoom);
 
   const handleSolo = () => {
@@ -29,15 +28,20 @@ export default function GroupChoiceScreen({ navigation }: any) {
     navigation.navigate('Welcome');
   };
 
+  // A group order is a shared table cart -- it needs an actual verified
+  // table_number the same way solo dine-in does, or checkout falls back to
+  // either no table at all (mislabeled as Pickup) or a stale table_number
+  // left in storage from a previous, unrelated visit. Routing through
+  // TablePin's QR scan first (same screen solo dine-in uses) establishes
+  // that correctly; TablePinScreen sets the group room and redirects to
+  // TableCart once verification succeeds instead of going to Menu.
   const handleCreateGroup = () => {
-    setGroupRoom(roomCode);
-    navigation.navigate('TableCart');
+    navigation.navigate('TablePin', { thenGroupRoom: roomCode });
   };
 
   const handleJoinGroup = () => {
     if (joinCode.length < 4) return;
-    setGroupRoom(joinCode);
-    navigation.navigate('TableCart');
+    navigation.navigate('TablePin', { thenGroupRoom: joinCode });
   };
 
   return (
