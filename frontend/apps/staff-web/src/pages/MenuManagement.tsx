@@ -18,6 +18,7 @@ export default function MenuManagement() {
     prep_time_minutes: '10',
     is_active: true,
     image_url: '',
+    stock_quantity: '',
   })
 
   const loadItems = async () => {
@@ -44,6 +45,7 @@ export default function MenuManagement() {
       prep_time_minutes: '10',
       is_active: true,
       image_url: '',
+      stock_quantity: '',
     })
     setEditingItem(null)
     setShowForm(false)
@@ -59,6 +61,7 @@ export default function MenuManagement() {
       prep_time_minutes: item.prep_time_minutes.toString(),
       is_active: item.is_active,
       image_url: item.image_url || '',
+      stock_quantity: item.stock_quantity != null ? item.stock_quantity.toString() : '',
     })
     setShowForm(true)
   }
@@ -89,6 +92,7 @@ export default function MenuManagement() {
         prep_time_minutes: parseInt(form.prep_time_minutes),
         is_active: form.is_active,
         image_url: form.image_url || undefined,
+        stock_quantity: form.stock_quantity.trim() === '' ? undefined : parseInt(form.stock_quantity),
       }
 
       if (editingItem) {
@@ -225,6 +229,18 @@ export default function MenuManagement() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[#f1f5f9]">Units Left (optional)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.stock_quantity}
+                  onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })}
+                  placeholder="Leave blank if you're not tracking a count"
+                  className={inputClass}
+                />
+              </div>
+
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -267,6 +283,7 @@ export default function MenuManagement() {
               <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Left</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Actions</th>
             </tr>
@@ -289,6 +306,15 @@ export default function MenuManagement() {
                 </td>
                 <td className="px-6 py-4 text-sm text-[#f1f5f9]">{item.category_type}</td>
                 <td className="px-6 py-4 text-sm font-medium text-[#f1f5f9]">${item.base_price.toFixed(2)}</td>
+                <td className="px-6 py-4 text-sm">
+                  {item.stock_quantity != null ? (
+                    <span className={item.stock_quantity <= 5 ? 'text-amber-400 font-medium' : 'text-[#f1f5f9]'}>
+                      {item.stock_quantity}
+                    </span>
+                  ) : (
+                    <span className="text-[#6b7280]">—</span>
+                  )}
+                </td>
                 <td className="px-6 py-4">
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${

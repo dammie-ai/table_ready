@@ -306,6 +306,46 @@ const toggleStock = async (req, res) => {
     }
 };
 
+/**
+ * PATCH /api/menu/:id/stock-quantity
+ * Just the "how many do we have left" count -- separate from the general
+ * PUT /:id update (which is manager-tier only, since it can also touch
+ * name/price/category) so kitchen can update this one number themselves
+ * mid-service without needing full edit rights on the item.
+ */
+const updateStockQuantity = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { stock_quantity } = req.body;
+
+        if (stock_quantity === undefined || stock_quantity === null || stock_quantity < 0) {
+            return res.status(400).json({ success: false, error: 'stock_quantity must be a non-negative number.' });
+        }
+
+        const result = await pool.query(
+            `UPDATE menu_items SET stock_quantity = $1 WHERE item_id = $2 RETURNING *`,
+            [stock_quantity, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Menu item not found.' });
+        }
+
+        const item = result.rows[0];
+        item.base_price = parseFloat(item.base_price);
+
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('menu_item_updated', { item_id: item.item_id, stock_quantity: item.stock_quantity });
+        }
+
+        return res.status(200).json({ success: true, item });
+    } catch (error) {
+        console.error('Error updating stock quantity:', error);
+        return res.status(500).json({ success: false, error: 'Internal server error.' });
+    }
+};
+
 module.exports = {
     getMenuItems,
     getMenuItemDetail,
@@ -315,5 +355,6 @@ module.exports = {
     createMenuItem,
     updateMenuItem,
     toggleMenuItem,
-    toggleStock
+    toggleStock,
+    updateStockQuantity
 };

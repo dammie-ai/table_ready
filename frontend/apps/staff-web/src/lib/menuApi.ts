@@ -79,6 +79,13 @@ export async function toggleMenuItemStock(itemId: number) {
   )
 }
 
+// Its own narrow endpoint, not the general PUT /menu/:id update -- that one
+// is manager-tier only (it can also touch name/price/category), but kitchen
+// needs to update this specific number themselves mid-service.
+export async function updateMenuItemStockQuantity(itemId: number, stockQuantity: number) {
+  return apiClient.patch<{ success: boolean; item: MenuItem }>(`/menu/${itemId}/stock-quantity`, { stock_quantity: stockQuantity })
+}
+
 export async function getComboMeals(): Promise<{ success: boolean; combos: ComboMeal[] }> {
   const res = await fetch(`${API_ORIGIN}/api/combo-meals`)
   const data = await res.json()

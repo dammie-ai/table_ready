@@ -190,3 +190,68 @@ exports.getServiceRatings = async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
+
+/**
+ * GET /api/analytics/top-items?period=day|week|month|year
+ * Most-ordered menu items for a given rolling window. This is the "what's
+ * actually selling right now" view for Kitchen Display + Manager Panel --
+ * different job from getDishOfWeekStats above (that one has no date
+ * filtering at all and is scoped to the dish-of-the-week promo feature),
+ * so rather than bolt period filtering onto it, it gets its own query.
+ */
+exports.getTopItems = async (req, res) => {
+  try {
+    // Anything that isn't one of these four just falls back to 'day' --
+    // no point erroring out over a typo'd query param on a read-only view.
+    const VALID_PERIODS = ['day', 'week', 'month', 'year'];
+    let { period } = req.query;
+    if (!VALID_PERIODS.includes(period)) {
+      period = 'day';
+    }
+
+    // Keeping the cutoff math intentionally dumb: 'day' mirrors the
+    // since-midnight pattern dashboardController already uses everywhere,
+    // and week/month/year are just rolling N-day windows -- no calendar
+    // months or ISO week boundaries, that precision isn't needed for a
+    // "what's hot" leaderboard.
+    let cutoff;
+    if (period === 'week') {
+      cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    } else if (period === 'month') {
+      cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    } else if (period === 'year') {
+      cutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    } else {
+      cutoff = new Date();
+      cutoff.setHours(0, 0, 0, 0);
+    }
+
+    // Same cancelled/refunded exclusion used throughout dashboardController
+    // and salesAudit -- an order nobody ended up getting shouldn't count
+    // toward "most ordered" just because it was placed at some point.
+    const result = await pool.query(
+      `SELECT
+        oi.item_id,
+        mi.name,
+        SUM(oi.quantity) AS total_quantity,
+        COUNT(DISTINCT oi.master_order_id) AS order_count
+      FROM order_items oi
+      JOIN menu_items mi ON oi.item_id = mi.item_id
+      JOIN orders o ON oi.master_order_id = o.master_order_id
+      WHERE o.created_at >= $1
+        AND o.status NOT IN ('CANCELLED', 'CANCELLED_AND_REFUNDED')
+      GROUP BY oi.item_id, mi.name
+      ORDER BY total_quantity DESC
+      LIMIT 10`,
+      [cutoff]
+    );
+
+    return res.status(200).json({
+      success: true,
+      period,
+      items: result.rows
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};

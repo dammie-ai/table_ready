@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
 import { getSocket, onConnectionChange } from '../lib/socket'
-import { getMenuItems, toggleMenuItemStock, type MenuItem } from '../lib/menuApi'
+import { getMenuItems, toggleMenuItemStock, updateMenuItemStockQuantity, type MenuItem } from '../lib/menuApi'
 
 interface Order {
   master_order_id: number
@@ -13,6 +13,24 @@ interface Order {
   items: any[]
 }
 
+interface TopItem {
+  item_id: number
+  name: string
+  total_quantity: number
+  order_count: number
+}
+
+type TopItemsPeriod = 'day' | 'week' | 'month' | 'year'
+
+// Same four windows the backend understands -- just the button labels are
+// friendlier than the raw query param values.
+const PERIOD_LABELS: Record<TopItemsPeriod, string> = {
+  day: 'Today',
+  week: 'Week',
+  month: 'Month',
+  year: 'Year',
+}
+
 const KITCHEN_HIDDEN_STATUSES = new Set([
   'ON_HOLD', 'CANCELLED_AND_REFUNDED', 'CANCELLED', 'COMPLETED', 'SERVED', 'PICKED_UP',
 ])
@@ -20,13 +38,18 @@ const KITCHEN_HIDDEN_STATUSES = new Set([
 export default function KitchenDisplay() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'orders' | 'stock'>('orders')
+  const [view, setView] = useState<'orders' | 'stock' | 'top-items'>('orders')
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [stockLoading, setStockLoading] = useState(true)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const [stockSearch, setStockSearch] = useState('')
+  const [qtyEdits, setQtyEdits] = useState<Record<number, string>>({})
+  const [savingQtyId, setSavingQtyId] = useState<number | null>(null)
   const [connected, setConnected] = useState(true)
   const [error, setError] = useState('')
+  const [topItems, setTopItems] = useState<TopItem[]>([])
+  const [topItemsLoading, setTopItemsLoading] = useState(false)
+  const [topItemsPeriod, setTopItemsPeriod] = useState<TopItemsPeriod>('day')
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -98,6 +121,31 @@ export default function KitchenDisplay() {
     }
   }, [])
 
+  // Kept separate from the orders/menu-items load above on purpose -- this
+  // one only needs to run when someone's actually looking at the Top Items
+  // tab, and it re-fires whenever they flip between Today/Week/Month/Year.
+  useEffect(() => {
+    if (view !== 'top-items') return
+
+    let cancelled = false
+    setTopItemsLoading(true)
+    apiClient
+      .get<{ success: boolean; period: string; items: TopItem[] }>(`/analytics/top-items?period=${topItemsPeriod}`)
+      .then((res) => {
+        if (!cancelled) setTopItems(res.items || [])
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load top items')
+      })
+      .finally(() => {
+        if (!cancelled) setTopItemsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [view, topItemsPeriod])
+
   const toggleStock = async (itemId: number) => {
     setTogglingId(itemId)
     try {
@@ -107,6 +155,34 @@ export default function KitchenDisplay() {
       setError(err instanceof Error ? err.message : 'Failed to toggle stock')
     } finally {
       setTogglingId(null)
+    }
+  }
+
+  // Not part of the same PUT the manager's full menu form uses -- kitchen
+  // doesn't have rights to that one, just to this one number, via its own
+  // narrow endpoint (mirrors how toggleStock above is split off from the
+  // full menu-item toggle for the same reason).
+  const saveQuantity = async (itemId: number) => {
+    const raw = qtyEdits[itemId]
+    if (raw === undefined || raw.trim() === '') return
+    const qty = parseInt(raw, 10)
+    if (isNaN(qty) || qty < 0) {
+      setError('Units left must be a non-negative number.')
+      return
+    }
+    setSavingQtyId(itemId)
+    try {
+      const res = await updateMenuItemStockQuantity(itemId, qty)
+      setMenuItems((prev) => prev.map((m) => (m.item_id === itemId ? res.item : m)))
+      setQtyEdits((prev) => {
+        const next = { ...prev }
+        delete next[itemId]
+        return next
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update units left')
+    } finally {
+      setSavingQtyId(null)
     }
   }
 
@@ -180,6 +256,14 @@ export default function KitchenDisplay() {
         >
           Stock
         </button>
+        <button
+          onClick={() => setView('top-items')}
+          className={`px-6 py-2 rounded-lg text-lg font-semibold ${
+            view === 'top-items' ? 'bg-[#f97316] text-white' : 'bg-gray-800 text-gray-300'
+          }`}
+        >
+          Top Items
+        </button>
       </div>
 
       {view === 'stock' ? (
@@ -207,11 +291,29 @@ export default function KitchenDisplay() {
                   item.out_of_stock_flag ? 'bg-gray-800 border-red-600' : 'bg-gray-800 border-gray-700'
                 }`}
               >
-                <div>
+                <div className="flex-1">
                   <p className="text-lg font-semibold">{item.name}</p>
                   <p className={`text-sm ${item.out_of_stock_flag ? 'text-red-400' : 'text-green-400'}`}>
                     {item.out_of_stock_flag ? 'Out of stock' : 'In stock'}
                   </p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder={item.stock_quantity != null ? String(item.stock_quantity) : 'units left'}
+                      value={qtyEdits[item.item_id] ?? ''}
+                      onChange={(e) => setQtyEdits((prev) => ({ ...prev, [item.item_id]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveQuantity(item.item_id) }}
+                      className="w-20 px-2 py-1 text-sm rounded bg-gray-900 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500"
+                    />
+                    <button
+                      onClick={() => saveQuantity(item.item_id)}
+                      disabled={savingQtyId === item.item_id || qtyEdits[item.item_id] === undefined}
+                      className="px-2 py-1 text-xs font-semibold rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 whitespace-nowrap"
+                    >
+                      {savingQtyId === item.item_id ? '…' : 'Set'}
+                    </button>
+                  </div>
                 </div>
                 <button
                   onClick={() => toggleStock(item.item_id)}
@@ -229,6 +331,48 @@ export default function KitchenDisplay() {
             </div>
           </div>
         )
+      ) : view === 'top-items' ? (
+        <div className="max-w-3xl mx-auto">
+          <div className="flex justify-center gap-2 mb-6">
+            {(['day', 'week', 'month', 'year'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setTopItemsPeriod(p)}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  topItemsPeriod === p ? 'bg-[#f97316] text-white' : 'bg-[#111118] border border-white/8 text-[#6b7280]'
+                }`}
+              >
+                {PERIOD_LABELS[p]}
+              </button>
+            ))}
+          </div>
+
+          {topItemsLoading ? (
+            <p className="text-center text-gray-400 text-2xl py-20">Loading top items...</p>
+          ) : topItems.length === 0 ? (
+            <p className="text-center text-gray-400 text-2xl py-20">No orders in this period yet</p>
+          ) : (
+            // Same ranked-list shape as ManagerPanel's Top Items card, just
+            // sized up for a kitchen-display screen someone's reading from
+            // a few feet away.
+            <div className="bg-[#111118] border border-white/8 rounded-2xl divide-y divide-white/8">
+              {topItems.map((item, i) => (
+                <div key={item.item_id} className="flex items-center justify-between px-5 py-4">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <span className={`text-xl font-mono w-8 text-center shrink-0 ${i === 0 ? 'text-[#f97316]' : 'text-[#6b7280]'}`}>
+                      #{i + 1}
+                    </span>
+                    <span className="text-xl font-semibold text-[#f1f5f9] truncate">{item.name}</span>
+                  </div>
+                  <div className="text-right shrink-0 pl-4">
+                    <div className="text-xl font-bold text-[#f1f5f9]">{item.total_quantity} sold</div>
+                    <div className="text-sm text-[#6b7280]">{item.order_count} order{item.order_count === 1 ? '' : 's'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       ) : orders.length === 0 ? (
         <p className="text-center text-gray-400 text-2xl py-20">No active orders</p>
       ) : (

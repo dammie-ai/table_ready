@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getNotificationPreferences, updateNotificationPreferences, deleteAccount } from '@table-ready/shared'
+import DateTimePicker from '@react-native-community/datetimepicker'
+import { getNotificationPreferences, updateNotificationPreferences, deleteAccount, updateCustomerProfile } from '@table-ready/shared'
 import { useAuthStore } from '@table-ready/shared'
 import { useThemeStore } from '../stores/themeStore'
 import BackButton from '../components/BackButton'
@@ -13,12 +14,32 @@ export default function SettingsScreen({ navigation }: any) {
     reminders: true,
   })
   const [loading, setLoading] = useState(true)
+  const [showBirthPicker, setShowBirthPicker] = useState(false)
+  const [savingBirthday, setSavingBirthday] = useState(false)
   const logout = useAuthStore((s) => s.logout)
   const user = useAuthStore((s) => s.user)
+  const token = useAuthStore((s) => s.token)
+  const setAuth = useAuthStore((s) => s.setAuth)
   const colors = useThemeStore((s) => s.colors)
   const mode = useThemeStore((s) => s.mode)
   const setMode = useThemeStore((s) => s.setMode)
   const isGuest = !user
+
+  // Registration asks for this too, but plenty of accounts (every one
+  // that signed up before tonight) predate that field existing at all --
+  // this is the only way those get a chance to add it after the fact.
+  const saveBirthday = async (date: Date) => {
+    setSavingBirthday(true)
+    try {
+      const iso = date.toISOString().split('T')[0]
+      const res = await updateCustomerProfile({ date_of_birth: iso })
+      if (token) setAuth(token, res.user)
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to save birthday')
+    } finally {
+      setSavingBirthday(false)
+    }
+  }
 
   useEffect(() => {
     // Settings is reachable straight from Welcome without signing in — the
@@ -143,6 +164,25 @@ export default function SettingsScreen({ navigation }: any) {
 
           <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+            <TouchableOpacity
+              style={[styles.row, { borderBottomColor: colors.border }]}
+              onPress={() => setShowBirthPicker(true)}
+              disabled={savingBirthday}
+            >
+              <Text style={[styles.rowLabel, { color: colors.text }]}>Birthday</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
+                {savingBirthday ? 'Saving…' : user?.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'Not set'}
+              </Text>
+            </TouchableOpacity>
+            {showBirthPicker && (
+              <DateTimePicker
+                value={user?.date_of_birth ? new Date(user.date_of_birth) : new Date(2000, 0, 1)}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                maximumDate={new Date()}
+                onChange={(_e, d) => { setShowBirthPicker(false); if (d) saveBirthday(d); }}
+              />
+            )}
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleLogout}>
               <Text style={[styles.menuItemText, { color: colors.accent }]}>Log Out</Text>
             </TouchableOpacity>

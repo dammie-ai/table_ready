@@ -47,6 +47,7 @@ export {
   updateNotificationPreferences,
   customerRegister,
   customerLogin,
+  updateCustomerProfile,
   deleteAccount,
   joinSessionByCode,
   getOrderHistory,

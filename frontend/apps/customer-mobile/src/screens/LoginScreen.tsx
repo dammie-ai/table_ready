@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import BackButton from '../components/BackButton';
@@ -25,6 +26,8 @@ export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
+  const [birthDate, setBirthDate] = useState<Date | null>(null);
+  const [showBirthPicker, setShowBirthPicker] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -63,7 +66,12 @@ export default function LoginScreen({ navigation }: any) {
     try {
       const res = mode === 'login'
         ? await customerLogin({ email, password })
-        : await customerRegister({ email, password, first_name: firstName || undefined });
+        : await customerRegister({
+            email,
+            password,
+            first_name: firstName || undefined,
+            date_of_birth: birthDate ? birthDate.toISOString().split('T')[0] : undefined,
+          });
       setAuth(res.token, res.user);
       setStorageItem(REMEMBERED_KEY, JSON.stringify({ email, password }))
         .then(() => console.log('[login] remembered credentials saved'))
@@ -103,12 +111,35 @@ export default function LoginScreen({ navigation }: any) {
 
       <ScrollView style={styles.form} contentContainerStyle={styles.formContent}>
         {mode === 'register' && (
-          <Input
-            label="Name (optional)"
-            value={firstName}
-            onChangeText={setFirstName}
-            placeholder="Your name"
-          />
+          <>
+            <Input
+              label="Name (optional)"
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder="Your name"
+            />
+
+            {/* Just capturing this for now, nothing reads it yet -- the
+                idea is birthday deals down the line, so it's fine that
+                nobody's forced to fill it in. */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Birthday (optional)</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowBirthPicker(true)}>
+                <Text style={birthDate ? styles.dateButtonText : styles.dateButtonPlaceholder}>
+                  {birthDate ? birthDate.toLocaleDateString() : 'Select a date'}
+                </Text>
+              </TouchableOpacity>
+              {showBirthPicker && (
+                <DateTimePicker
+                  value={birthDate || new Date(2000, 0, 1)}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  maximumDate={new Date()}
+                  onChange={(_e, d) => { setShowBirthPicker(false); if (d) setBirthDate(d); }}
+                />
+              )}
+            </View>
+          </>
         )}
 
         <Input
@@ -236,5 +267,30 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
   },
   submitButton: {
     marginTop: spacing.md,
+  },
+  fieldGroup: {
+    marginBottom: spacing.md,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  dateButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  dateButtonPlaceholder: {
+    fontSize: 16,
+    color: colors.textSecondary,
   },
 });

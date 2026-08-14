@@ -25,13 +25,14 @@ function toUser(customer) {
     email: customer.email,
     first_name: customer.first_name,
     last_name: customer.last_name,
+    date_of_birth: customer.date_of_birth || null,
   };
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 exports.register = async (req, res) => {
-  const { email, password, first_name, last_name, phone } = req.body;
+  const { email, password, first_name, last_name, phone, date_of_birth } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, error: 'Email and password are required.' });
@@ -64,23 +65,56 @@ exports.register = async (req, res) => {
       const updated = await pool.query(
         `UPDATE customer_profiles
          SET password_hash = $1, is_guest = false, updated_at = NOW(),
-             first_name = COALESCE($2, first_name), last_name = COALESCE($3, last_name), phone = COALESCE($4, phone)
-         WHERE customer_id = $5
-         RETURNING customer_id, email, first_name, last_name`,
-        [passwordHash, first_name || null, last_name || null, phone || null, existing.rows[0].customer_id]
+             first_name = COALESCE($2, first_name), last_name = COALESCE($3, last_name), phone = COALESCE($4, phone),
+             date_of_birth = COALESCE($5, date_of_birth)
+         WHERE customer_id = $6
+         RETURNING customer_id, email, first_name, last_name, date_of_birth`,
+        [passwordHash, first_name || null, last_name || null, phone || null, date_of_birth || null, existing.rows[0].customer_id]
       );
       customer = updated.rows[0];
     } else {
       const inserted = await pool.query(
-        `INSERT INTO customer_profiles (email, password_hash, first_name, last_name, phone, is_guest)
-         VALUES ($1, $2, $3, $4, $5, false)
-         RETURNING customer_id, email, first_name, last_name`,
-        [email, passwordHash, first_name || null, last_name || null, phone || null]
+        `INSERT INTO customer_profiles (email, password_hash, first_name, last_name, phone, date_of_birth, is_guest)
+         VALUES ($1, $2, $3, $4, $5, $6, false)
+         RETURNING customer_id, email, first_name, last_name, date_of_birth`,
+        [email, passwordHash, first_name || null, last_name || null, phone || null, date_of_birth || null]
       );
       customer = inserted.rows[0];
     }
 
     return res.status(201).json({ success: true, token: signCustomerToken(customer), user: toUser(customer) });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// PATCH /api/customer/profile -- lets an existing account add or change
+// their birthday (or name/phone) after the fact, since registration is the
+// only other place any of this gets captured and plenty of accounts
+// already existed before date_of_birth did.
+exports.updateProfile = async (req, res) => {
+  if (req.user?.type !== 'customer' || !req.user?.customer_id) {
+    return res.status(403).json({ success: false, error: 'This action requires a customer account.' });
+  }
+
+  const { first_name, last_name, phone, date_of_birth } = req.body;
+
+  try {
+    const updated = await pool.query(
+      `UPDATE customer_profiles
+       SET first_name = COALESCE($1, first_name), last_name = COALESCE($2, last_name),
+           phone = COALESCE($3, phone), date_of_birth = COALESCE($4, date_of_birth),
+           updated_at = NOW()
+       WHERE customer_id = $5
+       RETURNING customer_id, email, first_name, last_name, date_of_birth`,
+      [first_name || null, last_name || null, phone || null, date_of_birth || null, req.user.customer_id]
+    );
+
+    if (updated.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Account not found.' });
+    }
+
+    return res.status(200).json({ success: true, user: toUser(updated.rows[0]) });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -126,7 +160,7 @@ exports.login = async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT customer_id, email, password_hash, first_name, last_name FROM customer_profiles WHERE email = $1',
+      'SELECT customer_id, email, password_hash, first_name, last_name, date_of_birth FROM customer_profiles WHERE email = $1',
       [email]
     );
 

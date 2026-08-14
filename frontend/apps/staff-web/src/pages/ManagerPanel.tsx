@@ -37,6 +37,23 @@ interface ServiceRating {
   avg_score: number | null
 }
 
+interface TopItem {
+  item_id: number
+  name: string
+  total_quantity: number
+  order_count: number
+}
+
+type TopItemsPeriod = 'day' | 'week' | 'month' | 'year'
+
+// Friendlier labels for the same four period values the backend expects.
+const PERIOD_LABELS: Record<TopItemsPeriod, string> = {
+  day: 'Today',
+  week: 'Week',
+  month: 'Month',
+  year: 'Year',
+}
+
 const COLORS = ['#f97316', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 export default function ManagerPanel() {
@@ -52,6 +69,9 @@ export default function ManagerPanel() {
   const [restockError, setRestockError] = useState('')
   const [orderLookup, setOrderLookup] = useState('')
   const [managingOrderId, setManagingOrderId] = useState<number | null>(null)
+  const [topItems, setTopItems] = useState<TopItem[]>([])
+  const [topItemsPeriod, setTopItemsPeriod] = useState<TopItemsPeriod>('day')
+  const [topItemsLoading, setTopItemsLoading] = useState(true)
 
   const loadInventory = async () => {
     const res = await apiClient.get<any>('/inventory')
@@ -81,6 +101,28 @@ export default function ManagerPanel() {
     }
     loadData()
   }, [])
+
+  // Separate from loadData above so switching the period doesn't have to
+  // re-fetch category sales, staff performance, inventory, etc. all over
+  // again -- it only re-runs the one query that actually depends on period.
+  useEffect(() => {
+    let cancelled = false
+    setTopItemsLoading(true)
+    apiClient
+      .get<{ success: boolean; period: string; items: TopItem[] }>(`/analytics/top-items?period=${topItemsPeriod}`)
+      .then((res) => {
+        if (!cancelled) setTopItems(res.items || [])
+      })
+      .catch((err) => {
+        console.error('Failed to load top items:', err)
+      })
+      .finally(() => {
+        if (!cancelled) setTopItemsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [topItemsPeriod])
 
   const handleRestock = async (id: number) => {
     const amount = parseInt(restockAmounts[id])
@@ -257,6 +299,43 @@ export default function ManagerPanel() {
                 ))}
                 {staffData.length === 0 && <p className="text-sm text-[#6b7280]">No staff activity yet.</p>}
               </div>
+            </div>
+          </div>
+
+          <div className="bg-[#111118] border border-white/8 rounded-2xl p-5 mt-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <h3 className="text-sm font-semibold text-[#6b7280] uppercase tracking-widest font-mono">Top Items</h3>
+              <div className="flex gap-1">
+                {(['day', 'week', 'month', 'year'] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setTopItemsPeriod(p)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                      topItemsPeriod === p ? 'bg-[#f97316] text-white' : 'text-[#6b7280] hover:text-[#f1f5f9]'
+                    }`}
+                  >
+                    {PERIOD_LABELS[p]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Same ranked-list look as Staff Leaderboard above -- rank number,
+                name, a couple of numbers on the right, nothing fancier needed. */}
+            <div className="space-y-2">
+              {topItems.map((item, i) => (
+                <div key={item.item_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`text-xs font-mono w-5 text-center shrink-0 ${i === 0 ? 'text-amber-400' : 'text-[#6b7280]'}`}>#{i + 1}</span>
+                    <div className="text-sm font-medium truncate">{item.name}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-semibold">{item.total_quantity} sold</div>
+                    <div className="text-[10px] text-[#6b7280]">{item.order_count} order{item.order_count === 1 ? '' : 's'}</div>
+                  </div>
+                </div>
+              ))}
+              {topItemsLoading && <p className="text-sm text-[#6b7280]">Loading…</p>}
+              {!topItemsLoading && topItems.length === 0 && <p className="text-sm text-[#6b7280]">No orders in this period yet.</p>}
             </div>
           </div>
 

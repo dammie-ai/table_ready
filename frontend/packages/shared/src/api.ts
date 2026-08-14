@@ -250,7 +250,7 @@ export async function updateNotificationPreferences(prefs: any) {
 // not for customers at all, and /auth/register requires an already-
 // authenticated admin/manager. Customers get their own separate identity
 // space, tied to customer_profiles, not the staff table.
-export async function customerRegister(payload: { email: string; password: string; first_name?: string; last_name?: string; phone?: string }) {
+export async function customerRegister(payload: { email: string; password: string; first_name?: string; last_name?: string; phone?: string; date_of_birth?: string }) {
   return request<{ success: boolean; token: string; user: User }>('/customer/register', { method: 'POST', body: JSON.stringify(payload) })
 }
 
@@ -260,6 +260,13 @@ export async function customerLogin(payload: { email: string; password: string }
 
 export async function deleteAccount() {
   return request<{ success: boolean }>('/customer/account', { method: 'DELETE' })
+}
+
+// Registration is the only other place any of this gets captured, so this
+// is what lets an account that already existed before date_of_birth did
+// go back and add one (or fix their name/phone) after the fact.
+export async function updateCustomerProfile(payload: { first_name?: string; last_name?: string; phone?: string; date_of_birth?: string }) {
+  return request<{ success: boolean; user: User }>('/customer/profile', { method: 'PATCH', body: JSON.stringify(payload) })
 }
 
 export async function joinSessionByCode(payload: { code: string }) {
@@ -280,6 +287,7 @@ export interface User {
   first_name?: string
   last_name?: string
   role?: string
+  date_of_birth?: string | null
 }
 
 export interface MenuResponse {
