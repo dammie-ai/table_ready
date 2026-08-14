@@ -1,6 +1,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { NavigationContainer } from '@react-navigation/native'
 import { useGroupCartSync } from '@table-ready/shared'
+import { navigationRef } from './navigationRef'
+import FloatingSettingsButton from '../components/FloatingSettingsButton'
 import LocationCheckScreen from '../screens/LocationCheckScreen'
 import GroupChoiceScreen from '../screens/GroupChoiceScreen'
 import LoginScreen from '../screens/LoginScreen'
@@ -56,7 +58,7 @@ export default function Navigation() {
   // Table" buttons, right before TablePin's QR/PIN check-in. Delivery
   // still runs its own separate, wider-radius check inline on Welcome.
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="LocationCheck" component={LocationCheckScreen} />
@@ -77,6 +79,7 @@ export default function Navigation() {
         <Stack.Screen name="Waitlist" component={WaitlistScreen} options={{ title: 'Waitlist' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       </Stack.Navigator>
+      <FloatingSettingsButton />
     </NavigationContainer>
   )
 }

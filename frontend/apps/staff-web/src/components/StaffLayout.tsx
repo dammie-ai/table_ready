@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../stores/authStore'
 import { useTheme } from '../hooks/useTheme'
+import { LANGUAGES, setLanguage, type LanguageCode } from '../i18n'
 import { LayoutDashboard, UtensilsCrossed, Users, Calendar, ClipboardList, Settings, BarChart3, Tag, LogOut, Menu, X, ChevronDown, Check } from 'lucide-react'
 
 interface StaffLayoutProps {
@@ -29,7 +30,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   const user = useAuthStore((s) => s.user)
   const switchRole = useAuthStore((s) => s.switchRole)
   const { theme } = useTheme()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const ROLE_LABELS: Record<string, string> = {
     manager: t('roles.manager'),
     admin: t('roles.admin'),
@@ -127,6 +128,24 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* The full Settings page (theme colors, geofence, business hours...)
+            stays manager-only on purpose -- it's real business config, not
+            something a waiter or kitchen account should be able to touch.
+            But everyone still needs to be able to read this app in their
+            own language, so that one control lives out here on its own,
+            open to every role. */}
+        <div className="px-3 pt-3">
+          <select
+            value={i18n.language}
+            onChange={(e) => setLanguage(e.target.value as LanguageCode)}
+            className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-xs font-medium text-[#f1f5f9] outline-none hover:bg-white/8 transition-colors"
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code} className="bg-[#1c1c27]">{l.label}</option>
+            ))}
+          </select>
         </div>
 
         {user && user.roles.length > 1 && (
