@@ -15,6 +15,7 @@ type Props = {
   error?: string;
   rightAction?: { label: string; onPress: () => void };
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  maxLength?: number;
 };
 
 export default function Input({
@@ -29,6 +30,7 @@ export default function Input({
   error,
   rightAction,
   autoCapitalize,
+  maxLength,
 }: Props) {
   const colors = useThemeStore((s) => s.colors);
   const [revealed, setRevealed] = useState(false);
@@ -54,6 +56,7 @@ export default function Input({
           multiline={multiline}
           numberOfLines={numberOfLines}
           autoCapitalize={autoCapitalize}
+          maxLength={maxLength}
         />
         {secureTextEntry ? (
           <TouchableOpacity

@@ -11,7 +11,9 @@ const connectionListeners = new Set<ConnectionListener>()
 // silently connecting as an unauthenticated guest until this matched.
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  const stored = localStorage.getItem('tableready_auth')
+  // Mirrors authStore's storage choice -- see api.ts's getToken for why
+  // this has to be sessionStorage, not localStorage.
+  const stored = sessionStorage.getItem('tableready_auth')
   if (!stored) return null
   try {
     const parsed = JSON.parse(stored)

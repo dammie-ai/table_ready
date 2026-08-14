@@ -9,6 +9,9 @@ import { useThemeStore } from '../stores/themeStore';
 import { customerLogin, customerRegister, useAuthStore, getStorageItem, setStorageItem } from '@table-ready/shared';
 
 const REMEMBERED_KEY = 'tableready_remembered_credentials';
+// Same shape the backend checks in customerAuthController.js -- kept in
+// sync by hand since there's no shared validation module between the two.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // The app's entry gate — customers must sign in before reaching Welcome.
 // Separate identity system from staff: this hits /customer/login and
@@ -45,6 +48,14 @@ export default function LoginScreen({ navigation }: any) {
   const handleSubmit = async () => {
     if (!email || !password) {
       setError('Please fill in all fields.');
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Enter a valid email address.');
+      return;
+    }
+    if (password.length < 6 || password.length > 12) {
+      setError('Password must be between 6 and 12 characters.');
       return;
     }
     setError('');
@@ -113,8 +124,9 @@ export default function LoginScreen({ navigation }: any) {
           label="Password"
           value={password}
           onChangeText={setPassword}
-          placeholder="••••••••"
+          placeholder="6-12 characters"
           secureTextEntry
+          maxLength={12}
         />
 
         {error && (

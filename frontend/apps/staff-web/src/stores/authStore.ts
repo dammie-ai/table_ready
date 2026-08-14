@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
 export interface User {
   id: number
@@ -41,6 +41,15 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'tableready_auth',
+      // localStorage is shared across every tab on the same origin -- with
+      // several staff-web tabs open at once for different roles (exactly
+      // how tonight's demo runs: one tab each for waiter/kitchen/manager/
+      // delivery), logging into a new role in one tab silently overwrote
+      // the token every OTHER open tab's next request would use, since
+      // api.ts/socket.ts read the token fresh from storage on every call
+      // rather than from this store's in-memory state. sessionStorage is
+      // tab-scoped, so each tab now keeps its own independent login.
+      storage: createJSONStorage(() => sessionStorage),
     }
   )
 )

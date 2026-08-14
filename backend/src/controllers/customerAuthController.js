@@ -28,14 +28,19 @@ function toUser(customer) {
   };
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 exports.register = async (req, res) => {
   const { email, password, first_name, last_name, phone } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, error: 'Email and password are required.' });
   }
-  if (password.length < 6) {
-    return res.status(400).json({ success: false, error: 'Password must be at least 6 characters.' });
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ success: false, error: 'Enter a valid email address.' });
+  }
+  if (password.length < 6 || password.length > 12) {
+    return res.status(400).json({ success: false, error: 'Password must be between 6 and 12 characters.' });
   }
 
   try {
@@ -114,6 +119,9 @@ exports.login = async (req, res) => {
 
   if (!email || !password) {
     return res.status(400).json({ success: false, error: 'Email and password are required.' });
+  }
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ success: false, error: 'Enter a valid email address.' });
   }
 
   try {

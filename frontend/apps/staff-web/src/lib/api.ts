@@ -14,7 +14,11 @@ const API_BASE = `${API_ORIGIN}/api`
 
 function getToken(): string | null {
   if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('tableready_auth')
+    // Mirrors authStore's own storage choice (sessionStorage, not
+    // localStorage) -- reading the wrong one here would silently send no
+    // token at all once the store moved, since this reads independently
+    // rather than through Zustand.
+    const stored = sessionStorage.getItem('tableready_auth')
     if (stored) {
       try {
         const parsed = JSON.parse(stored)

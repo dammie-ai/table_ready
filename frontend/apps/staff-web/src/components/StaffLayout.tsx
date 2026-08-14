@@ -103,9 +103,14 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar -- flex column top-to-bottom so the nav list (which can run
+          past a screen's worth of items, like the manager role's 11 links)
+          scrolls in its own middle section instead of spilling out from
+          under the Sign Out button, which used to just float on top
+          wherever the overflow happened to land. */}
       <aside className={`
         fixed top-0 left-0 z-50 h-full w-64 bg-[#111118] border-r border-white/8 transform transition-transform duration-200 ease-in-out
+        flex flex-col
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-0
       `}>
@@ -152,7 +157,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
           </div>
         )}
 
-        <nav className="p-3 space-y-1">
+        <nav className="p-3 space-y-1 flex-1 overflow-y-auto min-h-0">
           {navItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.path)
@@ -176,7 +181,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/8">
+        <div className="shrink-0 p-3 border-t border-white/8">
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors w-full"
