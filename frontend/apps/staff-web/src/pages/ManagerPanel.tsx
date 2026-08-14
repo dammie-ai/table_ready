@@ -246,7 +246,7 @@ export default function ManagerPanel() {
                       <span className={`text-xs font-mono w-5 text-center shrink-0 ${i === 0 ? 'text-amber-400' : 'text-[#6b7280]'}`}>#{i + 1}</span>
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">{s.username}</div>
-                        <div className="text-[10px] text-[#6b7280] uppercase tracking-wide">{s.role.replace('_', ' ')}</div>
+                        <div className="text-[10px] text-[#6b7280] uppercase tracking-wide">{s.role.replace(/_/g, ' ')}</div>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
@@ -293,7 +293,7 @@ export default function ManagerPanel() {
                 return (
                   <div key={seg.order_type} className="bg-[#111118] border border-white/8 rounded-xl p-4 text-center">
                     <div className={`text-2xl font-display font-bold ${color.replace('bg-', 'text-')}`}>{pct}%</div>
-                    <div className="text-xs text-[#6b7280] mt-0.5">{seg.order_type.replace('_', ' ')}</div>
+                    <div className="text-xs text-[#6b7280] mt-0.5">{seg.order_type.replace(/_/g, ' ')}</div>
                     <div className="mt-2 h-1 bg-white/5 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
                     </div>

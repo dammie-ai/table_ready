@@ -185,7 +185,7 @@ export default function Checkout() {
                   }`}
                   style={orderType === type ? { borderColor: theme?.primary_color, backgroundColor: theme?.primary_color + '15' } : undefined}
                 >
-                  <span style={{ color: orderType === type ? theme?.primary_color : theme?.text_color }}>{type.replace('_', ' ')}</span>
+                  <span style={{ color: orderType === type ? theme?.primary_color : theme?.text_color }}>{type.replace(/_/g, ' ')}</span>
                 </button>
               ))}
             </div>

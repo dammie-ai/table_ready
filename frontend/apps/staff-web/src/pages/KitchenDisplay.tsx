@@ -24,6 +24,7 @@ export default function KitchenDisplay() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [stockLoading, setStockLoading] = useState(true)
   const [togglingId, setTogglingId] = useState<number | null>(null)
+  const [stockSearch, setStockSearch] = useState('')
   const [connected, setConnected] = useState(true)
   const [error, setError] = useState('')
 
@@ -185,8 +186,21 @@ export default function KitchenDisplay() {
         stockLoading ? (
           <p className="text-center text-gray-400 text-2xl py-20">Loading menu items...</p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-w-6xl mx-auto">
-            {menuItems.map((item) => (
+          <div className="max-w-6xl mx-auto">
+            <input
+              type="text"
+              value={stockSearch}
+              onChange={(e) => setStockSearch(e.target.value)}
+              placeholder="Search menu items…"
+              className="w-full mb-4 px-4 py-3 rounded-lg bg-gray-800 border-2 border-gray-700 text-white placeholder-gray-500 text-lg focus:outline-none focus:border-yellow-500"
+            />
+            {menuItems.filter((item) => item.name.toLowerCase().includes(stockSearch.trim().toLowerCase())).length === 0 && (
+              <p className="text-center text-gray-400 text-lg py-10">No items match "{stockSearch}".</p>
+            )}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {menuItems
+              .filter((item) => item.name.toLowerCase().includes(stockSearch.trim().toLowerCase()))
+              .map((item) => (
               <div
                 key={item.item_id}
                 className={`rounded-lg p-4 border-2 flex items-center justify-between ${
@@ -212,6 +226,7 @@ export default function KitchenDisplay() {
                 </button>
               </div>
             ))}
+            </div>
           </div>
         )
       ) : orders.length === 0 ? (
@@ -227,7 +242,7 @@ export default function KitchenDisplay() {
                 <div>
                   <h2 className="text-3xl font-bold">#{order.master_order_id}</h2>
                   <p className="text-xl text-gray-300">
-                    {order.table_number ? `Table ${order.table_number}` : (order.order_type?.replace('_', ' ') || 'Takeout')}
+                    {order.table_number ? `Table ${order.table_number}` : (order.order_type?.replace(/_/g, ' ') || 'Takeout')}
                     {order.customer_name && <span className="text-gray-400"> · {order.customer_name}</span>}
                   </p>
                 </div>
@@ -240,7 +255,7 @@ export default function KitchenDisplay() {
                       : 'bg-blue-600 text-white'
                   }`}
                 >
-                  {order.status.replace('_', ' ')}
+                  {order.status.replace(/_/g, ' ')}
                 </span>
               </div>
 

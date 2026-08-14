@@ -495,7 +495,7 @@ export default function WaiterDashboard() {
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       session.status === 'active' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-gray-500/15 text-gray-400'
                     }`}>
-                      {session.status}
+                      {session.status.replace(/_/g, ' ')}
                     </span>
                   </div>
                 ))}
@@ -526,7 +526,7 @@ export default function WaiterDashboard() {
                     <div className="text-2xl flex-shrink-0">{requestIcon(req.request_type)}</div>
                     <div>
                       <div className="font-semibold text-sm">Table {req.table_number}</div>
-                      <div className="text-sm text-[#6b7280]">{req.request_type.replace('_', ' ').toUpperCase()}</div>
+                      <div className="text-sm text-[#6b7280]">{req.request_type.replace(/_/g, ' ').toUpperCase()}</div>
                       {req.notes && <div className="text-xs text-[#6b7280]/60 mt-1">{req.notes}</div>}
                       <div className="text-[10px] text-[#6b7280]/40 mt-1 font-mono">
                         {new Date(req.created_at).toLocaleTimeString()}

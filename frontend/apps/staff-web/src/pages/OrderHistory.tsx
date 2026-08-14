@@ -103,7 +103,7 @@ export default function OrderHistory() {
                   <div>
                     <span className="font-mono font-bold text-lg">Order #{order.master_order_id}</span>
                     <span className="ml-2 text-xs px-2 py-1 rounded-full bg-white/5 text-[#6b7280]">
-                      {order.status.replace('_', ' ')}
+                      {order.status.replace(/_/g, ' ')}
                     </span>
                   </div>
                   <span className="text-sm text-[#6b7280]">

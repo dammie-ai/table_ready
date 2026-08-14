@@ -73,25 +73,25 @@ export default function AllergyManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading allergy data...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#09090f]">
+        <p className="text-[#6b7280]">Loading allergy data...</p>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Allergy Management</h1>
+    <div className="max-w-4xl mx-auto p-4 bg-[#09090f] min-h-screen">
+      <h1 className="text-3xl font-bold text-[#f1f5f9] mb-6">Allergy Management</h1>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {error && <p className="text-red-400 mb-4">{error}</p>}
 
       <div className="flex gap-1 mb-6">
         {(['items', 'alerts', 'summary'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold capitalize ${
-              activeTab === tab ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+            className={`px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-colors ${
+              activeTab === tab ? 'bg-[#f97316] text-white' : 'bg-white/5 text-[#6b7280] hover:text-[#f1f5f9]'
             }`}
           >
             {tab === 'items' ? 'Menu Item Tagging' : tab === 'alerts' ? `Active Alerts (${alerts.length})` : 'Frequency Summary'}
@@ -102,35 +102,35 @@ export default function AllergyManagement() {
       {activeTab === 'items' && (
         <div className="space-y-3">
           {items.map((item) => (
-            <div key={item.item_id} className="border rounded-lg p-4 bg-white">
+            <div key={item.item_id} className="border border-white/8 rounded-lg p-4 bg-[#111118]">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                  <h3 className="font-semibold text-[#f1f5f9]">{item.name}</h3>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {(item.allergens || []).length === 0 ? (
-                      <span className="text-xs text-gray-400">No allergens tagged</span>
+                      <span className="text-xs text-[#6b7280]">No allergens tagged</span>
                     ) : (
                       (item.allergens || []).map((a) => (
-                        <span key={a} className="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full">{a}</span>
+                        <span key={a} className="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full">{a}</span>
                       ))
                     )}
                   </div>
                 </div>
-                <button onClick={() => startEdit(item)} className="text-sm bg-gray-100 text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-200">
+                <button onClick={() => startEdit(item)} className="text-sm bg-white/5 text-[#f1f5f9] px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors">
                   Edit
                 </button>
               </div>
 
               {editingItemId === item.item_id && (
-                <div className="mt-4 pt-4 border-t">
+                <div className="mt-4 pt-4 border-t border-white/8">
                   <div className="flex flex-wrap gap-2 mb-3">
                     {COMMON_ALLERGENS.map((a) => (
                       <button
                         key={a}
                         type="button"
                         onClick={() => toggleAllergen(a)}
-                        className={`text-xs px-3 py-1.5 rounded-full border ${
-                          editSelection.has(a) ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                        className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                          editSelection.has(a) ? 'bg-red-500 text-white border-red-500' : 'bg-[#1c1c27] text-[#f1f5f9] border-white/8 hover:border-white/20'
                         }`}
                       >
                         {a}
@@ -141,7 +141,7 @@ export default function AllergyManagement() {
                         key={a}
                         type="button"
                         onClick={() => toggleAllergen(a)}
-                        className="text-xs px-3 py-1.5 rounded-full border bg-red-600 text-white border-red-600"
+                        className="text-xs px-3 py-1.5 rounded-full border bg-red-500 text-white border-red-500"
                       >
                         {a} ×
                       </button>
@@ -154,17 +154,17 @@ export default function AllergyManagement() {
                       onChange={(e) => setCustomAllergen(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomAllergen() } }}
                       placeholder="Add custom allergen…"
-                      className="flex-1 border rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400"
+                      className="flex-1 border border-white/8 rounded-lg px-3 py-2 text-sm text-[#f1f5f9] bg-[#1c1c27] placeholder-[#6b7280] outline-none focus:border-[#f97316]/50"
                     />
-                    <button type="button" onClick={addCustomAllergen} className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm hover:bg-gray-200">
+                    <button type="button" onClick={addCustomAllergen} className="bg-white/5 text-[#f1f5f9] px-3 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors">
                       Add
                     </button>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={() => saveAllergens(item.item_id)} disabled={saving} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                    <button onClick={() => saveAllergens(item.item_id)} disabled={saving} className="bg-[#f97316] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#f97316]/80 disabled:opacity-50 transition-colors">
                       {saving ? 'Saving…' : 'Save'}
                     </button>
-                    <button onClick={() => setEditingItemId(null)} className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">
+                    <button onClick={() => setEditingItemId(null)} className="bg-white/5 text-[#f1f5f9] px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors">
                       Cancel
                     </button>
                   </div>
@@ -177,22 +177,22 @@ export default function AllergyManagement() {
 
       {activeTab === 'alerts' && (
         <div className="space-y-2">
-          {alerts.length === 0 && <p className="text-gray-500">No active allergy alerts.</p>}
+          {alerts.length === 0 && <p className="text-[#6b7280]">No active allergy alerts.</p>}
           {alerts.map((a) => (
-            <div key={a.order_item_id} className="border border-red-200 bg-red-50 rounded-lg p-4">
+            <div key={a.order_item_id} className="border border-red-500/30 bg-red-500/10 rounded-lg p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-gray-900">{a.item_name} × {a.quantity}</p>
-                  <p className="text-xs text-gray-500">
-                    Order #{a.master_order_id} · {a.order_type}{a.table_number ? ` · Table ${a.table_number}` : ''} · {a.order_status}
+                  <p className="font-semibold text-[#f1f5f9]">{a.item_name} × {a.quantity}</p>
+                  <p className="text-xs text-[#6b7280]">
+                    Order #{a.master_order_id} · {a.order_type.replace(/_/g, ' ')}{a.table_number ? ` · Table ${a.table_number}` : ''} · {a.order_status.replace(/_/g, ' ')}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {(a.allergens || []).map((al) => (
-                      <span key={al} className="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full">{al}</span>
+                      <span key={al} className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{al}</span>
                     ))}
                   </div>
                 </div>
-                <span className="text-xs font-mono text-gray-500">{a.item_status}</span>
+                <span className="text-xs font-mono text-[#6b7280]">{a.item_status}</span>
               </div>
             </div>
           ))}
@@ -201,16 +201,16 @@ export default function AllergyManagement() {
 
       {activeTab === 'summary' && (
         <div className="space-y-2">
-          {Object.keys(frequency).length === 0 && <p className="text-gray-500">No allergens tagged on any menu item yet.</p>}
+          {Object.keys(frequency).length === 0 && <p className="text-[#6b7280]">No allergens tagged on any menu item yet.</p>}
           {Object.entries(frequency)
             .sort((a, b) => b[1].count - a[1].count)
             .map(([allergen, data]) => (
-              <div key={allergen} className="border rounded-lg p-4 bg-white">
+              <div key={allergen} className="border border-white/8 rounded-lg p-4 bg-[#111118]">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">{allergen}</span>
-                  <span className="text-sm text-gray-500">{data.count} item{data.count === 1 ? '' : 's'}</span>
+                  <span className="font-semibold text-[#f1f5f9]">{allergen}</span>
+                  <span className="text-sm text-[#6b7280]">{data.count} item{data.count === 1 ? '' : 's'}</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{data.items.join(', ')}</p>
+                <p className="text-sm text-[#6b7280] mt-1">{data.items.join(', ')}</p>
               </div>
             ))}
         </div>

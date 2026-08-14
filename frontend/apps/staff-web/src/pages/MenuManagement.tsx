@@ -118,51 +118,53 @@ export default function MenuManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading menu...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#09090f]">
+        <p className="text-[#6b7280]">Loading menu...</p>
       </div>
     )
   }
 
+  const inputClass = "w-full border border-white/8 rounded-lg px-3 py-2 text-[#f1f5f9] bg-[#1c1c27] placeholder-[#6b7280] outline-none focus:border-[#f97316]/50"
+
   return (
-    <div className="max-w-6xl mx-auto p-4">
+    <div className="max-w-6xl mx-auto p-4 bg-[#09090f] min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
+        <h1 className="text-3xl font-bold text-[#f1f5f9]">Menu Management</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          className="bg-[#f97316] text-white px-4 py-2 rounded-lg hover:bg-[#f97316]/80 transition-colors"
         >
           Add Item
         </button>
       </div>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {error && <p className="text-red-400 mb-4">{error}</p>}
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#111118] border border-white/8 rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-4 text-[#f1f5f9]">
               {editingItem ? 'Edit Item' : 'New Item'}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900">Name</label>
+                <label className="block text-sm font-medium mb-1 text-[#f1f5f9]">Name</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
+                  className={inputClass}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900">Category</label>
+                <label className="block text-sm font-medium mb-1 text-[#f1f5f9]">Category</label>
                 <select
                   value={form.category_type}
                   onChange={(e) => setForm({ ...form, category_type: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
+                  className={inputClass}
                 >
                   <option value="Entree">Entree</option>
                   <option value="Meat">Meat</option>
@@ -173,52 +175,52 @@ export default function MenuManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900">Description</label>
+                <label className="block text-sm font-medium mb-1 text-[#f1f5f9]">Description</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
+                  className={inputClass}
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900">Photo</label>
+                <label className="block text-sm font-medium mb-1 text-[#f1f5f9]">Photo</label>
                 {form.image_url && (
-                  <img src={form.image_url} alt="" className="w-full h-32 object-cover rounded-lg mb-2 border" />
+                  <img src={form.image_url} alt="" className="w-full h-32 object-cover rounded-lg mb-2 border border-white/8" />
                 )}
                 <input
                   type="text"
                   value={form.image_url}
                   onChange={(e) => setForm({ ...form, image_url: e.target.value })}
                   placeholder="https://... or upload"
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
+                  className={inputClass}
                 />
-                <label className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
+                <label className="inline-block mt-2 text-sm text-[#f97316] hover:text-[#f97316]/80 cursor-pointer">
                   Upload a photo
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                 </label>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900">Price ($)</label>
+                <label className="block text-sm font-medium mb-1 text-[#f1f5f9]">Price ($)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={form.base_price}
                   onChange={(e) => setForm({ ...form, base_price: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
+                  className={inputClass}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 text-gray-900">Prep Time (minutes)</label>
+                <label className="block text-sm font-medium mb-1 text-[#f1f5f9]">Prep Time (minutes)</label>
                 <input
                   type="number"
                   value={form.prep_time_minutes}
                   onChange={(e) => setForm({ ...form, prep_time_minutes: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-white placeholder-gray-400"
+                  className={inputClass}
                   required
                 />
               </div>
@@ -231,7 +233,7 @@ export default function MenuManagement() {
                   onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                   className="w-4 h-4"
                 />
-                <label htmlFor="is_active" className="text-sm font-medium">
+                <label htmlFor="is_active" className="text-sm font-medium text-[#f1f5f9]">
                   Active / In Stock
                 </label>
               </div>
@@ -240,14 +242,14 @@ export default function MenuManagement() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50"
+                  className="flex-1 border border-white/8 py-2 rounded-lg text-[#f1f5f9] hover:bg-white/5 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 bg-[#f97316] text-white py-2 rounded-lg hover:bg-[#f97316]/80 disabled:opacity-50 transition-colors"
                 >
                   {saving ? 'Saving...' : editingItem ? 'Update' : 'Create'}
                 </button>
@@ -257,42 +259,42 @@ export default function MenuManagement() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-[#111118] border border-white/8 rounded-lg overflow-hidden">
         <table className="min-w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-white/5">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Photo</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Category</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[#6b7280] uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-white/8">
             {items.map((item) => (
-              <tr key={item.item_id} className={item.is_active ? '' : 'bg-gray-50'}>
+              <tr key={item.item_id} className={item.is_active ? '' : 'bg-white/[0.02]'}>
                 <td className="px-6 py-4">
                   {item.image_url ? (
                     <img src={item.image_url} alt="" className="w-12 h-12 object-cover rounded-lg" />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs">—</div>
+                    <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-[#6b7280] text-xs">—</div>
                   )}
                 </td>
                 <td className="px-6 py-4">
                   <div>
-                    <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-sm text-gray-500">{item.description}</p>
+                    <p className="font-medium text-[#f1f5f9]">{item.name}</p>
+                    <p className="text-sm text-[#6b7280]">{item.description}</p>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">{item.category_type}</td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">${item.base_price.toFixed(2)}</td>
+                <td className="px-6 py-4 text-sm text-[#f1f5f9]">{item.category_type}</td>
+                <td className="px-6 py-4 text-sm font-medium text-[#f1f5f9]">${item.base_price.toFixed(2)}</td>
                 <td className="px-6 py-4">
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
                       item.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-emerald-500/15 text-emerald-400'
+                        : 'bg-red-500/15 text-red-400'
                     }`}
                   >
                     {item.is_active ? 'Active' : 'Out of Stock'}
@@ -302,7 +304,7 @@ export default function MenuManagement() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(item)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="text-[#f97316] hover:text-[#f97316]/80 text-sm font-medium"
                     >
                       Edit
                     </button>
@@ -310,8 +312,8 @@ export default function MenuManagement() {
                       onClick={() => handleToggle(item.item_id)}
                       className={`text-sm font-medium ${
                         item.is_active
-                          ? 'text-red-600 hover:text-red-800'
-                          : 'text-green-600 hover:text-green-800'
+                          ? 'text-red-400 hover:text-red-300'
+                          : 'text-emerald-400 hover:text-emerald-300'
                       }`}
                     >
                       {item.is_active ? 'Disable' : 'Enable'}
@@ -324,7 +326,7 @@ export default function MenuManagement() {
         </table>
 
         {items.length === 0 && (
-          <div className="p-8 text-center text-gray-500">No menu items found</div>
+          <div className="p-8 text-center text-[#6b7280]">No menu items found</div>
         )}
       </div>
     </div>

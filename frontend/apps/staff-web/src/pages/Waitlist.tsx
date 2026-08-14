@@ -208,7 +208,7 @@ export default function Waitlist() {
                     <p className="text-sm text-[#6b7280]">{entry.phone}</p>
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full border ${statusColor(entry.status)}`}>
-                    {entry.status}
+                    {entry.status.replace(/_/g, ' ')}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

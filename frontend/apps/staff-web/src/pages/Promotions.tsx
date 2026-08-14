@@ -153,7 +153,7 @@ export default function Promotions() {
                 <div key={promo.promotion_id} className="flex items-center justify-between p-4 bg-[#1c1c27] rounded-xl">
                   <div>
                     <h3 className="font-medium" style={{ color: theme?.text_color }}>{promo.name || `Promotion #${promo.promotion_id}`}</h3>
-                    <p className="text-sm text-[#6b7280] capitalize">{promo.type.replace('_', ' ')}</p>
+                    <p className="text-sm text-[#6b7280] capitalize">{promo.type.replace(/_/g, ' ')}</p>
                     {promo.discount_percentage && (
                       <p className="text-sm text-emerald-400">{promo.discount_percentage}% discount</p>
                     )}

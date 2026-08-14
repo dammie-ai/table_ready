@@ -121,7 +121,7 @@ export default function OrderTracking() {
           Back to Menu
         </Link>
       </div>
-      <p className="text-gray-600 mb-6">{order.order_type.replace('_', ' ')}</p>
+      <p className="text-gray-600 mb-6">{order.order_type.replace(/_/g, ' ')}</p>
 
       {isOnHold && (
         <div className="border rounded-lg p-4 mb-6" style={{ borderColor: '#f59e0b', backgroundColor: '#fef3c7' }}>
@@ -151,7 +151,7 @@ export default function OrderTracking() {
                 >
                   {idx + 1}
                 </div>
-                {step.replace('_', ' ')}
+                {step.replace(/_/g, ' ')}
               </div>
             ))}
           </div>
