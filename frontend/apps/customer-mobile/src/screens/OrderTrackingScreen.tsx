@@ -39,6 +39,12 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
   const [showServiceToast, setShowServiceToast] = useState('');
   const [toastError, setToastError] = useState('');
   const [deliveryTracking, setDeliveryTracking] = useState<{ distance_miles: number | null; eta_minutes: number | null } | null>(null);
+  // delivery_status (assigned/accepted/picked_up/out_for_delivery/delivered)
+  // is a separate state machine from order.status -- the driver's actions
+  // never touched order.status until the very end, so the customer saw no
+  // visible progress at all between "Ready" and "Completed". This mirrors
+  // that column directly instead of trying to fold it into STEPS.
+  const [deliveryStatus, setDeliveryStatus] = useState<string | null>(null);
 
   // route.params.orderType and order.order_type are both the uppercase
   // backend enum ('PICKUP' | 'DELIVERY' | 'DINE_IN' | 'ORDER_FROM_HOME') --
@@ -69,6 +75,7 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
         if (!cancelled) {
           setOrder(res.order);
           if ((res.order as any).delivery_tracking) setDeliveryTracking((res.order as any).delivery_tracking);
+          if ((res.order as any).delivery_status) setDeliveryStatus((res.order as any).delivery_status);
         }
       })
       .catch((err) => {
@@ -102,11 +109,20 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
     };
     socket.on('delivery_location_updated', handleDeliveryLocation);
 
+    // Broadcast globally (not room-scoped) unlike order_status_updated, so
+    // every connected client gets every order's delivery updates -- has to
+    // filter to this screen's own order itself.
+    const handleDeliveryStatus = (data: { orderId: number; status: string }) => {
+      if (data.orderId === Number(orderId)) setDeliveryStatus(data.status);
+    };
+    socket.on('delivery_status_updated', handleDeliveryStatus);
+
     return () => {
       cancelled = true;
       socket.off('connect', joinRoom);
       socket.off('order_status_updated', handleStatusUpdate);
       socket.off('delivery_location_updated', handleDeliveryLocation);
+      socket.off('delivery_status_updated', handleDeliveryStatus);
     };
   }, [orderId]);
 
@@ -242,6 +258,20 @@ export default function OrderTrackingScreen({ navigation, route }: any) {
             <Text style={styles.pickupLabel}>Your Pickup Code</Text>
             <Text style={styles.pickupCode}>{order.pickup_code}</Text>
             <Text style={styles.pickupHint}>Show this at the counter</Text>
+          </View>
+        )}
+
+        {isDelivery && !isCancelled && deliveryStatus && deliveryStatus !== 'assigned' && (
+          <View style={styles.deliveryStatusCard}>
+            <Text style={styles.sectionLabel}>Delivery Status</Text>
+            <Text style={styles.deliveryStatusText}>
+              {{
+                accepted: '🚗 Driver is heading to the restaurant',
+                picked_up: '📦 Driver has picked up your order',
+                out_for_delivery: '🛣️ Out for delivery',
+                delivered: '✅ Delivered',
+              }[deliveryStatus] || deliveryStatus}
+            </Text>
           </View>
         )}
 
@@ -595,6 +625,18 @@ const createStyles = (colors: ReturnType<typeof useThemeStore.getState>['colors'
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+  deliveryStatusCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  deliveryStatusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
   },
   deliveryTrackingCard: {
     backgroundColor: colors.surface,
